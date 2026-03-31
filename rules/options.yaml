@@ -1,0 +1,56 @@
+- id: restricted_installation
+  applies_to:
+    - rooftop_pv
+    - mixed
+  title_en: Restricted-Zone Installation
+  title_zh: 限定区域安装
+  fit_when_en: Best fit when only selected roof zones look suitable and phased rollout is preferred.
+  fit_when_zh: 适用于仅部分屋面区域具备条件、且更适合分阶段推进时。
+  main_constraint_en: Coverage is limited and weak or sensitive roof zones must stay excluded.
+  main_constraint_zh: 覆盖范围受限，薄弱区或敏感区必须继续排除。
+  operational_impact_en: Medium; easier to sequence around active warehouse operations.
+  operational_impact_zh: 中等；更容易围绕仓储运营安排分区施工。
+  cost_level_en: Medium
+  cost_level_zh: 中
+  schedule_impact_en: Medium
+  schedule_impact_zh: 中
+  recommendation_note_en: Preferred first step for the current main demo because it supports phased advancement with lower disruption.
+  recommendation_note_zh: 适合作为当前主案例的优先路径，可在较低运营扰动下分阶段推进。
+- id: local_strengthening
+  applies_to:
+    - rooftop_pv
+    - load_upgrade
+    - mixed
+  title_en: Local Strengthening Before Installation
+  title_zh: 安装前局部加固
+  fit_when_en: Best fit when broader PV coverage matters and local weak zones can be verified.
+  fit_when_zh: 适用于希望保留较大铺设范围，且可识别并验证局部薄弱区时。
+  main_constraint_en: Requires clearer member data and owner acceptance of localized strengthening work.
+  main_constraint_zh: 需要更清晰的构件资料，并要求业主接受局部加固施工。
+  operational_impact_en: High; strengthening work increases access and shutdown coordination.
+  operational_impact_zh: 高；加固施工会提高现场干扰和停工协调要求。
+  cost_level_en: High
+  cost_level_zh: 高
+  schedule_impact_en: High
+  schedule_impact_zh: 高
+  recommendation_note_en: Suitable if the project value justifies extra disruption after targeted verification.
+  recommendation_note_zh: 若项目价值足以覆盖额外干扰，在完成针对性复核后可考虑采用。
+- id: pause_and_verify
+  applies_to:
+    - rooftop_pv
+    - mixed
+    - retrofit
+  title_en: Pause and Verify Before Scheme Selection
+  title_zh: 暂停并先完成复核
+  fit_when_en: Best fit when roof system details or verification access are too uncertain for a responsible scheme decision.
+  fit_when_zh: 适用于屋面体系细节或复核通道过于不确定，尚无法负责任地选定方案时。
+  main_constraint_en: Delays business decision and requires owners to unlock drawings, survey scope, or inspection access first.
+  main_constraint_zh: 会延后业务决策，且需要业主先释放图纸、调查范围或现场检查条件。
+  operational_impact_en: Low immediately, but installation cannot proceed until verification is unlocked.
+  operational_impact_zh: 短期运营影响低，但在完成复核前无法进入安装阶段。
+  cost_level_en: Low
+  cost_level_zh: 低
+  schedule_impact_en: High
+  schedule_impact_zh: 高
+  recommendation_note_en: Recommended to pause if no defendable verification route exists yet.
+  recommendation_note_zh: 如果当前没有可辩护的复核路径，应优先暂停推进。

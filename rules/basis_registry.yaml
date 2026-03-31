@@ -1,0 +1,18 @@
+- basis_id: gb_50017_general
+  source_type: standard
+  title_en: GB 50017 Steel Structure Design Standard
+  title_zh: GB 50017 钢结构设计标准
+  citation_en: General steel member and connection review path for screening-stage structural decisions.
+  citation_zh: 作为筛查阶段钢结构构件与连接复核路径的一般依据。
+- basis_id: aisc_360_general
+  source_type: standard
+  title_en: AISC 360 Specification for Structural Steel Buildings
+  title_zh: AISC 360 钢结构建筑规范
+  citation_en: General member stability, steel design, and connection review path under AISC context.
+  citation_zh: 作为 AISC 体系下构件稳定、钢结构设计与连接复核的一般依据。
+- basis_id: eurocode_3_general
+  source_type: standard
+  title_en: Eurocode 3 Design of Steel Structures
+  title_zh: Eurocode 3 钢结构设计规范
+  citation_en: General steel member and connection review path under Eurocode context.
+  citation_zh: 作为 Eurocode 体系下钢结构构件与连接复核的一般依据。

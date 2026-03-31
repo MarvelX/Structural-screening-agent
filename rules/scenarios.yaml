@@ -1,0 +1,20 @@
+- slug: rooftop_pv
+  label_en: Rooftop PV
+  label_zh: 屋顶光伏
+  project_types:
+    - rooftop_pv
+- slug: load_upgrade
+  label_en: Load Upgrade
+  label_zh: 荷载升级
+  project_types:
+    - load_upgrade
+- slug: retrofit
+  label_en: Retrofit
+  label_zh: 改造
+  project_types:
+    - retrofit
+- slug: mixed
+  label_en: Mixed Scenario
+  label_zh: 混合场景
+  project_types:
+    - mixed

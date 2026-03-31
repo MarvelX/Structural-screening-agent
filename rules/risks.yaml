@@ -1,0 +1,66 @@
+- id: pv_capacity_gap
+  applies_to:
+    - rooftop_pv
+    - mixed
+  triggers:
+    drawing_availability:
+      - partial
+      - missing
+  risk_level: high
+  decision_impact: conditional_go
+  title_en: Insufficient reserve capacity in roof members
+  title_zh: 屋面构件承载储备不足
+  recommended_action_en: Perform targeted structural verification
+  recommended_action_zh: 开展针对性结构复核
+- id: no_path_to_verify
+  applies_to:
+    - rooftop_pv
+    - mixed
+    - retrofit
+  triggers:
+    drawing_availability:
+      - missing
+    shutdown_constraint:
+      - strict
+  risk_level: critical
+  decision_impact: no_go
+  title_en: No viable verification path under current constraints
+  title_zh: 当前约束下缺少可执行的复核路径
+  recommended_action_en: Pause and secure drawings or intrusive survey scope
+  recommended_action_zh: 暂停推进并补齐图纸或调查范围
+- id: roof_attachment_uncertainty
+  applies_to:
+    - rooftop_pv
+  risk_level: high
+  decision_impact: conditional_go
+  title_en: Roof attachment path remains unverified for the current roof system
+  title_zh: 当前屋面体系下的支架连接路径尚未验证
+  recommended_action_en: Confirm panel profile, rib geometry, and attachment path before scheme lock
+  recommended_action_zh: 在锁定方案前确认板型、波形参数及支架连接路径
+- id: waterproofing_constraint
+  applies_to:
+    - rooftop_pv
+  risk_level: high
+  decision_impact: conditional_go
+  title_en: Waterproofing sensitivity limits penetrating attachment options
+  title_zh: 防水敏感性限制了穿透式连接方案
+  recommended_action_en: Prioritize non-penetrating details or isolate high-sensitivity zones
+  recommended_action_zh: 优先考虑非穿透连接或隔离高防水敏感区域
+- id: long_span_uncertainty
+  applies_to:
+    - rooftop_pv
+  risk_level: high
+  decision_impact: conditional_go
+  title_en: Long-span framing and large bay modules increase reserve-capacity uncertainty
+  title_zh: 大跨度与大柱距布置提高了承载储备不确定性
+  recommended_action_en: Use a framing module check to target the first verification package
+  recommended_action_zh: 先按框架模数梳理首轮复核范围
+- id: no_zone_strategy
+  applies_to:
+    - rooftop_pv
+  risk_level: medium
+  decision_impact: conditional_go
+  title_en: Operational disruption risk remains high without a restricted-zone installation strategy
+  title_zh: 若缺少分区安装策略，运营扰动风险将维持高位
+  recommended_action_en: Define a restricted-zone installation plan before broad rollout
+  recommended_action_zh: 在大范围推进前先明确分区安装策略
