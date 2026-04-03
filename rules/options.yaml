@@ -12,6 +12,8 @@
   operational_impact_zh: 中等；更容易围绕仓储运营安排分区施工。
   cost_level_en: Medium
   cost_level_zh: 中
+  screening_cost_range_en: CNY 120-220/m²
+  screening_cost_range_zh: ￥120-220/㎡
   schedule_impact_en: Medium
   schedule_impact_zh: 中
   recommendation_note_en: Preferred first step for the current main demo because it supports phased advancement with lower disruption.
@@ -31,6 +33,8 @@
   operational_impact_zh: 高；加固施工会提高现场干扰和停工协调要求。
   cost_level_en: High
   cost_level_zh: 高
+  screening_cost_range_en: CNY 260-480/m²
+  screening_cost_range_zh: ￥260-480/㎡
   schedule_impact_en: High
   schedule_impact_zh: 高
   recommendation_note_en: Suitable if the project value justifies extra disruption after targeted verification.
@@ -50,6 +54,8 @@
   operational_impact_zh: 短期运营影响低，但在完成复核前无法进入安装阶段。
   cost_level_en: Low
   cost_level_zh: 低
+  screening_cost_range_en: CNY 20-60/m² (verification-first only)
+  screening_cost_range_zh: ￥20-60/㎡（仅前置复核）
   schedule_impact_en: High
   schedule_impact_zh: 高
   recommendation_note_en: Recommended to pause if no defendable verification route exists yet.

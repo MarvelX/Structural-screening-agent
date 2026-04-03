@@ -17,6 +17,8 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
     "project_intake": {"zh": "项目输入", "en": "Project Intake"},
     "demo_scenario": {"zh": "案例库", "en": "Case Library"},
     "project_type": {"zh": "项目类型", "en": "Project Type"},
+    "default_package": {"zh": "经验默认包", "en": "Default Package"},
+    "default_package_hint": {"zh": "仅用于补齐未填写字段，不覆盖你已明确输入的条件。", "en": "Only fills blank fields and does not overwrite values you already provided."},
     "design_standard_context": {"zh": "规范体系", "en": "Design Standard Context"},
     "input_group_project_basics": {"zh": "基本项目条件", "en": "Project Basics"},
     "input_group_structural_evidence": {"zh": "结构证据链", "en": "Structural Evidence"},
@@ -55,6 +57,9 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
     "roof_rib_height": {"zh": "压型钢板波高 (mm)", "en": "Roof Rib Height (mm)"},
     "building_span": {"zh": "建筑跨度 (m)", "en": "Building Span (m)"},
     "column_spacing": {"zh": "柱距 (m)", "en": "Column Spacing (m)"},
+    "eave_height": {"zh": "檐口高度 (m)", "en": "Eave Height (m)"},
+    "steel_grade": {"zh": "钢材标号", "en": "Steel Grade"},
+    "steel_grade_preset": {"zh": "钢材标号常规选项", "en": "Steel Grade Preset"},
     "purlin_type": {"zh": "檩条形式", "en": "Purlin Type"},
     "roof_panel_type": {"zh": "屋面板类型", "en": "Roof Panel Type"},
     "attachment_preference": {"zh": "连接偏好", "en": "Attachment Preference"},
@@ -65,13 +70,56 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
     "waterproofing_sensitivity": {"zh": "防水敏感性", "en": "Waterproofing Sensitivity"},
     "restricted_installation_zones": {"zh": "限制安装区域", "en": "Restricted Installation Zones"},
     "verification_path": {"zh": "可用复核路径", "en": "Available Verification Path"},
+    "purlin_spacing": {"zh": "檩条间距 (m)", "en": "Purlin Spacing (m)"},
+    "rafter_section": {"zh": "门架梁截面", "en": "Rafter Section"},
+    "rafter_section_preset": {"zh": "门架梁截面常规选项", "en": "Rafter Section Preset"},
+    "column_section": {"zh": "门架柱截面", "en": "Column Section"},
+    "column_section_preset": {"zh": "门架柱截面常规选项", "en": "Column Section Preset"},
     "main_case_screening_inputs": {"zh": "主案例筛查项", "en": "Main-Case Screening Inputs"},
     "basis": {"zh": "依据", "en": "Basis"},
+    "basis_ids": {"zh": "依据 ID", "en": "Basis IDs"},
+    "engineering_meaning": {"zh": "工程含义", "en": "Engineering Meaning"},
+    "input_traces": {"zh": "输入追踪", "en": "Input Traces"},
+    "traceability_basis": {"zh": "可追溯性与依据", "en": "Traceability and Basis"},
+    "assessment_scope": {"zh": "评估范围", "en": "Assessment Scope"},
+    "project_input_tab": {"zh": "项目输入", "en": "Project Input"},
+    "assessment_tab": {"zh": "评估结论", "en": "Assessment"},
+    "basis_traceability_tab": {"zh": "依据与追溯", "en": "Basis & Traceability"},
+    "report_export_tab": {"zh": "报告导出", "en": "Report Export"},
+    "calculation_extension_tab": {"zh": "计算扩展", "en": "Calculation Extension"},
+    "photo_assist_entry": {"zh": "拍照辅助识别入口", "en": "Photo Assist Entry"},
+    "photo_assist_targets": {"zh": "辅助识别目标", "en": "Photo Assist Targets"},
+    "photo_assist_backfill_boundary": {"zh": "当前回填边界", "en": "Current Backfill Boundary"},
+    "photo_assist_upload_hint": {
+        "zh": "支持上传节点、檩条、屋面板和梁柱现状照片，后续用于辅助识别，不替代正式复核。",
+        "en": "Upload connection, purlin, roof panel, and member-condition photos for future assisted recognition; this does not replace formal review.",
+    },
+    "photo_assist_received": {"zh": "已接收图片数量", "en": "Uploaded Photo Count"},
+    "candidate_backfill_fields": {"zh": "候选回填字段", "en": "Candidate Backfill Fields"},
+    "load_combination_sensitivity": {"zh": "荷载组合敏感性", "en": "Load Combination Sensitivity"},
+    "input_summary": {"zh": "输入摘要", "en": "Input Summary"},
+    "evidence_status": {"zh": "证据状态", "en": "Evidence Status"},
+    "simplified_calculation_results": {"zh": "简化计算结果", "en": "Simplified Calculation Results"},
+    "basis_references": {"zh": "规范依据", "en": "Basis References"},
+    "applicable_standards": {"zh": "适用规范体系", "en": "Applicable Standards"},
+    "trigger_conditions": {"zh": "触发条件", "en": "Trigger Conditions"},
+    "evidence_requirements": {"zh": "证据需求", "en": "Evidence Requirements"},
+    "follow_up_review": {"zh": "后续复核要求", "en": "Follow-up Review"},
+    "preliminary_structural_conclusion": {"zh": "初步结构结论", "en": "Preliminary Structural Conclusion"},
+    "next_step_review_actions": {"zh": "后续复核建议", "en": "Next-Step Review Actions"},
+    "portal_frame_screening_title": {"zh": "门式刚架屋面光伏增载初筛", "en": "Portal-Frame Rooftop PV Screening"},
+    "portal_frame_screening_subtitle": {
+        "zh": "用于既有单层门式刚架厂房/仓库的结构初筛复核，输出简化计算结果、控制因素与下一步正式复核建议。",
+        "en": "Structural screening review for existing single-story portal-frame buildings with rooftop PV added load.",
+    },
+    "portal_frame_screening_panel": {"zh": "门刚光伏初筛", "en": "Portal Frame PV Screening"},
     "priority_rationale": {"zh": "当前优先原因", "en": "Priority Rationale"},
     "fit_when": {"zh": "适用情形", "en": "Fit When"},
     "main_constraint": {"zh": "主要约束", "en": "Main Constraint"},
     "operational_impact": {"zh": "运营影响", "en": "Operational Impact"},
     "cost_level": {"zh": "成本等级", "en": "Cost Level"},
+    "screening_cost_range": {"zh": "初筛成本区间", "en": "Screening Cost Range"},
+    "screening_cost_note": {"zh": "成本区间说明", "en": "Cost Range Note"},
     "schedule_impact": {"zh": "工期影响", "en": "Schedule Impact"},
     "recommendation_note": {"zh": "推荐说明", "en": "Recommendation Note"},
     "top_risks": {"zh": "关键风险", "en": "Top Risks"},
@@ -80,8 +128,16 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
     "missing_data": {"zh": "待补关键资料", "en": "Missing Critical Data"},
     "follow_up_questions": {"zh": "建议补充追问", "en": "Follow-up Questions"},
     "options": {"zh": "方案选项", "en": "Options"},
-    "agent_explanation": {"zh": "智能体说明", "en": "Agent Explanation"},
-    "decision_memo": {"zh": "决策摘要", "en": "Decision Memo"},
+    "agent_explanation": {"zh": "复核说明", "en": "Review Note"},
+    "decision_memo": {"zh": "复核摘要", "en": "Review Summary"},
+    "update_assessment": {"zh": "更新评估", "en": "Update Assessment"},
+    "control_factors": {"zh": "控制因素", "en": "Controlling Factors"},
+    "key_calculation_results": {"zh": "关键计算结果", "en": "Key Calculation Results"},
+    "critical_calculation_results": {"zh": "关键计算结果", "en": "Critical Calculation Results"},
+    "detailed_calculation_results": {"zh": "详细计算明细", "en": "Detailed Calculation Details"},
+    "detailed_evidence_status": {"zh": "详细证据状态", "en": "Detailed Evidence Status"},
+    "export_overview": {"zh": "导出说明", "en": "Export Overview"},
+    "extension_overview": {"zh": "扩展接口说明", "en": "Extension Overview"},
     "scenario": {"zh": "场景", "en": "Scenario"},
     "confidence": {"zh": "置信度", "en": "Confidence"},
     "language": {"zh": "界面语言", "en": "Interface Language"},
@@ -89,10 +145,13 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
     "primary_path": {"zh": "优先路径", "en": "Primary Path"},
     "backup_path": {"zh": "备选路径", "en": "Backup Path"},
     "download_bilingual_report": {"zh": "下载双语报告", "en": "Download Bilingual Report"},
+    "download_word_report": {"zh": "下载 Word 报告", "en": "Download Word Report"},
+    "download_pdf_report": {"zh": "下载 PDF 报告", "en": "Download PDF Report"},
+    "custom_input": {"zh": "自定义输入", "en": "Custom Input"},
     "none": {"zh": "无", "en": "None"},
-    "featured_demo": {"zh": "推荐案例", "en": "Recommended Case"},
-    "demo_flow": {"zh": "使用流程", "en": "How to Use"},
-    "report_export_note": {"zh": "Markdown 双语导出", "en": "Bilingual Markdown export"},
+    "featured_demo": {"zh": "示例项目", "en": "Reference Case"},
+    "demo_flow": {"zh": "查看顺序", "en": "Review Flow"},
+    "report_export_note": {"zh": "Markdown 导出", "en": "Markdown Export"},
     "product_scope": {"zh": "当前适用边界", "en": "Current Scope"},
     "standards_context_note": {"zh": "规范上下文说明", "en": "Standards Context"},
     "scope_note": {
@@ -104,9 +163,10 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
         "en": "The standards context only marks which code path should govern the next-stage review. This version does not perform full GB / AISC / Eurocode calculations.",
     },
     "provider_status": {"zh": "模型状态", "en": "Provider Status"},
+    "result_unit": {"zh": "结果单位", "en": "Result Unit"},
     "mock_fallback": {"zh": "模拟降级模式", "en": "Mock fallback"},
     "live_model": {"zh": "在线模型模式", "en": "Live model"},
-    "app_title": {"zh": "结构可行性评估智能体", "en": "Structural Feasibility Screening Agent"},
+    "app_title": {"zh": "门式刚架屋面光伏增载结构初筛", "en": "Portal-Frame Rooftop PV Structural Screening"},
     "must_do": {"zh": "必须先做", "en": "Must Do"},
     "parallel": {"zh": "建议并行做", "en": "Parallel Track"},
     "later": {"zh": "可后续做", "en": "Later Step"},
@@ -176,6 +236,10 @@ OPTION_TRANSLATIONS: Dict[str, Dict[str, Dict[Language, str]]] = {
         "partial": {"zh": "部分掌握", "en": "Partial"},
         "missing": {"zh": "缺失", "en": "Missing"},
     },
+    "default_package_key": {
+        "none": {"zh": "不使用默认包", "en": "No Default Package"},
+        "portal_frame_conservative": {"zh": "门刚保守默认包", "en": "Portal-Frame Conservative Package"},
+    },
     "purlin_type": {
         "cold_formed_z": {"zh": "冷弯 Z 型檩条", "en": "Cold-Formed Z Purlin"},
         "cold_formed_c": {"zh": "冷弯 C 型檩条", "en": "Cold-Formed C Purlin"},
@@ -212,6 +276,100 @@ PRESET_TEXT_TRANSLATIONS: Dict[str, Dict[str, Dict[Language, str]]] = {
     },
 }
 
+INPUT_PATH_TRANSLATIONS: Dict[str, Dict[Language, str]] = {
+    "member_evidence.drawing_availability": {"zh": "构件图纸完整性", "en": "Member Drawing Availability"},
+    "member_evidence.member_schedule_status": {"zh": "既有构件表状态", "en": "Member Schedule Status"},
+    "member_evidence.survey_available": {"zh": "现场调查状态", "en": "Site Survey Status"},
+    "connection_evidence.connection_detail_status": {"zh": "连接做法资料状态", "en": "Connection Detail Status"},
+    "connection_evidence.roof_vendor_data_status": {"zh": "屋面厂家资料状态", "en": "Roof Vendor Data Status"},
+    "connection_evidence.available_verification_path": {"zh": "复核路径", "en": "Verification Path"},
+    "roof_system.panel_thickness_mm": {"zh": "屋面板厚", "en": "Roof Panel Thickness"},
+    "roof_system.rib_height_mm": {"zh": "屋面板波高", "en": "Roof Rib Height"},
+    "pv_load.added_dead_load_kpa": {"zh": "新增屋面恒载", "en": "Added Roof Dead Load"},
+    "secondary_members.purlin_spacing_m": {"zh": "檩条间距", "en": "Purlin Spacing"},
+    "geometry.eave_height_m": {"zh": "檐口高度", "en": "Eave Height"},
+    "portal_frame.purlin_strength_ratio": {"zh": "檩条强度比", "en": "Purlin Strength Ratio"},
+    "portal_frame.purlin_deflection_ratio": {"zh": "檩条挠度比", "en": "Purlin Deflection Ratio"},
+    "portal_frame.primary_frame_rafter_screening_ratio": {"zh": "主门架梁筛查比值", "en": "Primary Frame Rafter Screening Ratio"},
+    "portal_frame.primary_frame_column_screening_ratio": {"zh": "主门架柱筛查比值", "en": "Primary Frame Column Screening Ratio"},
+    "portal_frame.primary_frame_screening_ratio": {"zh": "主门架筛查比值", "en": "Primary Frame Screening Ratio"},
+}
+
+BASIS_TERM_TRANSLATIONS: Dict[str, Dict[Language, str]] = {
+    "incomplete steel member evidence": {"zh": "钢构件证据不完整", "en": "incomplete steel member evidence"},
+    "connection review required": {"zh": "需要开展连接复核", "en": "connection review required"},
+    "steel member review under AISC context": {"zh": "AISC 体系下钢构件复核", "en": "steel member review under AISC context"},
+    "connection review under AISC context": {"zh": "AISC 体系下连接复核", "en": "connection review under AISC context"},
+    "steel member review under Eurocode context": {"zh": "Eurocode 体系下钢构件复核", "en": "steel member review under Eurocode context"},
+    "connection review under Eurocode context": {"zh": "Eurocode 体系下连接复核", "en": "connection review under Eurocode context"},
+    "screening-stage portal-frame purlin check": {"zh": "筛查阶段门式刚架檩条验算", "en": "screening-stage portal-frame purlin check"},
+    "roof photovoltaic load increase requires screening": {"zh": "屋面光伏增载需要先做筛查", "en": "roof photovoltaic load increase requires screening"},
+    "screening-stage portal-frame purlin check under AISC context": {"zh": "AISC 体系下筛查阶段门式刚架檩条验算", "en": "screening-stage portal-frame purlin check under AISC context"},
+    "screening-stage portal-frame purlin check under Eurocode context": {"zh": "Eurocode 体系下筛查阶段门式刚架檩条验算", "en": "screening-stage portal-frame purlin check under Eurocode context"},
+    "Continue steel member and connection review": {"zh": "继续开展钢构件与连接复核", "en": "Continue steel member and connection review"},
+    "Verify local roof attachment detailing": {"zh": "核对局部屋面连接构造", "en": "Verify local roof attachment detailing"},
+    "Continue member stability review under AISC 360": {"zh": "按 AISC 360 继续开展构件稳定复核", "en": "Continue member stability review under AISC 360"},
+    "Continue steel design and connection review": {"zh": "继续开展钢构件设计与连接复核", "en": "Continue steel design and connection review"},
+    "Continue steel member review under Eurocode 3": {"zh": "按 Eurocode 3 继续开展钢构件复核", "en": "Continue steel member review under Eurocode 3"},
+    "Continue local execution and connection review": {"zh": "继续开展局部构造与连接复核", "en": "Continue local execution and connection review"},
+    "Escalate to formal review if purlin utilization, deflection, or support reactions exceed screening thresholds": {"zh": "当檩条利用率、挠度或支座反力超过筛查阈值时，应升级为正式复核", "en": "Escalate to formal review if purlin utilization, deflection, or support reactions exceed screening thresholds"},
+    "Perform deeper review for portal-frame roof load path and local connection effects": {"zh": "进一步复核门架屋面荷载路径及局部连接效应", "en": "Perform deeper review for portal-frame roof load path and local connection effects"},
+    "Escalate to formal review if purlin demand, drift, or connection effects exceed screening thresholds": {"zh": "当檩条需求、变形或连接效应超过筛查阈值时，应升级为正式复核", "en": "Escalate to formal review if purlin demand, drift, or connection effects exceed screening thresholds"},
+    "Perform deeper review for portal-frame load combinations and member stability": {"zh": "进一步复核门架荷载组合与构件稳定", "en": "Perform deeper review for portal-frame load combinations and member stability"},
+    "Escalate to formal review if purlin resistance, serviceability, or support reactions exceed screening thresholds": {"zh": "当檩条承载力、正常使用或支座反力超过筛查阈值时，应升级为正式复核", "en": "Escalate to formal review if purlin resistance, serviceability, or support reactions exceed screening thresholds"},
+    "portal frame geometry": {"zh": "门式刚架几何参数", "en": "portal frame geometry"},
+    "purlin spacing and section data": {"zh": "檩条间距与截面资料", "en": "purlin spacing and section data"},
+    "roof photovoltaic load summary": {"zh": "屋面光伏荷载摘要", "en": "roof photovoltaic load summary"},
+    "structural drawings": {"zh": "结构图纸", "en": "structural drawings"},
+    "member schedule": {"zh": "构件表", "en": "member schedule"},
+    "connection details": {"zh": "连接节点资料", "en": "connection details"},
+}
+
+BASIS_TEXT_TRANSLATIONS: Dict[str, Dict[Language, str]] = {
+    "incomplete steel member evidence": {"zh": "钢构件证据不完整", "en": "incomplete steel member evidence"},
+    "connection review required": {"zh": "需要开展连接复核", "en": "connection review required"},
+    "Continue steel member and connection review": {"zh": "继续开展钢构件与连接复核", "en": "Continue steel member and connection review"},
+    "Verify local roof attachment detailing": {"zh": "核对局部屋面连接做法", "en": "Verify local roof attachment detailing"},
+    "structural drawings": {"zh": "结构图纸", "en": "structural drawings"},
+    "member schedule": {"zh": "构件表", "en": "member schedule"},
+    "connection details": {"zh": "连接节点资料", "en": "connection details"},
+    "steel member review under AISC context": {"zh": "AISC 体系下需开展钢构件复核", "en": "steel member review under AISC context"},
+    "connection review under AISC context": {"zh": "AISC 体系下需开展连接复核", "en": "connection review under AISC context"},
+    "Continue member stability review under AISC 360": {"zh": "继续按 AISC 360 开展构件稳定复核", "en": "Continue member stability review under AISC 360"},
+    "Continue steel design and connection review": {"zh": "继续开展钢结构设计与连接复核", "en": "Continue steel design and connection review"},
+    "steel member review under Eurocode context": {"zh": "Eurocode 体系下需开展钢构件复核", "en": "steel member review under Eurocode context"},
+    "connection review under Eurocode context": {"zh": "Eurocode 体系下需开展连接复核", "en": "connection review under Eurocode context"},
+    "Continue steel member review under Eurocode 3": {"zh": "继续按 Eurocode 3 开展钢构件复核", "en": "Continue steel member review under Eurocode 3"},
+    "Continue local execution and connection review": {"zh": "继续开展局部构造与连接复核", "en": "Continue local execution and connection review"},
+    "screening-stage portal-frame purlin check": {"zh": "筛查阶段门式刚架檩条检查", "en": "screening-stage portal-frame purlin check"},
+    "roof photovoltaic load increase requires screening": {"zh": "屋面光伏增载需要进行筛查", "en": "roof photovoltaic load increase requires screening"},
+    "Escalate to formal review if purlin utilization, deflection, or support reactions exceed screening thresholds": {
+        "zh": "若檩条利用率、挠度或支反力超出筛查阈值，应升级至正式复核",
+        "en": "Escalate to formal review if purlin utilization, deflection, or support reactions exceed screening thresholds",
+    },
+    "Perform deeper review for portal-frame roof load path and local connection effects": {
+        "zh": "进一步复核门式刚架屋面传力路径及局部连接效应",
+        "en": "Perform deeper review for portal-frame roof load path and local connection effects",
+    },
+    "portal frame geometry": {"zh": "门式刚架几何参数", "en": "portal frame geometry"},
+    "purlin spacing and section data": {"zh": "檩条间距与截面资料", "en": "purlin spacing and section data"},
+    "roof photovoltaic load summary": {"zh": "屋面光伏荷载汇总", "en": "roof photovoltaic load summary"},
+    "screening-stage portal-frame purlin check under AISC context": {"zh": "AISC 体系下筛查阶段门式刚架檩条检查", "en": "screening-stage portal-frame purlin check under AISC context"},
+    "Escalate to formal review if purlin demand, drift, or connection effects exceed screening thresholds": {
+        "zh": "若檩条需求、变形或连接效应超出筛查阈值，应升级至正式复核",
+        "en": "Escalate to formal review if purlin demand, drift, or connection effects exceed screening thresholds",
+    },
+    "Perform deeper review for portal-frame load combinations and member stability": {
+        "zh": "进一步复核门式刚架荷载组合与构件稳定",
+        "en": "Perform deeper review for portal-frame load combinations and member stability",
+    },
+    "screening-stage portal-frame purlin check under Eurocode context": {"zh": "Eurocode 体系下筛查阶段门式刚架檩条检查", "en": "screening-stage portal-frame purlin check under Eurocode context"},
+    "Escalate to formal review if purlin resistance, serviceability, or support reactions exceed screening thresholds": {
+        "zh": "若檩条抗力、正常使用或支反力超出筛查阈值，应升级至正式复核",
+        "en": "Escalate to formal review if purlin resistance, serviceability, or support reactions exceed screening thresholds",
+    },
+}
+
 
 def translate(language: Language, key: str) -> str:
     return TRANSLATIONS[key][language]
@@ -243,6 +401,29 @@ def canonicalize_preset_text(field: str, value: str) -> str:
         if value in localized.values():
             return canonical_value
     return value
+
+
+def localize_input_path(language: Language, path: str) -> str:
+    return INPUT_PATH_TRANSLATIONS.get(path, {"zh": path, "en": path})[language]
+
+
+def localize_basis_term(language: Language, value: str) -> str:
+    return BASIS_TERM_TRANSLATIONS.get(value, {"zh": value, "en": value})[language]
+
+
+def localize_basis_text(language: Language, text: str) -> str:
+    return BASIS_TEXT_TRANSLATIONS.get(text, {"zh": text, "en": text})[language]
+
+
+def localize_calc_unit(language: Language, unit: str) -> str:
+    unit_map = {
+        "kPa": {"zh": "kPa", "en": "kPa"},
+        "kN/m": {"zh": "kN/m", "en": "kN/m"},
+        "kN*m": {"zh": "kN·m", "en": "kN·m"},
+        "dimensionless": {"zh": "无量纲", "en": "dimensionless"},
+        "score": {"zh": "分", "en": "score"},
+    }
+    return unit_map.get(unit, {"zh": unit, "en": unit})[language]
 
 
 def format_bilingual_item(item: BilingualItem, language: Language) -> str:

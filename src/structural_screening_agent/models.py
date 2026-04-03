@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import List, Literal, Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 
 class DecisionStatus(str, Enum):
@@ -20,6 +20,11 @@ class BuildingIntake(BaseModel):
     estimated_added_load_kpa: Optional[float] = None
     building_span_m: Optional[float] = None
     column_spacing_m: Optional[float] = None
+    eave_height_m: Optional[float] = None
+    rafter_section: Optional[str] = None
+    column_section: Optional[str] = None
+    steel_grade: Optional[str] = None
+    purlin_spacing_m: Optional[float] = None
     purlin_type: Optional[str] = None
     roof_panel_type: Optional[str] = None
     roof_panel_thickness_mm: Optional[float] = None
@@ -37,6 +42,42 @@ class BuildingIntake(BaseModel):
     shutdown_constraint: Literal["none", "limited", "strict"]
     drawing_availability: Literal["complete", "partial", "missing"]
     survey_available: bool = False
+
+    @field_validator("estimated_added_load_kpa")
+    @classmethod
+    def validate_estimated_added_load_kpa(cls, value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return value
+        if value <= 0 or value > 5.0:
+            raise ValueError("estimated_added_load_kpa must remain within a realistic screening range (0, 5].")
+        return value
+
+    @field_validator("building_span_m")
+    @classmethod
+    def validate_building_span_m(cls, value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return value
+        if value <= 0 or value > 120.0:
+            raise ValueError("building_span_m must remain within a realistic screening range (0, 120].")
+        return value
+
+    @field_validator("column_spacing_m")
+    @classmethod
+    def validate_column_spacing_m(cls, value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return value
+        if value <= 0 or value > 20.0:
+            raise ValueError("column_spacing_m must remain within a realistic screening range (0, 20].")
+        return value
+
+    @field_validator("eave_height_m")
+    @classmethod
+    def validate_eave_height_m(cls, value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return value
+        if value <= 0 or value > 30.0:
+            raise ValueError("eave_height_m must remain within a realistic screening range (0, 30].")
+        return value
 
 
 class BilingualItem(BaseModel):
@@ -63,6 +104,8 @@ class ScreeningOption(BaseModel):
     operational_impact_zh: str = Field(min_length=1)
     cost_level_en: str = Field(min_length=1)
     cost_level_zh: str = Field(min_length=1)
+    screening_cost_range_en: str = Field(min_length=1)
+    screening_cost_range_zh: str = Field(min_length=1)
     schedule_impact_en: str = Field(min_length=1)
     schedule_impact_zh: str = Field(min_length=1)
     recommendation_note_en: str = Field(min_length=1)

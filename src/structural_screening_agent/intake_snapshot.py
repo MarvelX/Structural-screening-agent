@@ -13,6 +13,10 @@ def build_screening_snapshot(intake: BuildingIntake, language: Language) -> List
         items.append(f"{translate(language, 'building_span')}: {intake.building_span_m:.1f} m")
     if intake.column_spacing_m is not None:
         items.append(f"{translate(language, 'column_spacing')}: {intake.column_spacing_m:.1f} m")
+    if intake.eave_height_m is not None:
+        items.append(f"{translate(language, 'eave_height')}: {intake.eave_height_m:.1f} m")
+    if intake.steel_grade:
+        items.append(f"{translate(language, 'steel_grade')}: {intake.steel_grade}")
     if intake.purlin_type:
         items.append(
             f"{translate(language, 'purlin_type')}: {translate_option(language, 'purlin_type', intake.purlin_type)}"

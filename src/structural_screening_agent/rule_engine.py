@@ -344,6 +344,76 @@ def _build_review_required(intake: BuildingIntake) -> List[BilingualItem]:
     return review_required
 
 
+def _build_review_required_from_kernel(
+    intake: BuildingIntake,
+    kernel_outcome: KernelOutcome,
+) -> List[BilingualItem]:
+    if kernel_outcome.basis_references:
+        return [
+            BilingualItem(
+                title_en=item.title_en,
+                title_zh=item.title_zh,
+                detail_en="; ".join(item.review_requirements) if item.review_requirements else item.citation_en,
+                detail_zh=item.citation_zh,
+            )
+            for item in kernel_outcome.basis_references
+        ]
+    return _build_review_required(intake)
+
+
+def _apply_risk_accumulation_escalation(
+    intake: BuildingIntake,
+    matched_risks: List[BilingualItem],
+    recommended_actions: List[ScreeningAction],
+    current_status: DecisionStatus,
+) -> DecisionStatus:
+    if current_status != DecisionStatus.CONDITIONAL_GO:
+        return current_status
+
+    score = 0
+    if intake.estimated_added_load_kpa is not None and intake.estimated_added_load_kpa >= 0.15:
+        score += 1
+    if intake.drawing_availability != "complete":
+        score += 2
+    if not intake.survey_available:
+        score += 1
+    if intake.corrosion_condition == "high":
+        score += 1
+    if (
+        intake.building_span_m is not None
+        and intake.column_spacing_m is not None
+        and intake.building_span_m >= 33.0
+        and intake.column_spacing_m >= 8.5
+    ):
+        score += 1
+    if intake.roof_panel_type == "profiled_sheet" and (
+        intake.roof_panel_thickness_mm is None or intake.roof_rib_height_mm is None
+    ):
+        score += 1
+    if intake.shutdown_constraint in ("limited", "strict") and not (intake.restricted_installation_zones or "").strip():
+        score += 1
+
+    if score < 5:
+        return current_status
+
+    _append_item(
+        matched_risks,
+        "Accumulated conditional risks now exceed the screening tolerance",
+        "多项中风险叠加后已超出当前筛查容忍度",
+        detail_en=(
+            "Accumulated conditional-go signals across load demand, evidence gaps, field verification, and framing/attachment uncertainty now exceed the current screening tolerance."
+        ),
+        detail_zh="当前新增荷载、证据缺口、现场核验以及框架/连接不确定性已形成叠加效应，超出本轮筛查可容忍范围。",
+    )
+    _append_action(
+        recommended_actions,
+        "Stop rollout and consolidate the next review package before further scheme comparison",
+        "暂停推进并先收敛下一轮复核包，再继续进行方案比较",
+        "must_do",
+    )
+    return DecisionStatus.NO_GO
+
+
 def _build_verification_readiness(
     intake: BuildingIntake,
     status: DecisionStatus,
@@ -910,6 +980,24 @@ def _build_review_triggers(intake: BuildingIntake) -> List[ReviewTrigger]:
 
 
 def _build_traceability(kernel_outcome: KernelOutcome) -> List[TraceabilityFinding]:
+    if kernel_outcome.triggered_rules:
+        return [
+            TraceabilityFinding(
+                finding_id=rule.rule_id,
+                severity=rule.severity,
+                summary_en=rule.summary_en,
+                summary_zh=rule.summary_zh,
+                basis_ids=list(rule.basis_ids),
+                traces=[
+                    TraceabilityTrace(
+                        input_path=trace.input_path,
+                        observed_value=trace.observed_value,
+                    )
+                    for trace in rule.traces
+                ],
+            )
+            for rule in kernel_outcome.triggered_rules
+        ]
     return [
         TraceabilityFinding(
             finding_id=finding.finding_id,
@@ -929,6 +1017,93 @@ def _build_traceability(kernel_outcome: KernelOutcome) -> List[TraceabilityFindi
     ]
 
 
+def _build_verification_readiness_from_kernel(kernel_outcome: KernelOutcome) -> VerificationReadiness:
+    return VerificationReadiness(
+        level=kernel_outcome.verification_readiness.level,
+        summary_en=kernel_outcome.verification_readiness.summary_en,
+        summary_zh=kernel_outcome.verification_readiness.summary_zh,
+        blockers=[
+            BilingualItem(title_en=item.title_en, title_zh=item.title_zh)
+            for item in kernel_outcome.verification_readiness.blockers
+        ],
+    )
+
+
+def _build_member_reserve_uncertainties_from_kernel(kernel_outcome: KernelOutcome) -> List[ReserveUncertainty]:
+    return [
+        ReserveUncertainty(
+            title_en=item.title_en,
+            title_zh=item.title_zh,
+            severity=item.severity,
+            summary_en=item.summary_en,
+            summary_zh=item.summary_zh,
+        )
+        for item in kernel_outcome.member_reserve_uncertainties
+    ]
+
+
+def _build_attachment_pathways_from_kernel(kernel_outcome: KernelOutcome) -> List[AttachmentPathway]:
+    return [
+        AttachmentPathway(
+            title_en=item.title_en,
+            title_zh=item.title_zh,
+            status=item.status,
+            summary_en=item.summary_en,
+            summary_zh=item.summary_zh,
+        )
+        for item in kernel_outcome.attachment_pathways
+    ]
+
+
+def _build_review_triggers_from_kernel(kernel_outcome: KernelOutcome) -> List[ReviewTrigger]:
+    return [
+        ReviewTrigger(
+            category=item.category,
+            title_en=item.title_en,
+            title_zh=item.title_zh,
+            summary_en=item.summary_en,
+            summary_zh=item.summary_zh,
+        )
+        for item in kernel_outcome.review_triggers
+    ]
+
+
+def _build_engineering_checks_from_kernel(kernel_outcome: KernelOutcome) -> List[EngineeringCheck]:
+    return [
+        EngineeringCheck(
+            title_en=item.title_en,
+            title_zh=item.title_zh,
+            status=item.status,
+            summary_en=item.summary_en,
+            summary_zh=item.summary_zh,
+        )
+        for item in kernel_outcome.engineering_checks
+    ]
+
+
+def _build_recommended_actions_from_kernel(kernel_outcome: KernelOutcome) -> List[ScreeningAction]:
+    return [
+        ScreeningAction(
+            title_en=item.title_en,
+            title_zh=item.title_zh,
+            phase=item.phase,
+        )
+        for item in kernel_outcome.recommended_actions
+    ]
+
+
+def _build_resource_recommendations_from_kernel(kernel_outcome: KernelOutcome) -> List[ResourceRecommendation]:
+    return [
+        ResourceRecommendation(
+            title_en=item.title_en,
+            title_zh=item.title_zh,
+            summary_en=item.summary_en,
+            summary_zh=item.summary_zh,
+        )
+        for item in kernel_outcome.resource_recommendations
+    ]
+
+
 def evaluate_screening(intake: BuildingIntake) -> ScreeningResult:
     kernel_case = from_building_intake(intake)
     kernel_outcome = evaluate_screening_case(kernel_case)
@@ -937,7 +1112,7 @@ def evaluate_screening(intake: BuildingIntake) -> ScreeningResult:
     option_rules = _load_yaml("options.yaml")
 
     matched_risks: List[BilingualItem] = []
-    recommended_actions: List[ScreeningAction] = []
+    recommended_actions: List[ScreeningAction] = _build_recommended_actions_from_kernel(kernel_outcome)
     status = DecisionStatus(kernel_outcome.decision.status)
     status = _apply_flat_risk_rules(
         intake=intake,
@@ -956,19 +1131,20 @@ def evaluate_screening(intake: BuildingIntake) -> ScreeningResult:
         missing_data=missing_data,
         current_status=status,
     )
-    options = _build_options(intake, option_rules, status)
-    review_required = _build_review_required(intake)
-    verification_readiness = _build_verification_readiness(intake, status, missing_data)
-    engineering_checks = _build_engineering_checks(intake, status)
-    member_reserve_uncertainties = _build_member_reserve_uncertainties(intake)
-    attachment_pathways = _build_attachment_pathways(intake)
-    review_triggers = _build_review_triggers(intake)
-    resource_recommendations = _build_resource_recommendations(
-        intake,
-        engineering_checks,
-        review_triggers,
-        attachment_pathways,
+    status = _apply_risk_accumulation_escalation(
+        intake=intake,
+        matched_risks=matched_risks,
+        recommended_actions=recommended_actions,
+        current_status=status,
     )
+    options = _build_options(intake, option_rules, status)
+    review_required = _build_review_required_from_kernel(intake, kernel_outcome)
+    verification_readiness = _build_verification_readiness_from_kernel(kernel_outcome)
+    engineering_checks = _build_engineering_checks_from_kernel(kernel_outcome)
+    member_reserve_uncertainties = _build_member_reserve_uncertainties_from_kernel(kernel_outcome)
+    attachment_pathways = _build_attachment_pathways_from_kernel(kernel_outcome)
+    review_triggers = _build_review_triggers_from_kernel(kernel_outcome)
+    resource_recommendations = _build_resource_recommendations_from_kernel(kernel_outcome)
     traceability = _build_traceability(kernel_outcome)
 
     confidence = kernel_outcome.decision.confidence

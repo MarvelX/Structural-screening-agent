@@ -11,20 +11,25 @@ def main_demo_case() -> BuildingIntake:
         estimated_added_load_kpa=0.18,
         building_span_m=30.0,
         column_spacing_m=8.0,
+        eave_height_m=8.0,
+        rafter_section="310x150x8x12 welded rafter",
+        column_section="305x305x10x15 welded column",
+        steel_grade="Q355",
+        purlin_spacing_m=1.5,
         purlin_type="cold_formed_z",
         roof_panel_type="profiled_sheet",
-        roof_panel_thickness_mm=None,
-        roof_rib_height_mm=None,
+        roof_panel_thickness_mm=0.6,
+        roof_rib_height_mm=75.0,
         roof_attachment_preference="clamp_based",
-        existing_member_schedule_status="missing",
+        existing_member_schedule_status="available",
         connection_detail_status="partial",
-        roof_vendor_data_status="missing",
+        roof_vendor_data_status="partial",
         corrosion_condition="moderate",
         waterproofing_sensitivity="high",
         restricted_installation_zones="skylights, smoke vents, and maintenance corridors",
         available_verification_path="drawings_only",
         shutdown_constraint="limited",
-        drawing_availability="partial",
+        drawing_availability="complete",
         survey_available=False,
     )
 
@@ -39,6 +44,8 @@ def warehouse_upgrade_case() -> BuildingIntake:
         estimated_added_load_kpa=0.12,
         building_span_m=24.0,
         column_spacing_m=8.0,
+        eave_height_m=7.5,
+        steel_grade="Q355",
         purlin_type="cold_formed_z",
         roof_panel_type="profiled_sheet",
         roof_panel_thickness_mm=None,
@@ -67,6 +74,8 @@ def industrial_retrofit_case() -> BuildingIntake:
         estimated_added_load_kpa=0.28,
         building_span_m=27.0,
         column_spacing_m=9.0,
+        eave_height_m=9.0,
+        steel_grade=None,
         purlin_type=None,
         roof_panel_type="sandwich_panel",
         roof_panel_thickness_mm=None,
@@ -85,9 +94,49 @@ def industrial_retrofit_case() -> BuildingIntake:
     )
 
 
+def portal_frame_conservative_package() -> BuildingIntake:
+    return BuildingIntake(
+        project_type="rooftop_pv",
+        design_standard_context="gb",
+        building_type="existing warehouse",
+        structural_system="steel portal frame",
+        roof_type="metal roof",
+        intended_modification="distributed rooftop pv",
+        estimated_added_load_kpa=0.15,
+        building_span_m=24.0,
+        column_spacing_m=8.0,
+        eave_height_m=7.5,
+        rafter_section="300x150x6x10 welded rafter",
+        column_section="300x200x8x12 welded column",
+        steel_grade="Q235",
+        purlin_spacing_m=1.5,
+        purlin_type="cold_formed_z",
+        roof_panel_type="profiled_sheet",
+        roof_panel_thickness_mm=None,
+        roof_rib_height_mm=None,
+        roof_attachment_preference="clamp_based",
+        existing_member_schedule_status="partial",
+        connection_detail_status="missing",
+        roof_vendor_data_status="missing",
+        corrosion_condition="unknown",
+        waterproofing_sensitivity="high",
+        restricted_installation_zones="unknown roof obstructions",
+        available_verification_path="drawings_only",
+        shutdown_constraint="limited",
+        drawing_availability="partial",
+        survey_available=False,
+    )
+
+
 def all_demo_cases() -> dict[str, BuildingIntake]:
     return {
         "main_warehouse_pv": main_demo_case(),
         "warehouse_upgrade": warehouse_upgrade_case(),
         "industrial_retrofit": industrial_retrofit_case(),
+    }
+
+
+def all_default_packages() -> dict[str, BuildingIntake]:
+    return {
+        "portal_frame_conservative": portal_frame_conservative_package(),
     }

@@ -1,5 +1,6 @@
-from typing import List
+from typing import List, Optional
 
+from structural_screening_agent.core.kernel import KernelOutcome
 from structural_screening_agent.localization import Language
 from structural_screening_agent.models import BuildingIntake, ScreeningResult
 
@@ -8,7 +9,14 @@ def build_assumptions_and_limitations(
     intake: BuildingIntake,
     result: ScreeningResult,
     language: Language,
+    kernel_outcome: Optional[KernelOutcome] = None,
 ) -> List[str]:
+    if kernel_outcome is not None and kernel_outcome.assumption_ledger:
+        return [
+            item.summary_zh if language == "zh" else item.summary_en
+            for item in kernel_outcome.assumption_ledger
+        ]
+
     if language == "zh":
         items = ["当前输出仅用于前期结构筛查与路径判断，不替代正式结构设计、规范计算或签字结论。"]
         if intake.drawing_availability != "complete":

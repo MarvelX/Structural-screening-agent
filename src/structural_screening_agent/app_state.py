@@ -1,9 +1,10 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 from structural_screening_agent.core.domain import from_building_intake
 from structural_screening_agent.core.kernel import evaluate_screening_case
+from structural_screening_agent.core.persistence import ScreeningRepository
 from structural_screening_agent.decision_agent import build_bilingual_explanation, build_follow_up_questions
-from structural_screening_agent.demo_data import all_demo_cases, main_demo_case
+from structural_screening_agent.demo_data import all_default_packages, all_demo_cases, main_demo_case
 from structural_screening_agent.localization import Language
 from structural_screening_agent.models import BuildingIntake
 from structural_screening_agent.report_generator import build_markdown_report
@@ -19,78 +20,91 @@ def demo_case_options() -> Dict[str, BuildingIntake]:
     return all_demo_cases()
 
 
+def default_package_options() -> Dict[str, BuildingIntake]:
+    return all_default_packages()
+
+
 def demo_case_catalog(language: Language = "zh") -> Dict[str, Dict[str, object]]:
     if language == "zh":
         return {
             "main_warehouse_pv": {
-                "label": "推荐案例：既有钢结构仓库 + 屋面光伏",
-                "note": "适用于既有仓库屋面光伏项目前期结构筛查，重点展示证据链、专项复核触发项与当前优先路径。",
+                "label": "门式刚架厂房/仓库 + 屋面光伏增载初筛",
+                "note": "面向既有单层门式刚架建筑的结构初筛复核，重点输出简化计算结果、控制因素和下一步正式复核建议。",
                 "featured": True,
                 "narrative_steps": [
-                    "先录入项目条件和证据状态，确认图纸、构件表、连接做法与屋面资料掌握程度。",
-                    "再看管理层摘要，快速判断当前结论、主要约束、下一步和优先路径。",
-                    "然后查看专项复核触发项与复核推进链，理解为什么先进入构件或连接复核。",
-                    "最后比较当前优先方案并导出决策摘要，作为内部讨论或顾问交接材料。",
+                    "先录入门式刚架几何、构件截面、檩条参数和光伏附加荷载。",
+                    "再确认图纸、计算书、现场核查和屋面/连接资料掌握程度。",
+                    "然后查看简化计算结果、控制因素和当前初步结构结论。",
+                    "最后导出结构初筛摘要，作为顾问深化复核或内部决策输入。",
                 ],
-            },
-            "warehouse_upgrade": {
-                "label": "次案例：仓库荷载升级",
-                "note": "用于补充说明平台或设备升级场景下的结构筛查逻辑。",
-                "featured": False,
-                "narrative_steps": [],
-            },
-            "industrial_retrofit": {
-                "label": "补充案例：工业建筑改造",
-                "note": "用于展示 No-Go / 高不确定性场景下的 gatekeeping 能力。",
-                "featured": False,
-                "narrative_steps": [],
             },
         }
 
     return {
         "main_warehouse_pv": {
-            "label": "Recommended Case: Existing Steel Warehouse + Rooftop PV",
-            "note": "Best suited for early-stage rooftop PV screening on existing warehouses, with emphasis on evidence strength, review triggers, and the preferred path.",
+            "label": "Portal-Frame Building + Rooftop PV Added-Load Screening",
+            "note": "Focused on structural screening review for existing single-story portal-frame buildings, with simplified calculations, controlling factors, and next-step review actions.",
             "featured": True,
             "narrative_steps": [
-                "Start by entering the project conditions and evidence status, including drawings, member schedules, connection details, and roof-system data.",
-                "Review the management summary to understand the current decision, primary constraint, next step, and preferred path.",
-                "Inspect the review triggers and review progression to see why the project should move into member or connection review next.",
-                "Compare the preferred path and export the decision summary for internal review or consultant handoff.",
+                "Enter portal-frame geometry, member sections, purlin parameters, and rooftop PV added load.",
+                "Confirm drawings, original calculations, field survey status, and roof/connection evidence.",
+                "Review simplified screening calculations, controlling factors, and the preliminary structural conclusion.",
+                "Export the structural screening memo for consultant handoff or internal decision review.",
             ],
-        },
-        "warehouse_upgrade": {
-            "label": "Supporting Case: Warehouse Upgrade",
-            "note": "Supports load upgrade and platform/equipment screening logic.",
-            "featured": False,
-            "narrative_steps": [],
-        },
-        "industrial_retrofit": {
-            "label": "Supporting Case: Industrial Retrofit",
-            "note": "Shows No-Go / high uncertainty gatekeeping behavior.",
-            "featured": False,
-            "narrative_steps": [],
         },
     }
 
 
 def ordered_demo_keys() -> List[str]:
-    return ["main_warehouse_pv", "warehouse_upgrade", "industrial_retrofit"]
+    return ["main_warehouse_pv"]
+
+
+def _merge_default_package(form_data: Dict[str, object]) -> Dict[str, object]:
+    package_key = form_data.get("default_package_key")
+    if not package_key:
+        return dict(form_data)
+
+    package = default_package_options().get(str(package_key))
+    if package is None:
+        return dict(form_data)
+
+    merged = package.model_dump()
+    for key, value in form_data.items():
+        if key == "default_package_key":
+            continue
+        if value not in (None, ""):
+            merged[key] = value
+    return merged
 
 
 def build_intake(form_data: Dict[str, object]) -> BuildingIntake:
-    return BuildingIntake(**form_data)
+    merged = _merge_default_package(form_data)
+    return BuildingIntake(**merged)
 
 
-def evaluate_case(form_data: Dict[str, object], language: Language = "zh") -> Dict[str, object]:
+def evaluate_case(
+    form_data: Dict[str, object],
+    language: Language = "zh",
+    repository: Optional[ScreeningRepository] = None,
+) -> Dict[str, object]:
     intake = build_intake(form_data)
     kernel_case = from_building_intake(intake)
     kernel_outcome = evaluate_screening_case(kernel_case)
     result = evaluate_screening(intake)
-    questions: List[str] = build_follow_up_questions(intake, result, language=language)
-    explanation = build_bilingual_explanation(intake, result, language=language)
-    report = build_markdown_report(intake, result, explanation)
-    return {
+    questions: List[str] = build_follow_up_questions(
+        intake,
+        result,
+        language=language,
+        kernel_outcome=kernel_outcome,
+    )
+    explanation = build_bilingual_explanation(
+        intake,
+        result,
+        language=language,
+        kernel_outcome=kernel_outcome,
+    )
+    report = build_markdown_report(intake, result, explanation, kernel_outcome=kernel_outcome)
+    payload = {
         "intake": intake,
         "kernel_case": kernel_case,
         "kernel_outcome": kernel_outcome,
@@ -99,3 +113,16 @@ def evaluate_case(form_data: Dict[str, object], language: Language = "zh") -> Di
         "explanation": explanation,
         "report": report,
     }
+    if repository is not None:
+        run_id, result_id = repository.save_run_and_evaluation(
+            case=kernel_case,
+            outcome=kernel_outcome,
+            report_markdown=report,
+            explanation_payload=explanation.model_dump(mode="json"),
+            language=language,
+        )
+        payload["persistence"] = {
+            "run_id": run_id,
+            "result_id": result_id,
+        }
+    return payload

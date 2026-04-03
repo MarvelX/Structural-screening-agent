@@ -4,15 +4,108 @@
   title_zh: GB 50017 钢结构设计标准
   citation_en: General steel member and connection review path for screening-stage structural decisions.
   citation_zh: 作为筛查阶段钢结构构件与连接复核路径的一般依据。
+  applicable_standards:
+    - gb
+  trigger_conditions:
+    - incomplete steel member evidence
+    - connection review required
+  review_requirements:
+    - Continue steel member and connection review
+    - Verify local roof attachment detailing
+  evidence_requirements:
+    - structural drawings
+    - member schedule
+    - connection details
 - basis_id: aisc_360_general
   source_type: standard
   title_en: AISC 360 Specification for Structural Steel Buildings
   title_zh: AISC 360 钢结构建筑规范
   citation_en: General member stability, steel design, and connection review path under AISC context.
   citation_zh: 作为 AISC 体系下构件稳定、钢结构设计与连接复核的一般依据。
+  applicable_standards:
+    - aisc
+  trigger_conditions:
+    - steel member review under AISC context
+    - connection review under AISC context
+  review_requirements:
+    - Continue member stability review under AISC 360
+    - Continue steel design and connection review
+  evidence_requirements:
+    - structural drawings
+    - member schedule
+    - connection details
 - basis_id: eurocode_3_general
   source_type: standard
   title_en: Eurocode 3 Design of Steel Structures
   title_zh: Eurocode 3 钢结构设计规范
   citation_en: General steel member and connection review path under Eurocode context.
   citation_zh: 作为 Eurocode 体系下钢结构构件与连接复核的一般依据。
+  applicable_standards:
+    - eurocode
+  trigger_conditions:
+    - steel member review under Eurocode context
+    - connection review under Eurocode context
+  review_requirements:
+    - Continue steel member review under Eurocode 3
+    - Continue local execution and connection review
+  evidence_requirements:
+    - structural drawings
+    - member schedule
+    - connection details
+- basis_id: gb_portal_frame_purlin_screening
+  source_type: standard
+  title_en: GB Portal Frame Purlin Screening Basis
+  title_zh: GB 门式刚架檩条筛查依据
+  citation_en: Screening-level purlin check for portal-frame roofs with photovoltaic dead load increase; use for boundary screening before formal structural review.
+  citation_zh: 适用于门式刚架屋面光伏增载后的檩条筛查；在正式结构复核前用于边界筛查。
+  applicable_standards:
+    - gb
+  trigger_conditions:
+    - screening-stage portal-frame purlin check
+    - roof photovoltaic load increase requires screening
+  review_requirements:
+    - Escalate to formal review if purlin utilization, deflection, or support reactions exceed screening thresholds
+    - Perform deeper review for portal-frame roof load path and local connection effects
+  evidence_requirements:
+    - portal frame geometry
+    - purlin spacing and section data
+    - roof photovoltaic load summary
+    - structural drawings
+- basis_id: aisc_portal_frame_purlin_screening
+  source_type: standard
+  title_en: AISC Portal Frame Purlin Screening Basis
+  title_zh: AISC 门式刚架檩条筛查依据
+  citation_en: Screening-level purlin check for portal-frame roofs under AISC context with added photovoltaic load; boundary check before formal review.
+  citation_zh: 适用于 AISC 体系下门式刚架屋面光伏增载后的檩条筛查；在正式复核前进行边界检查。
+  applicable_standards:
+    - aisc
+  trigger_conditions:
+    - screening-stage portal-frame purlin check under AISC context
+    - roof photovoltaic load increase requires screening
+  review_requirements:
+    - Escalate to formal review if purlin demand, drift, or connection effects exceed screening thresholds
+    - Perform deeper review for portal-frame load combinations and member stability
+  evidence_requirements:
+    - portal frame geometry
+    - purlin spacing and section data
+    - roof photovoltaic load summary
+    - structural drawings
+- basis_id: eurocode_portal_frame_purlin_screening
+  source_type: standard
+  title_en: Eurocode Portal Frame Purlin Screening Basis
+  title_zh: Eurocode 门式刚架檩条筛查依据
+  citation_en: Screening-level purlin check for portal-frame roofs under Eurocode context with photovoltaic load increase; boundary check before formal structural review.
+  citation_zh: 适用于 Eurocode 体系下门式刚架屋面光伏增载后的檩条筛查；在正式结构复核前进行边界检查。
+  applicable_standards:
+    - eurocode
+  trigger_conditions:
+    - screening-stage portal-frame purlin check under Eurocode context
+    - roof photovoltaic load increase requires screening
+  review_requirements:
+    - Escalate to formal review if purlin resistance, serviceability, or support reactions exceed screening thresholds
+    - Perform deeper review for portal-frame roof load path and local connection effects
+  evidence_requirements:
+    - portal frame geometry
+    - purlin spacing and section data
+    - roof photovoltaic load summary
+    - structural drawings

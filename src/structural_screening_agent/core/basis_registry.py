@@ -12,6 +12,10 @@ class BasisReference(BaseModel):
     title_zh: str = Field(min_length=1)
     citation_en: str = Field(min_length=1)
     citation_zh: str = Field(min_length=1)
+    applicable_standards: List[str] = Field(min_length=1)
+    trigger_conditions: List[str] = Field(min_length=1)
+    review_requirements: List[str] = Field(min_length=1)
+    evidence_requirements: List[str] = Field(min_length=1)
 
 
 class BasisRegistry(BaseModel):
