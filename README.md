@@ -1,121 +1,87 @@
 # Structural Screening Agent
 
-Bilingual Streamlit workbench for early-stage structural feasibility screening in retrofit projects.
+面向**既有门式刚架屋面光伏增载**场景的结构初筛复核工具。
 
-## Positioning
+它不是聊天机器人，不是 UI 包装的规则表单，也不是正式结构设计软件；它的定位是把前期结构筛查中最关键的工程判断数字化，帮助甲方技术负责人或招聘评审快速看懂：**项目现阶段能否进入下一轮正式复核，为什么，以及下一步该做什么。**
 
-- Primary scenario: existing steel warehouse + rooftop PV
-- Product mode: AI decision assistant, not a generic chatbot and not a pure calculator
-- Primary outputs: `Go / Conditional Go / No-Go`, management summary, top risks, missing data, phased recommended actions, option comparison, bilingual report
-- UI mode: Chinese / English switchable interface
-- Export mode: bilingual same-line Markdown report
+## 这个项目解决什么问题
 
-## Intended Users
+在既有厂房或仓库上做屋面光伏时，真正卡住项目推进的，往往不是正式计算书本身，而是更靠前的一层问题：
 
-- Project development managers evaluating whether a retrofit deserves further engineering effort
-- Owner-side or EPC-side decision makers who need a structured early-stage screening memo
-- Teams coordinating drawings, surveys, shutdown windows, and next-step verification scope
+- 当前资料条件下，项目能不能继续推进
+- 控制因素到底落在檩条、主门架还是连接路径
+- 现有图纸、现场调查和厂家资料是否足以形成可辩护的复核包
+- 如果现在不能推进，缺的到底是什么
 
-## What The Demo Actually Does
+这个项目把这类前期筛查逻辑做成一个可运行、可追溯、可导出的工程工具。
 
-- Screens retrofit feasibility at `screening memo` level rather than code-compliant structural design level
-- Uses a deterministic rule core for `Go / Conditional Go / No-Go`
-- Deepens the main demo with a more realistic warehouse + rooftop PV checklist:
-  - building span
-  - column spacing
-  - purlin type
-  - roof panel system
-  - panel thickness / rib height
-  - attachment preference
-  - existing member schedule / section schedule status
-  - connection detail record status
-  - roof vendor data status
-  - corrosion condition
-  - waterproofing sensitivity
-  - restricted installation zones
-  - available verification path
-- Adds an executive-facing management summary layer:
-  - current decision
-  - primary constraint
-  - next step
-  - preferred path
-- Adds drawing-facts and evidence-strength framing instead of pretending to auto-parse drawings:
-  - drawing facts summary
-  - verification readiness
-  - assumptions and limits
-- Adds screening-level engineering checks rather than a fake calculation engine:
-  - reserve capacity screening
-  - attachment feasibility screening
-  - check-to-action linkage
-- Generates structured option comparison instead of plain option labels:
-  - priority rationale
-  - fit when
-  - main constraint
-  - operational impact
-  - cost level
-  - schedule impact
-  - recommendation note
-- Adds light-weight standards context:
-  - `GB`
-  - `AISC`
-  - `Eurocode`
-  This only marks which review path should govern the next-stage engineering check.
-- Keeps LLM responsibility limited to explanation and follow-up phrasing, never final feasibility judgment
+## 核心能力
 
-## How To Use
+- **控制路径识别**：区分当前风险是由檩条强度、檩条挠度、主门架梁、主门架柱还是连接路径控制。
+- **screening kernel**：使用确定性内核输出关键简化计算，而不是直接让大模型生成结论。
+- **保守假设台账**：资料缺失时，不是直接失效，而是显式记录保守假设和边界。
+- **依据与追溯**：结论可回溯到规范路径、触发条件、证据需求和输入来源。
+- **工程化输出**：可导出 Markdown / Word / PDF 格式的结构初筛复核摘要。
 
-1. Select a case from the sidebar case library and confirm the basic project inputs.
-2. Enter the current documentation status, shutdown constraint, and the main-case evidence fields when applicable.
-3. Review the decision banner and the management summary first.
-4. Check drawing facts, verification readiness, engineering checks, and check-to-action linkage.
-5. Review top risks, missing data, and the phased action groups (`Must Do`, `Parallel Track`, `Later Step`).
-6. Compare the preferred path against backup options, then export the bilingual markdown report for team discussion or consultant handoff.
+## 为什么这不是一个普通 AI demo
 
-## Current Scope
+- 结论不是 LLM 说了算，而是来自确定性 screening kernel。
+- 输出不是一段泛泛解释，而是工程对象、简化计算、控制因素、依据和后续动作的组合。
+- 主界面不是聊天框，而是围绕 `评估结论 / 依据与追溯 / 报告导出` 组织的决策界面。
+- 产品边界写得很清楚：**screening-level only**，不冒充正式设计、有限元分析或签章复核。
 
-- Not a replacement for structural engineering design or sign-off
-- No member-by-member checks, no code-compliant calculation engine, no automatic drawing parsing
-- No direct procurement instruction, fabrication detailing, or signed engineering conclusion
-- Engineering checks are still `screening-level judgments`, not formal member, connection, or stability verification
+## 关键界面
 
-## Standards Context
+### 1. 评估结论
 
-- `GB` currently adds follow-on review notes pointing toward `GB 50017` and roof attachment review
-- `AISC` currently adds follow-on review notes pointing toward `AISC 360`
-- `Eurocode` currently adds follow-on review notes pointing toward `Eurocode 3`
-- Current standards selection does **not** mean the product already performs the full corresponding code calculation chain
+![评估结论页](docs/showcase/assets/assessment-overview.png)
 
-## Current Decision Stack
+首屏聚焦 `初步结构结论 / 控制因素 / 关键计算结果 / 证据状态`，让技术负责人先看到“是否能进入下一阶段正式复核”。
 
-- Decision banner: `Go / Conditional Go / No-Go`
-- Management summary: current decision, primary constraint, next step, preferred path
-- Drawing facts summary: manually curated drawing and vendor facts rather than automatic extraction
-- Verification readiness: `Ready / Partial Ready / Not Ready`
-- Engineering screening checks: reserve capacity and attachment feasibility
-- Check-to-action linkage: explains why a given engineering check leads to a must-do action and keeps a given path on top
-- Phased action groups: `Must Do / Parallel Track / Later Step`
-- Standards context: which code path should govern the next-stage engineering review
+### 2. 依据与追溯
 
-## LLM Providers
+![依据与追溯页](docs/showcase/assets/basis-traceability.png)
 
-- Supported providers: `mock`, `openai`, `minimax`, `gemini`
-- `mock` is the default fallback mode for stable local use without any API key
-- Copy `.env.example` to `.env` or export environment variables in your shell
-- `Minimax` uses the official OpenAI Python SDK compatibility endpoint
-- `Gemini` uses the official `google-genai` SDK
+展示依据条目、触发条件、证据需求和输入追踪，证明结论不是黑箱。
 
-Example:
+### 3. 报告导出
 
-```bash
-export LLM_PROVIDER=gemini
-export GEMINI_API_KEY=your_key_here
-python -m streamlit run app.py
-```
+![报告导出页](docs/showcase/assets/report-export.png)
 
-## Run
+支持 Markdown / Word / PDF 导出，适合内部讨论、甲方汇报和顾问交接。
+
+## 快速运行
 
 ```bash
 python -m pip install -e ".[dev]"
-python -m streamlit run app.py
-pytest
+python -m streamlit run app.py --server.port 8503
 ```
+
+打开：
+
+- [http://localhost:8503](http://localhost:8503)
+
+如果你只想快速看懂 demo，建议阅读：
+
+- [Demo Guide](docs/showcase/demo-guide.md)
+- [Project Brief](docs/showcase/project-brief.md)
+
+## 当前边界
+
+- 当前聚焦于**门式刚架 + 屋面光伏增载**场景
+- 支持 `GB / AISC / Eurocode` 的规范路径选择
+- 当前属于 **screening-level 结构复核**
+- 不替代正式计算书、有限元分析、顾问签章复核或施工图设计
+
+## 为什么这个项目有代表性
+
+这个项目的代表性不只在于“做了一个结构工具”，而在于它把多个层面收成了一套产品：
+
+- 工程场景定义
+- 领域对象建模
+- 筛查计算与规则边界
+- 依据与 traceability
+- 报告导出
+- 面向决策者的展示界面
+
+它体现的是把真实工程问题定义、工具架构和产品落地打通的能力，而不是只做单点算法或单点界面。

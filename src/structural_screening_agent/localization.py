@@ -288,6 +288,7 @@ INPUT_PATH_TRANSLATIONS: Dict[str, Dict[Language, str]] = {
     "pv_load.added_dead_load_kpa": {"zh": "新增屋面恒载", "en": "Added Roof Dead Load"},
     "secondary_members.purlin_spacing_m": {"zh": "檩条间距", "en": "Purlin Spacing"},
     "geometry.eave_height_m": {"zh": "檐口高度", "en": "Eave Height"},
+    "portal_frame.controlling_path": {"zh": "当前控制路径", "en": "Current Controlling Path"},
     "portal_frame.purlin_strength_ratio": {"zh": "檩条强度比", "en": "Purlin Strength Ratio"},
     "portal_frame.purlin_deflection_ratio": {"zh": "檩条挠度比", "en": "Purlin Deflection Ratio"},
     "portal_frame.primary_frame_rafter_screening_ratio": {"zh": "主门架梁筛查比值", "en": "Primary Frame Rafter Screening Ratio"},
@@ -405,6 +406,18 @@ def canonicalize_preset_text(field: str, value: str) -> str:
 
 def localize_input_path(language: Language, path: str) -> str:
     return INPUT_PATH_TRANSLATIONS.get(path, {"zh": path, "en": path})[language]
+
+
+def localize_trace_value(language: Language, input_path: str, value: str) -> str:
+    if input_path == "portal_frame.controlling_path":
+        mapping = {
+            "purlin_strength": {"zh": "檩条强度控制", "en": "Purlin Strength Governing"},
+            "purlin_deflection": {"zh": "檩条挠度控制", "en": "Purlin Deflection Governing"},
+            "primary_frame_rafter": {"zh": "主门架梁控制", "en": "Primary Frame Rafter Governing"},
+            "primary_frame_column": {"zh": "主门架柱控制", "en": "Primary Frame Column Governing"},
+        }
+        return mapping.get(value, {"zh": value, "en": value})[language]
+    return value
 
 
 def localize_basis_term(language: Language, value: str) -> str:

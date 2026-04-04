@@ -23,6 +23,7 @@ from structural_screening_agent.localization import (
     localize_calc_unit,
     localize_basis_term,
     localize_input_path,
+    localize_trace_value,
     translate,
     translate_option,
 )
@@ -147,7 +148,7 @@ def _build_traceability_cards(result: ScreeningResult, language: Language) -> Li
     cards: List[ContentCard] = []
     for item in result.traceability:
         traces = ", ".join(
-            f"{localize_input_path(language, trace.input_path)}={trace.observed_value}"
+            f"{localize_input_path(language, trace.input_path)}={localize_trace_value(language, trace.input_path, trace.observed_value)}"
             for trace in item.traces
         ) or translate(language, "none")
         detail = f"{translate(language, 'input_traces')}: {traces}"

@@ -26,6 +26,7 @@ from structural_screening_agent.localization import (
     localize_calc_unit,
     localize_basis_term,
     localize_input_path,
+    localize_trace_value,
     localize_preset_text,
     translate,
     translate_option,
@@ -77,7 +78,7 @@ def _build_traceability_lines(result: ScreeningResult) -> str:
                 localize_input_path("en", trace.input_path),
                 localize_input_path("zh", trace.input_path),
             )
-            + f"={trace.observed_value}"
+            + f"={same_line(localize_trace_value('en', trace.input_path, trace.observed_value), localize_trace_value('zh', trace.input_path, trace.observed_value))}"
             for trace in item.traces
         ) or "None"
         blocks.extend(

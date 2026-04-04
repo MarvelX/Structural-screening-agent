@@ -61,3 +61,46 @@ def test_app_runs_without_streamlit_exceptions() -> None:
     at = AppTest.from_file(str(root / "app.py"))
     at.run(timeout=20)
     assert len(at.exception) == 0
+
+
+def test_showcase_docs_exist() -> None:
+    root = project_root()
+    assert (root / "docs" / "showcase" / "demo-guide.md").exists()
+    assert (root / "docs" / "showcase" / "project-brief.md").exists()
+    assert (root / "docs" / "showcase" / "assets").exists()
+
+
+def test_readme_mentions_showcase_positioning() -> None:
+    root = project_root()
+    readme = (root / "README.md").read_text()
+    assert "门式刚架屋面光伏增载" in readme
+    assert "不是聊天机器人" in readme
+    assert "docs/showcase/demo-guide.md" in readme
+
+
+def test_showcase_docs_contain_expected_sections() -> None:
+    root = project_root()
+    demo_guide = (root / "docs" / "showcase" / "demo-guide.md").read_text()
+    brief = (root / "docs" / "showcase" / "project-brief.md").read_text()
+    assert "3 分钟跑起来" in demo_guide
+    assert "评估结论" in demo_guide
+    assert "项目一句话" in brief
+    assert "不是一个通用 AI demo" in brief
+
+
+def test_showcase_docs_link_to_assets_and_each_other() -> None:
+    root = project_root()
+    readme = (root / "README.md").read_text()
+    demo_guide = (root / "docs" / "showcase" / "demo-guide.md").read_text()
+    brief = (root / "docs" / "showcase" / "project-brief.md").read_text()
+    assert "docs/showcase/assets/assessment-overview.png" in readme
+    assert "docs/showcase/project-brief.md" in readme
+    assert "docs/showcase/assets/report-export.png" in demo_guide
+    assert "docs/showcase/demo-guide.md" in brief
+
+
+def test_showcase_screenshot_assets_exist() -> None:
+    root = project_root()
+    assert (root / "docs" / "showcase" / "assets" / "assessment-overview.png").exists()
+    assert (root / "docs" / "showcase" / "assets" / "basis-traceability.png").exists()
+    assert (root / "docs" / "showcase" / "assets" / "report-export.png").exists()

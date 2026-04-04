@@ -48,6 +48,8 @@ def test_workbench_view_prioritizes_decision_and_main_option() -> None:
     assert all("gb_portal_frame_purlin_screening" not in card.detail for card in view.traceability_cards)
     assert all("依据 ID" not in card.detail for card in view.traceability_cards)
     assert any("檩条强度比" in card.detail for card in view.traceability_cards)
+    assert all("portal_frame.controlling_path" not in card.detail for card in view.traceability_cards)
+    assert any("檩条挠度控制" in card.detail or "主门架梁控制" in card.detail for card in view.traceability_cards)
     assert len(view.review_progression_summary) >= 2
     assert any("连接复核路径" in item for item in view.review_progression_summary)
     assert len(view.check_action_links) >= 2
