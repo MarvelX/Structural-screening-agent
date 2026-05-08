@@ -1,6 +1,7 @@
 from structural_screening_agent.bv_review.basis import build_review_basis
 from structural_screening_agent.bv_review.checklist import build_document_checklist
 from structural_screening_agent.bv_review.models import BVReviewDecision, BVReviewIntake, BVReviewResult
+from structural_screening_agent.bv_review.report import build_bv_report_preview
 from structural_screening_agent.bv_review.review_path import build_structural_review_path
 from structural_screening_agent.bv_review.review_plan import build_review_plan
 from structural_screening_agent.bv_review.risk_register import build_risk_register
@@ -28,4 +29,5 @@ def evaluate_bv_review(intake: BVReviewIntake) -> BVReviewResult:
         risks=risks,
         review_plan=review_plan,
     )
-    return result.model_copy(update={"decision": _resolve_decision(result)})
+    result = result.model_copy(update={"decision": _resolve_decision(result)})
+    return result.model_copy(update={"report_preview": build_bv_report_preview(intake, result)})
