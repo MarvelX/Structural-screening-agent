@@ -8,6 +8,7 @@ from structural_screening_agent.bv_review.models import (
 from structural_screening_agent.bv_review.risk_register import build_risk_register
 from structural_screening_agent.bv_review.review_plan import build_review_plan
 from structural_screening_agent.bv_review.review_path import build_structural_review_path
+from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
 
 def _sample_intake() -> BVReviewIntake:
@@ -171,3 +172,54 @@ def test_risk_register_treats_all_missing_documents_as_blocking_nonconformities(
     assert missing_risk.category == "nonconformity"
     assert missing_risk.severity == "critical"
     assert missing_risk.blocks_report_issue is True
+
+
+def test_bv_review_workflow_composes_basis_checklist_paths_risks_and_plan() -> None:
+    result = evaluate_bv_review(_sample_intake())
+
+    assert result.decision == "not_ready"
+    assert result.basis_references
+    assert result.checklist_items
+    assert result.review_paths
+    assert result.risks
+    assert result.review_plan
+    assert any(item.blocks_report_issue for item in result.risks)
+
+
+def test_bv_review_workflow_marks_review_with_holds_when_only_partial_documents_remain() -> None:
+    intake = _sample_intake().model_copy(
+        update={
+            "documents": {
+                "structural_drawings": "partial",
+                "calculation_report": "partial",
+                "technical_specification": "available",
+                "geotechnical_report": "partial",
+                "vendor_datasheets": "partial",
+                "contract_requirements": "available",
+            }
+        }
+    )
+
+    result = evaluate_bv_review(intake)
+
+    assert result.decision == "review_with_holds"
+    assert not any(item.blocks_report_issue for item in result.risks)
+
+
+def test_bv_review_workflow_marks_ready_when_all_documents_are_available() -> None:
+    intake = _sample_intake().model_copy(
+        update={
+            "documents": {
+                "structural_drawings": "available",
+                "calculation_report": "available",
+                "technical_specification": "available",
+                "geotechnical_report": "available",
+                "vendor_datasheets": "available",
+                "contract_requirements": "available",
+            }
+        }
+    )
+
+    result = evaluate_bv_review(intake)
+
+    assert result.decision == "ready_for_review"
