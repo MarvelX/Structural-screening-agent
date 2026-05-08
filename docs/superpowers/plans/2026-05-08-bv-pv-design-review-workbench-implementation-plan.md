@@ -44,7 +44,7 @@
 - Create: `src/structural_screening_agent/bv_review/models.py`
 - Create: `tests/test_bv_review_models.py`
 
-- [ ] **Step 1: Write the failing model tests**
+- [x] **Step 1: Write the failing model tests**
 
 Add `tests/test_bv_review_models.py`:
 
@@ -102,13 +102,13 @@ def test_bv_document_status_type_accepts_expected_status_values() -> None:
     assert status == "partial"
 ```
 
-- [ ] **Step 2: Run the model tests to verify they fail**
+- [x] **Step 2: Run the model tests to verify they fail**
 
 Run: `pytest tests/test_bv_review_models.py -q`
 
 Expected: FAIL with `ModuleNotFoundError: No module named 'structural_screening_agent.bv_review'`.
 
-- [ ] **Step 3: Create the BV package and minimal models**
+- [x] **Step 3: Create the BV package and minimal models**
 
 Create `src/structural_screening_agent/bv_review/__init__.py`:
 
@@ -227,13 +227,13 @@ class BVReviewResult(BaseModel):
     report_preview: Optional[BVReportPreview] = None
 ```
 
-- [ ] **Step 4: Run the model tests to verify they pass**
+- [x] **Step 4: Run the model tests to verify they pass**
 
 Run: `pytest tests/test_bv_review_models.py -q`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/structural_screening_agent/bv_review/__init__.py src/structural_screening_agent/bv_review/models.py tests/test_bv_review_models.py
@@ -247,7 +247,7 @@ git commit -m "feat: add bv review domain models"
 - Modify: `src/structural_screening_agent/bv_review/__init__.py`
 - Create: `tests/test_bv_review_workflow.py`
 
-- [ ] **Step 1: Write the failing basis tests**
+- [x] **Step 1: Write the failing basis tests**
 
 Add to `tests/test_bv_review_workflow.py`:
 
@@ -288,13 +288,13 @@ def test_review_basis_builder_maps_standards_and_review_objects_to_references() 
     assert all(item.evidence_requirements for item in basis)
 ```
 
-- [ ] **Step 2: Run the basis test to verify it fails**
+- [x] **Step 2: Run the basis test to verify it fails**
 
 Run: `pytest tests/test_bv_review_workflow.py::test_review_basis_builder_maps_standards_and_review_objects_to_references -q`
 
 Expected: FAIL with `ModuleNotFoundError` or `ImportError` for `structural_screening_agent.bv_review.basis`.
 
-- [ ] **Step 3: Implement deterministic basis builder**
+- [x] **Step 3: Implement deterministic basis builder**
 
 Create `src/structural_screening_agent/bv_review/basis.py`:
 
@@ -399,13 +399,13 @@ from structural_screening_agent.bv_review.models import (
 __all__ = ["BVReviewIntake", "BVReviewResult", "build_review_basis"]
 ```
 
-- [ ] **Step 4: Run the basis test to verify it passes**
+- [x] **Step 4: Run the basis test to verify it passes**
 
 Run: `pytest tests/test_bv_review_workflow.py::test_review_basis_builder_maps_standards_and_review_objects_to_references -q`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/structural_screening_agent/bv_review/__init__.py src/structural_screening_agent/bv_review/basis.py tests/test_bv_review_workflow.py
@@ -419,7 +419,7 @@ git commit -m "feat: add bv review basis builder"
 - Create: `src/structural_screening_agent/bv_review/review_path.py`
 - Modify: `tests/test_bv_review_workflow.py`
 
-- [ ] **Step 1: Write the failing checklist and path tests**
+- [x] **Step 1: Write the failing checklist and path tests**
 
 Add to `tests/test_bv_review_workflow.py`:
 
@@ -451,13 +451,13 @@ def test_structural_review_path_creates_object_specific_review_methods_and_holds
     assert "地勘报告" in foundation_path.method
 ```
 
-- [ ] **Step 2: Run the checklist/path tests to verify they fail**
+- [x] **Step 2: Run the checklist/path tests to verify they fail**
 
 Run: `pytest tests/test_bv_review_workflow.py::test_document_checklist_marks_missing_calculation_and_geotechnical_reports_as_review_holds tests/test_bv_review_workflow.py::test_structural_review_path_creates_object_specific_review_methods_and_holds -q`
 
 Expected: FAIL with import errors for `checklist` and `review_path`.
 
-- [ ] **Step 3: Implement checklist builder**
+- [x] **Step 3: Implement checklist builder**
 
 Create `src/structural_screening_agent/bv_review/checklist.py`:
 
@@ -503,7 +503,7 @@ def build_document_checklist(intake: BVReviewIntake) -> list[BVChecklistItem]:
     return items
 ```
 
-- [ ] **Step 4: Implement structural review path builder**
+- [x] **Step 4: Implement structural review path builder**
 
 Create `src/structural_screening_agent/bv_review/review_path.py`:
 
@@ -545,13 +545,13 @@ def build_structural_review_path(intake: BVReviewIntake, checklist: list[BVCheck
     return paths
 ```
 
-- [ ] **Step 5: Run the checklist/path tests to verify they pass**
+- [x] **Step 5: Run the checklist/path tests to verify they pass**
 
 Run: `pytest tests/test_bv_review_workflow.py::test_document_checklist_marks_missing_calculation_and_geotechnical_reports_as_review_holds tests/test_bv_review_workflow.py::test_structural_review_path_creates_object_specific_review_methods_and_holds -q`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/structural_screening_agent/bv_review/checklist.py src/structural_screening_agent/bv_review/review_path.py tests/test_bv_review_workflow.py
@@ -565,7 +565,7 @@ git commit -m "feat: add bv document checklist and review paths"
 - Create: `src/structural_screening_agent/bv_review/risk_register.py`
 - Modify: `tests/test_bv_review_workflow.py`
 
-- [ ] **Step 1: Write the failing review plan and risk tests**
+- [x] **Step 1: Write the failing review plan and risk tests**
 
 Add to `tests/test_bv_review_workflow.py`:
 
@@ -596,13 +596,13 @@ def test_risk_register_flags_blocking_missing_documents_and_optimization_items()
     assert any("结构计算书" in item.recommendation for item in risks)
 ```
 
-- [ ] **Step 2: Run the review plan/risk tests to verify they fail**
+- [x] **Step 2: Run the review plan/risk tests to verify they fail**
 
 Run: `pytest tests/test_bv_review_workflow.py::test_review_plan_generates_itp_items_with_roles_methods_and_deliverables tests/test_bv_review_workflow.py::test_risk_register_flags_blocking_missing_documents_and_optimization_items -q`
 
 Expected: FAIL with import errors for `review_plan` and `risk_register`.
 
-- [ ] **Step 3: Implement review plan generator**
+- [x] **Step 3: Implement review plan generator**
 
 Create `src/structural_screening_agent/bv_review/review_plan.py`:
 
@@ -665,7 +665,7 @@ def build_review_plan(
     return plan
 ```
 
-- [ ] **Step 4: Implement risk register builder**
+- [x] **Step 4: Implement risk register builder**
 
 Create `src/structural_screening_agent/bv_review/risk_register.py`:
 
@@ -735,13 +735,13 @@ def build_risk_register(
     return risks
 ```
 
-- [ ] **Step 5: Run the review plan/risk tests to verify they pass**
+- [x] **Step 5: Run the review plan/risk tests to verify they pass**
 
 Run: `pytest tests/test_bv_review_workflow.py::test_review_plan_generates_itp_items_with_roles_methods_and_deliverables tests/test_bv_review_workflow.py::test_risk_register_flags_blocking_missing_documents_and_optimization_items -q`
 
 Expected: PASS.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/structural_screening_agent/bv_review/review_plan.py src/structural_screening_agent/bv_review/risk_register.py tests/test_bv_review_workflow.py
@@ -755,7 +755,7 @@ git commit -m "feat: add bv review plan and risk register"
 - Modify: `src/structural_screening_agent/bv_review/__init__.py`
 - Modify: `tests/test_bv_review_workflow.py`
 
-- [ ] **Step 1: Write the failing workflow test**
+- [x] **Step 1: Write the failing workflow test**
 
 Add to `tests/test_bv_review_workflow.py`:
 
@@ -814,13 +814,13 @@ def test_bv_review_workflow_marks_ready_when_all_documents_are_available() -> No
     assert result.decision == "ready_for_review"
 ```
 
-- [ ] **Step 2: Run the workflow tests to verify they fail**
+- [x] **Step 2: Run the workflow tests to verify they fail**
 
 Run: `pytest tests/test_bv_review_workflow.py::test_bv_review_workflow_composes_basis_checklist_paths_risks_and_plan tests/test_bv_review_workflow.py::test_bv_review_workflow_marks_review_with_holds_when_only_partial_documents_remain tests/test_bv_review_workflow.py::test_bv_review_workflow_marks_ready_when_all_documents_are_available -q`
 
 Expected: FAIL with import error for `workflow`.
 
-- [ ] **Step 3: Implement workflow orchestration**
+- [x] **Step 3: Implement workflow orchestration**
 
 Create `src/structural_screening_agent/bv_review/workflow.py`:
 
@@ -871,13 +871,13 @@ from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 __all__ = ["BVReviewIntake", "BVReviewResult", "build_review_basis", "evaluate_bv_review"]
 ```
 
-- [ ] **Step 4: Run the workflow tests to verify they pass**
+- [x] **Step 4: Run the workflow tests to verify they pass**
 
 Run: `pytest tests/test_bv_review_workflow.py::test_bv_review_workflow_composes_basis_checklist_paths_risks_and_plan tests/test_bv_review_workflow.py::test_bv_review_workflow_marks_review_with_holds_when_only_partial_documents_remain tests/test_bv_review_workflow.py::test_bv_review_workflow_marks_ready_when_all_documents_are_available -q`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/structural_screening_agent/bv_review/__init__.py src/structural_screening_agent/bv_review/workflow.py tests/test_bv_review_workflow.py
@@ -891,7 +891,7 @@ git commit -m "feat: compose bv review workflow"
 - Modify: `src/structural_screening_agent/bv_review/workflow.py`
 - Create: `tests/test_bv_review_report.py`
 
-- [ ] **Step 1: Write the failing report tests**
+- [x] **Step 1: Write the failing report tests**
 
 Add `tests/test_bv_review_report.py`:
 
@@ -949,13 +949,13 @@ def test_bv_report_boundary_statement_does_not_claim_formal_design_or_bv_officia
     assert "合格工程师复核" in text
 ```
 
-- [ ] **Step 2: Run the report tests to verify they fail**
+- [x] **Step 2: Run the report tests to verify they fail**
 
 Run: `pytest tests/test_bv_review_report.py -q`
 
 Expected: FAIL with import error for `structural_screening_agent.bv_review.report`.
 
-- [ ] **Step 3: Implement report preview composer**
+- [x] **Step 3: Implement report preview composer**
 
 Create `src/structural_screening_agent/bv_review/report.py`:
 
@@ -1031,7 +1031,7 @@ def build_bv_report_preview(intake: BVReviewIntake, result: BVReviewResult) -> B
     return BVReportPreview(title="BV 光伏结构设计审查报告", sections=sections)
 ```
 
-- [ ] **Step 4: Attach report preview in workflow**
+- [x] **Step 4: Attach report preview in workflow**
 
 Modify `src/structural_screening_agent/bv_review/workflow.py`:
 
@@ -1071,19 +1071,19 @@ def evaluate_bv_review(intake: BVReviewIntake) -> BVReviewResult:
     return result.model_copy(update={"report_preview": build_bv_report_preview(intake, result)})
 ```
 
-- [ ] **Step 5: Run the report tests to verify they pass**
+- [x] **Step 5: Run the report tests to verify they pass**
 
 Run: `pytest tests/test_bv_review_report.py -q`
 
 Expected: PASS.
 
-- [ ] **Step 6: Run BV workflow tests**
+- [x] **Step 6: Run BV workflow tests**
 
 Run: `pytest tests/test_bv_review_models.py tests/test_bv_review_workflow.py tests/test_bv_review_report.py -q`
 
 Expected: PASS.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add src/structural_screening_agent/bv_review/report.py src/structural_screening_agent/bv_review/workflow.py tests/test_bv_review_report.py
@@ -1095,23 +1095,23 @@ git commit -m "feat: compose bv design review report preview"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-05-08-bv-pv-design-review-workbench-implementation-plan.md`
 
-- [ ] **Step 1: Run all tests**
+- [x] **Step 1: Run all tests**
 
 Run: `pytest -q`
 
 Expected: PASS with all existing tests plus new BV tests.
 
-- [ ] **Step 2: Verify no unexpected files changed**
+- [x] **Step 2: Verify no unexpected files changed**
 
 Run: `git status --short`
 
 Expected: only intentional files are modified or the worktree is clean after the final commit.
 
-- [ ] **Step 3: Mark completed checkboxes in this plan**
+- [x] **Step 3: Mark completed checkboxes in this plan**
 
 Edit this plan so completed steps use `- [x]` for tasks actually executed in the current branch. Do not mark future UI and showcase refresh work as completed in this Phase 1 plan.
 
-- [ ] **Step 4: Commit plan checkbox updates if any were made**
+- [x] **Step 4: Commit plan checkbox updates if any were made**
 
 ```bash
 git add docs/superpowers/plans/2026-05-08-bv-pv-design-review-workbench-implementation-plan.md
