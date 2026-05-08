@@ -1,6 +1,12 @@
 from structural_screening_agent.bv_review.basis import build_review_basis
 from structural_screening_agent.bv_review.checklist import build_document_checklist
-from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.models import (
+    BVChecklistItem,
+    BVReviewIntake,
+    BVReviewPathItem,
+)
+from structural_screening_agent.bv_review.risk_register import build_risk_register
+from structural_screening_agent.bv_review.review_plan import build_review_plan
 from structural_screening_agent.bv_review.review_path import build_structural_review_path
 
 
@@ -96,3 +102,72 @@ def test_structural_review_path_creates_object_specific_review_methods_and_holds
     foundation_path = next(item for item in paths if item.path_id == "foundation_review")
     assert foundation_path.status == "hold"
     assert "地勘报告" in foundation_path.method
+
+
+def test_review_plan_generates_itp_items_with_roles_methods_and_deliverables() -> None:
+    checklist = build_document_checklist(_sample_intake())
+    paths = build_structural_review_path(_sample_intake(), checklist)
+    plan = build_review_plan(_sample_intake(), checklist, paths)
+
+    phases = {item.phase for item in plan}
+    assert {"intake", "document_review", "technical_check", "reporting"} <= phases
+    assert any(item.responsible_role == "BV structural review engineer" for item in plan)
+    assert any("设计审核意见" in item.deliverable or "初筛摘要" in item.deliverable for item in plan)
+
+
+def test_review_plan_uses_fallback_deliverable_for_paths_without_deliverables() -> None:
+    path = BVReviewPathItem(
+        path_id="manual_empty_deliverables_review",
+        review_object="mounting_structure",
+        title="手工空交付物路径",
+        method="复核手工构造的审核路径。",
+        required_inputs=["项目技术规格书"],
+        deliverables=[],
+        status="ready",
+    )
+
+    plan = build_review_plan(_sample_intake(), [], [path])
+    technical_item = next(item for item in plan if item.item_id == path.path_id)
+
+    assert technical_item.phase == "technical_check"
+    assert "手工空交付物路径" in technical_item.deliverable
+    assert "审核记录" in technical_item.deliverable
+
+
+def test_risk_register_flags_blocking_missing_documents_and_optimization_items() -> None:
+    checklist = build_document_checklist(_sample_intake())
+    paths = build_structural_review_path(_sample_intake(), checklist)
+    risks = build_risk_register(_sample_intake(), checklist, paths)
+
+    assert any(item.category == "nonconformity" and item.blocks_report_issue for item in risks)
+    assert any(item.severity in {"high", "critical"} for item in risks)
+    assert any(item.category == "optimization" for item in risks)
+    assert any("结构计算书" in item.recommendation for item in risks)
+    assert any(
+        item.risk_id.startswith("partial_")
+        and item.severity == "high"
+        and item.blocks_report_issue is False
+        for item in risks
+    )
+    hold_risk = next(item for item in risks if item.risk_id == "review_path_has_holds")
+    assert hold_risk.blocks_report_issue is True
+
+
+def test_risk_register_treats_all_missing_documents_as_blocking_nonconformities() -> None:
+    checklist = [
+        BVChecklistItem(
+            document_key="manually_missing_input",
+            title="手工构造缺失资料",
+            status="missing",
+            affected_review_objects=["mounting_structure"],
+            review_blocked=False,
+            required_action="补充手工构造缺失资料。",
+        )
+    ]
+
+    risks = build_risk_register(_sample_intake(), checklist, [])
+    missing_risk = next(item for item in risks if item.risk_id == "missing_manually_missing_input")
+
+    assert missing_risk.category == "nonconformity"
+    assert missing_risk.severity == "critical"
+    assert missing_risk.blocks_report_issue is True
