@@ -37,7 +37,7 @@
 - Create: `src/structural_screening_agent/bv_review/ui_state.py`
 - Create: `tests/test_bv_review_ui_state.py`
 
-- [ ] **Step 1: Write the failing UI state tests**
+- [x] **Step 1: Write the failing UI state tests**
 
 Create `tests/test_bv_review_ui_state.py`:
 
@@ -98,13 +98,13 @@ def test_build_bv_review_intake_preserves_user_selected_scope_and_documents() ->
     assert intake.documents["geotechnical_report"] == "partial"
 ```
 
-- [ ] **Step 2: Run the UI state tests to verify they fail**
+- [x] **Step 2: Run the UI state tests to verify they fail**
 
 Run: `pytest tests/test_bv_review_ui_state.py -q`
 
 Expected: FAIL with `ModuleNotFoundError: No module named 'structural_screening_agent.bv_review.ui_state'`.
 
-- [ ] **Step 3: Implement UI state helper**
+- [x] **Step 3: Implement UI state helper**
 
 Create `src/structural_screening_agent/bv_review/ui_state.py`:
 
@@ -209,13 +209,13 @@ def build_bv_review_intake(
     )
 ```
 
-- [ ] **Step 4: Run the UI state tests to verify they pass**
+- [x] **Step 4: Run the UI state tests to verify they pass**
 
 Run: `pytest tests/test_bv_review_ui_state.py -q`
 
 Expected: PASS.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/structural_screening_agent/bv_review/ui_state.py tests/test_bv_review_ui_state.py
@@ -228,7 +228,7 @@ git commit -m "feat: add bv review ui state"
 - Modify: `app.py`
 - Modify: `tests/test_project_layout.py`
 
-- [ ] **Step 1: Write the failing app layout test**
+- [x] **Step 1: Write the failing app layout test**
 
 Add assertions to `test_app_py_uses_tabbed_information_architecture` in `tests/test_project_layout.py`:
 
@@ -243,13 +243,13 @@ Add assertions to `test_app_py_uses_tabbed_information_architecture` in `tests/t
     assert "Portal-Frame Scenario Module" in source
 ```
 
-- [ ] **Step 2: Run the layout test to verify it fails**
+- [x] **Step 2: Run the layout test to verify it fails**
 
 Run: `pytest tests/test_project_layout.py::test_app_py_uses_tabbed_information_architecture -q`
 
 Expected: FAIL because `app.py` still uses the portal-frame product title and has no BV review tab.
 
-- [ ] **Step 3: Import BV UI helpers in app**
+- [x] **Step 3: Import BV UI helpers in app**
 
 Modify `app.py` imports by adding:
 
@@ -267,7 +267,7 @@ from structural_screening_agent.bv_review.ui_state import (
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 ```
 
-- [ ] **Step 4: Update page title and app heading**
+- [x] **Step 4: Update page title and app heading**
 
 Change:
 
@@ -292,7 +292,7 @@ st.caption(
 )
 ```
 
-- [ ] **Step 5: Add BV tab before existing portal-frame tabs**
+- [x] **Step 5: Add BV tab before existing portal-frame tabs**
 
 Change tab assignment to:
 
@@ -309,7 +309,7 @@ bv_review_tab, assessment_tab, input_tab, basis_tab, export_tab, extension_tab =
 )
 ```
 
-- [ ] **Step 6: Add small local label helpers in app**
+- [x] **Step 6: Add small local label helpers in app**
 
 Add after `_render_key_calculation_cards`:
 
@@ -325,7 +325,7 @@ def _render_bv_section(title: str, items: list[str], limit: Optional[int] = None
         st.write(f"- {item}")
 ```
 
-- [ ] **Step 7: Render BV review tab**
+- [x] **Step 7: Render BV review tab**
 
 Add after the existing line `report_pdf_filename = report_filename.replace(".md", ".pdf")` and before `with assessment_tab:`:
 
@@ -451,19 +451,19 @@ with bv_review_tab:
                     st.write(item)
 ```
 
-- [ ] **Step 8: Run the layout test to verify it passes**
+- [x] **Step 8: Run the layout test to verify it passes**
 
 Run: `pytest tests/test_project_layout.py::test_app_py_uses_tabbed_information_architecture -q`
 
 Expected: PASS.
 
-- [ ] **Step 9: Run AppTest smoke**
+- [x] **Step 9: Run AppTest smoke**
 
 Run: `pytest tests/test_project_layout.py::test_app_runs_without_streamlit_exceptions -q`
 
 Expected: PASS.
 
-- [ ] **Step 10: Commit**
+- [x] **Step 10: Commit**
 
 ```bash
 git add app.py tests/test_project_layout.py
@@ -475,29 +475,29 @@ git commit -m "feat: add bv review mode to streamlit app"
 **Files:**
 - Modify: `docs/superpowers/plans/2026-05-08-bv-review-mode-ui-implementation-plan.md`
 
-- [ ] **Step 1: Run focused BV and UI tests**
+- [x] **Step 1: Run focused BV and UI tests**
 
 Run: `pytest tests/test_bv_review_ui_state.py tests/test_bv_review_models.py tests/test_bv_review_workflow.py tests/test_bv_review_report.py tests/test_project_layout.py -q`
 
 Expected: PASS.
 
-- [ ] **Step 2: Run all tests**
+- [x] **Step 2: Run all tests**
 
 Run: `pytest -q`
 
 Expected: PASS.
 
-- [ ] **Step 3: Verify worktree status**
+- [x] **Step 3: Verify worktree status**
 
 Run: `git status --short`
 
 Expected: clean before plan checkbox update.
 
-- [ ] **Step 4: Mark this plan complete**
+- [x] **Step 4: Mark this plan complete**
 
 Edit `docs/superpowers/plans/2026-05-08-bv-review-mode-ui-implementation-plan.md` so completed checkbox steps use `- [x]`.
 
-- [ ] **Step 5: Commit plan progress**
+- [x] **Step 5: Commit plan progress**
 
 ```bash
 git add docs/superpowers/plans/2026-05-08-bv-review-mode-ui-implementation-plan.md
