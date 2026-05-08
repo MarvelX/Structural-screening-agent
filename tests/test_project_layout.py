@@ -24,6 +24,14 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     root = project_root()
     source = (root / "app.py").read_text()
 
+    assert "BV PV Design Review Workbench" in source
+    assert "evaluate_bv_review" in source
+    assert "default_bv_review_intake" in source
+    assert "build_bv_review_intake" in source
+    assert "bv_review_tab" in source
+    assert "BV Review" in source
+    assert "Risk & Nonconformity Register" in source
+    assert "Portal-Frame Scenario Module" in source
     assert "st.tabs(" in source
     assert 'translate(ui_language, "assessment_tab")' in source
     assert 'translate(ui_language, "project_input_tab")' in source
