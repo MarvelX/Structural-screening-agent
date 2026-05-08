@@ -1,5 +1,7 @@
 from structural_screening_agent.bv_review.basis import build_review_basis
+from structural_screening_agent.bv_review.checklist import build_document_checklist
 from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.review_path import build_structural_review_path
 
 
 def _sample_intake() -> BVReviewIntake:
@@ -71,3 +73,26 @@ def test_review_basis_builder_intersects_gb_50017_review_objects() -> None:
     )
 
     assert gb_50017.review_objects == ["connection"]
+
+
+def test_document_checklist_marks_missing_calculation_and_geotechnical_reports_as_review_holds() -> None:
+    checklist = build_document_checklist(_sample_intake())
+
+    missing_keys = {item.document_key for item in checklist if item.review_blocked}
+    assert "calculation_report" in missing_keys
+    assert "geotechnical_report" in missing_keys
+    assert any("补充结构计算书" in item.required_action for item in checklist)
+    assert any("foundation" in item.affected_review_objects for item in checklist)
+
+
+def test_structural_review_path_creates_object_specific_review_methods_and_holds() -> None:
+    checklist = build_document_checklist(_sample_intake())
+    paths = build_structural_review_path(_sample_intake(), checklist)
+
+    path_ids = {item.path_id for item in paths}
+    assert "mounting_structure_review" in path_ids
+    assert "foundation_review" in path_ids
+    assert "existing_rooftop_added_load_review" in path_ids
+    foundation_path = next(item for item in paths if item.path_id == "foundation_review")
+    assert foundation_path.status == "hold"
+    assert "地勘报告" in foundation_path.method
