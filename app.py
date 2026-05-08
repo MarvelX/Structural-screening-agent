@@ -22,6 +22,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_bv_review_intake,
     default_bv_review_intake,
 )
+from structural_screening_agent.bv_review.models import BVReportSection
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.core.persistence import ScreeningRepository
 from structural_screening_agent.localization import (
@@ -120,6 +121,77 @@ def _render_bv_section(title: str, items: list[str], limit: Optional[int] = None
     visible_items = items if limit is None else items[:limit]
     for item in visible_items:
         st.write(f"- {item}")
+
+
+def _bv_object_labels(values: list[str], language: Language) -> str:
+    return ", ".join(_label(BV_REVIEW_OBJECT_LABELS, value, language) for value in values)
+
+
+def _bv_basis_items(bv_result, language: Language) -> list[str]:
+    if language == "zh":
+        return [f"{item.title}: {'; '.join(item.review_actions)}" for item in bv_result.basis_references]
+    return [
+        f"{item.basis_id}: {item.source_type}; objects: {_bv_object_labels(item.review_objects, language)}"
+        for item in bv_result.basis_references
+    ]
+
+
+def _bv_path_items(bv_result, language: Language) -> list[str]:
+    if language == "zh":
+        return [f"{item.title}: {item.status} | {item.method}" for item in bv_result.review_paths]
+    return [
+        f"{_label(BV_REVIEW_OBJECT_LABELS, item.review_object, language)}: {item.status}; deliverables: {len(item.deliverables)}"
+        for item in bv_result.review_paths
+    ]
+
+
+def _bv_risk_items(bv_result, language: Language) -> list[str]:
+    if language == "zh":
+        return [f"{item.severity} | {item.title}: {item.recommendation}" for item in bv_result.risks]
+    return [
+        f"{item.severity} | {item.category}: {item.risk_id}; blocks report: {item.blocks_report_issue}"
+        for item in bv_result.risks
+    ]
+
+
+def _bv_plan_items(bv_result, language: Language) -> list[str]:
+    if language == "zh":
+        return [f"{item.phase}: {item.method} | {item.deliverable}" for item in bv_result.review_plan]
+    return [f"{item.phase}: {item.responsible_role}; item: {item.item_id}" for item in bv_result.review_plan]
+
+
+def _bv_report_preview_sections(bv_intake, bv_result, language: Language) -> list[BVReportSection]:
+    if language == "zh" and bv_result.report_preview is not None:
+        return bv_result.report_preview.sections[:4]
+
+    blockers = [item for item in bv_result.risks if item.blocks_report_issue]
+    return [
+        BVReportSection(
+            heading="Project and Review Scope",
+            items=[
+                f"Project name: {bv_intake.project_name}",
+                f"Country / region: {bv_intake.country_or_region}",
+                f"Design stage: {bv_intake.design_stage}",
+                f"Decision: {bv_result.decision}",
+            ],
+        ),
+        BVReportSection(
+            heading="Review Basis",
+            items=_bv_basis_items(bv_result, language)[:4],
+        ),
+        BVReportSection(
+            heading="Document Completeness",
+            items=[f"{item.document_key}: {item.status}" for item in bv_result.checklist_items[:4]],
+        ),
+        BVReportSection(
+            heading="Findings",
+            items=[
+                f"Blocking items: {len(blockers)}",
+                f"Risks and nonconformities: {len(bv_result.risks)}",
+                f"Review plan items: {len(bv_result.review_plan)}",
+            ],
+        ),
+    ]
 
 
 def _preset_or_custom_value(
@@ -487,51 +559,55 @@ with bv_review_tab:
                 key=f"bv_doc_{document_key}",
             )
 
-    bv_intake = build_bv_review_intake(
-        project_name=bv_project_name,
-        country_or_region=bv_country_or_region,
-        project_type=bv_project_type,
-        design_stage=bv_design_stage,
-        standards_systems=bv_standards,
-        review_objects=bv_review_objects,
-        client_requirements_text=bv_client_requirements_text,
-        documents=document_statuses,
-    )
-    bv_result = evaluate_bv_review(bv_intake)
-    blockers = [item for item in bv_result.risks if item.blocks_report_issue]
+    if not bv_standards:
+        st.warning("Select at least one standards system." if ui_language == "en" else "请至少选择一个标准体系。")
+    elif not bv_review_objects:
+        st.warning("Select at least one review object." if ui_language == "en" else "请至少选择一个审核对象。")
+    else:
+        bv_intake = build_bv_review_intake(
+            project_name=bv_project_name,
+            country_or_region=bv_country_or_region,
+            project_type=bv_project_type,
+            design_stage=bv_design_stage,
+            standards_systems=bv_standards,
+            review_objects=bv_review_objects,
+            client_requirements_text=bv_client_requirements_text,
+            documents=document_statuses,
+        )
+        bv_result = evaluate_bv_review(bv_intake)
+        blockers = [item for item in bv_result.risks if item.blocks_report_issue]
 
-    metric_1, metric_2, metric_3 = st.columns(3)
-    metric_1.metric("Decision" if ui_language == "en" else "审核结论", bv_result.decision)
-    metric_2.metric("Blocking Items" if ui_language == "en" else "阻塞项", len(blockers))
-    metric_3.metric("Review Paths" if ui_language == "en" else "审核路径", len(bv_result.review_paths))
+        metric_1, metric_2, metric_3 = st.columns(3)
+        metric_1.metric("Decision" if ui_language == "en" else "审核结论", bv_result.decision)
+        metric_2.metric("Blocking Items" if ui_language == "en" else "阻塞项", len(blockers))
+        metric_3.metric("Review Paths" if ui_language == "en" else "审核路径", len(bv_result.review_paths))
 
-    overview_col, risk_col = st.columns([1.0, 1.0])
-    with overview_col:
-        _render_bv_section(
-            "Review Basis Builder" if ui_language == "en" else "审核依据",
-            [f"{item.title}: {'; '.join(item.review_actions)}" for item in bv_result.basis_references],
-            limit=4,
-        )
-        _render_bv_section(
-            "Structural Review Path" if ui_language == "en" else "结构审核路径",
-            [f"{item.title}: {item.status} | {item.method}" for item in bv_result.review_paths],
-            limit=5,
-        )
-    with risk_col:
-        _render_bv_section(
-            "Risk & Nonconformity Register" if ui_language == "en" else "风险与不符合项清单",
-            [f"{item.severity} | {item.title}: {item.recommendation}" for item in bv_result.risks],
-            limit=6,
-        )
-        _render_bv_section(
-            "ITP & Review Plan" if ui_language == "en" else "ITP 与审核计划",
-            [f"{item.phase}: {item.method} | {item.deliverable}" for item in bv_result.review_plan],
-            limit=5,
-        )
+        overview_col, risk_col = st.columns([1.0, 1.0])
+        with overview_col:
+            _render_bv_section(
+                "Review Basis Builder" if ui_language == "en" else "审核依据",
+                _bv_basis_items(bv_result, ui_language),
+                limit=4,
+            )
+            _render_bv_section(
+                "Structural Review Path" if ui_language == "en" else "结构审核路径",
+                _bv_path_items(bv_result, ui_language),
+                limit=5,
+            )
+        with risk_col:
+            _render_bv_section(
+                "Risk & Nonconformity Register" if ui_language == "en" else "风险与不符合项清单",
+                _bv_risk_items(bv_result, ui_language),
+                limit=6,
+            )
+            _render_bv_section(
+                "ITP & Review Plan" if ui_language == "en" else "ITP 与审核计划",
+                _bv_plan_items(bv_result, ui_language),
+                limit=5,
+            )
 
-    if bv_result.report_preview is not None:
         st.markdown("#### Design Review Report Preview" if ui_language == "en" else "设计审查报告预览")
-        for section in bv_result.report_preview.sections[:4]:
+        for section in _bv_report_preview_sections(bv_intake, bv_result, ui_language):
             with st.container(border=True):
                 st.markdown(f"**{section.heading}**")
                 for item in section.items[:4]:

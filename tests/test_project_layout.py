@@ -42,6 +42,10 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "view.assessment_metric_cards" in source
     assert "view.conclusion_overview_card" in source
     assert "view.evidence_overview_cards" in source
+    assert "Select at least one standards system" in source
+    assert "Select at least one review object" in source
+    assert "_bv_basis_items" in source
+    assert "_bv_report_preview_sections" in source
     assert 'translate(ui_language, "critical_calculation_results")' in source
     assert 'translate(ui_language, "detailed_calculation_results")' in source
     assert 'translate(ui_language, "detailed_evidence_status")' in source

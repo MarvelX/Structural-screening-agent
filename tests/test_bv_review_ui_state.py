@@ -1,3 +1,6 @@
+import pytest
+from pydantic import ValidationError
+
 from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
@@ -52,3 +55,29 @@ def test_build_bv_review_intake_preserves_user_selected_scope_and_documents() ->
     assert intake.review_objects == ["foundation", "load_calculation"]
     assert intake.client_requirements == ["Independent review before IFC release"]
     assert intake.documents["geotechnical_report"] == "partial"
+
+
+def test_build_bv_review_intake_rejects_empty_user_selected_scope() -> None:
+    with pytest.raises(ValidationError):
+        build_bv_review_intake(
+            project_name="Scope removed",
+            country_or_region="China",
+            project_type="rooftop_pv",
+            design_stage="construction_drawing",
+            standards_systems=[],
+            review_objects=["foundation"],
+            client_requirements_text="",
+            documents={},
+        )
+
+    with pytest.raises(ValidationError):
+        build_bv_review_intake(
+            project_name="Scope removed",
+            country_or_region="China",
+            project_type="rooftop_pv",
+            design_stage="construction_drawing",
+            standards_systems=["gb"],
+            review_objects=[],
+            client_requirements_text="",
+            documents={},
+        )

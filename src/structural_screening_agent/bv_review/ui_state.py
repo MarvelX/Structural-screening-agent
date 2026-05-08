@@ -91,8 +91,8 @@ def build_bv_review_intake(
         country_or_region=country_or_region.strip() or default.country_or_region,
         project_type=project_type,
         design_stage=design_stage,
-        standards_systems=standards_systems or list(default.standards_systems),
-        review_objects=review_objects or list(default.review_objects),
+        standards_systems=list(standards_systems),
+        review_objects=list(review_objects),
         client_requirements=_split_client_requirements(client_requirements_text),
         documents={key: documents.get(key, default.documents[key]) for key in BV_DOCUMENT_LABELS},
     )
