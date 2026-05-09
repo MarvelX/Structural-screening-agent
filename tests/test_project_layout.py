@@ -107,6 +107,9 @@ def test_showcase_docs_contain_expected_sections() -> None:
     assert "评估结论" in demo_guide
     assert "设计审查报告预览" in demo_guide
     assert "门刚场景模块" in demo_guide
+    assert "BV PV Design Review Workbench" in brief
+    assert "第三方审核工程师" in brief
+    assert "门式刚架屋面光伏增载场景模块" in brief
     assert "项目一句话" in brief
     assert "不是一个通用 AI demo" in brief
 
