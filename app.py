@@ -23,6 +23,7 @@ from structural_screening_agent.bv_review.ui_state import (
     default_bv_review_intake,
 )
 from structural_screening_agent.bv_review.models import BVReportSection
+from structural_screening_agent.bv_review.report import build_bv_markdown_report, build_bv_report_filename
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.core.persistence import ScreeningRepository
 from structural_screening_agent.localization import (
@@ -606,7 +607,40 @@ with bv_review_tab:
                 limit=5,
             )
 
+        bv_report_preview = bv_result.report_preview
+        bv_markdown_payload = build_bv_markdown_report(bv_intake, bv_result)
+        bv_markdown_filename = build_bv_report_filename(bv_intake.project_type)
+        bv_word_filename = bv_markdown_filename.replace(".md", ".docx")
+        bv_pdf_filename = bv_markdown_filename.replace(".md", ".pdf")
+        bv_docx_payload = build_docx_report_bytes(bv_report_preview)
+        bv_pdf_payload = build_pdf_report_bytes(bv_report_preview)
+
         st.markdown("#### Design Review Report Preview" if ui_language == "en" else "设计审查报告预览")
+        bv_export_col_1, bv_export_col_2, bv_export_col_3 = st.columns(3)
+        with bv_export_col_1:
+            bv_markdown_download = st.download_button(
+                "Download Markdown Report" if ui_language == "en" else "下载 Markdown 报告",
+                data=bv_markdown_payload,
+                file_name=bv_markdown_filename,
+                mime="text/markdown",
+                use_container_width=True,
+            )
+        with bv_export_col_2:
+            bv_word_download = st.download_button(
+                "Download Word Report" if ui_language == "en" else "下载 Word 报告",
+                data=bv_docx_payload,
+                file_name=bv_word_filename,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+            )
+        with bv_export_col_3:
+            bv_pdf_download = st.download_button(
+                "Download PDF Report" if ui_language == "en" else "下载 PDF 报告",
+                data=bv_pdf_payload,
+                file_name=bv_pdf_filename,
+                mime="application/pdf",
+                use_container_width=True,
+            )
         for section in _bv_report_preview_sections(bv_intake, bv_result, ui_language):
             with st.container(border=True):
                 st.markdown(f"**{section.heading}**")

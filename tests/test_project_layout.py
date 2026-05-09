@@ -57,6 +57,11 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'translate(ui_language, "column_section_preset")' in source
     assert 'translate(ui_language, "download_word_report")' in source
     assert 'translate(ui_language, "download_pdf_report")' in source
+    assert "build_bv_markdown_report" in source
+    assert "build_bv_report_filename" in source
+    assert "bv_markdown_download" in source
+    assert "bv_word_download" in source
+    assert "bv_pdf_download" in source
     assert "st.file_uploader(" in source
 
 
