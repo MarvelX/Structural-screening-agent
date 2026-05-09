@@ -11,12 +11,18 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.cidfonts import UnicodeCIDFont
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import PageBreak, Paragraph, SimpleDocTemplate, Spacer
+from typing import Iterable, Protocol
 
 from structural_screening_agent.report_generator import ReportPreview
 
 
-def _iter_preview_items(preview: ReportPreview):
-    for section in preview.sections:
+class _PreviewSectionLike(Protocol):
+    heading: str
+    items: list[str]
+
+
+def _iter_sections_items(sections: Iterable[_PreviewSectionLike]):
+    for section in sections:
         yield ("heading", section.heading)
         for item in section.items:
             if item.startswith("### "):
@@ -25,6 +31,10 @@ def _iter_preview_items(preview: ReportPreview):
                 yield ("bullet", item[2:])
             else:
                 yield ("paragraph", item)
+
+
+def _iter_preview_items(preview: ReportPreview):
+    yield from _iter_sections_items(preview.sections)
 
 
 def _is_heading(section_heading: str, zh_text: str, en_text: str) -> bool:
@@ -131,8 +141,7 @@ def build_docx_report_bytes(preview: ReportPreview) -> bytes:
 
     document.add_page_break()
 
-    body_preview = ReportPreview(title=preview.title, sections=remaining_sections)
-    for item_type, text in _iter_preview_items(body_preview):
+    for item_type, text in _iter_sections_items(remaining_sections):
         if item_type == "heading":
             heading = document.add_heading(text, level=1)
             heading.runs[0].font.size = Pt(13)
@@ -228,8 +237,7 @@ def build_pdf_report_bytes(preview: ReportPreview) -> bytes:
             story.append(Paragraph(text.replace("\n", "<br/>"), body_style))
     story.extend([Spacer(1, 8), PageBreak()])
 
-    body_preview = ReportPreview(title=preview.title, sections=remaining_sections)
-    for item_type, text in _iter_preview_items(body_preview):
+    for item_type, text in _iter_sections_items(remaining_sections):
         if item_type == "heading":
             story.append(Paragraph(text, heading_style))
         elif item_type == "subheading":

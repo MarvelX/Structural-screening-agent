@@ -12,6 +12,19 @@ from structural_screening_agent.app_state import (
     evaluate_case,
     ordered_demo_keys,
 )
+from structural_screening_agent.bv_review.ui_state import (
+    BV_DESIGN_STAGE_LABELS,
+    BV_DOCUMENT_LABELS,
+    BV_DOCUMENT_STATUS_LABELS,
+    BV_PROJECT_TYPE_LABELS,
+    BV_REVIEW_OBJECT_LABELS,
+    BV_STANDARD_LABELS,
+    build_bv_review_intake,
+    default_bv_review_intake,
+)
+from structural_screening_agent.bv_review.models import BVReportSection
+from structural_screening_agent.bv_review.report import build_bv_markdown_report, build_bv_report_filename
+from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.core.persistence import ScreeningRepository
 from structural_screening_agent.localization import (
     Language,
@@ -27,7 +40,7 @@ from structural_screening_agent.report_export import build_docx_report_bytes, bu
 from structural_screening_agent.report_generator import build_report_filename, build_report_preview
 
 
-st.set_page_config(page_title="Portal-Frame Rooftop PV Screening", layout="wide")
+st.set_page_config(page_title="BV PV Design Review Workbench", layout="wide")
 
 repository = ScreeningRepository(Path(".local_data") / "screening.db")
 demo_cases = demo_case_options()
@@ -100,6 +113,88 @@ def _render_key_calculation_cards(cards: list[ContentCard], language: Language, 
                         st.write(line)
 
 
+def _label(label_map: dict[str, dict[str, str]], value: str, language: Language) -> str:
+    return label_map.get(value, {}).get(language, value)
+
+
+def _render_bv_section(title: str, items: list[str], limit: Optional[int] = None) -> None:
+    st.markdown(f"#### {title}")
+    visible_items = items if limit is None else items[:limit]
+    for item in visible_items:
+        st.write(f"- {item}")
+
+
+def _bv_object_labels(values: list[str], language: Language) -> str:
+    return ", ".join(_label(BV_REVIEW_OBJECT_LABELS, value, language) for value in values)
+
+
+def _bv_basis_items(bv_result, language: Language) -> list[str]:
+    if language == "zh":
+        return [f"{item.title}: {'; '.join(item.review_actions)}" for item in bv_result.basis_references]
+    return [
+        f"{item.basis_id}: {item.source_type}; objects: {_bv_object_labels(item.review_objects, language)}"
+        for item in bv_result.basis_references
+    ]
+
+
+def _bv_path_items(bv_result, language: Language) -> list[str]:
+    if language == "zh":
+        return [f"{item.title}: {item.status} | {item.method}" for item in bv_result.review_paths]
+    return [
+        f"{_label(BV_REVIEW_OBJECT_LABELS, item.review_object, language)}: {item.status}; deliverables: {len(item.deliverables)}"
+        for item in bv_result.review_paths
+    ]
+
+
+def _bv_risk_items(bv_result, language: Language) -> list[str]:
+    if language == "zh":
+        return [f"{item.severity} | {item.title}: {item.recommendation}" for item in bv_result.risks]
+    return [
+        f"{item.severity} | {item.category}: {item.risk_id}; blocks report: {item.blocks_report_issue}"
+        for item in bv_result.risks
+    ]
+
+
+def _bv_plan_items(bv_result, language: Language) -> list[str]:
+    if language == "zh":
+        return [f"{item.phase}: {item.method} | {item.deliverable}" for item in bv_result.review_plan]
+    return [f"{item.phase}: {item.responsible_role}; item: {item.item_id}" for item in bv_result.review_plan]
+
+
+def _bv_report_preview_sections(bv_intake, bv_result, language: Language) -> list[BVReportSection]:
+    if language == "zh" and bv_result.report_preview is not None:
+        return bv_result.report_preview.sections[:4]
+
+    blockers = [item for item in bv_result.risks if item.blocks_report_issue]
+    return [
+        BVReportSection(
+            heading="Project and Review Scope",
+            items=[
+                f"Project name: {bv_intake.project_name}",
+                f"Country / region: {bv_intake.country_or_region}",
+                f"Design stage: {bv_intake.design_stage}",
+                f"Decision: {bv_result.decision}",
+            ],
+        ),
+        BVReportSection(
+            heading="Review Basis",
+            items=_bv_basis_items(bv_result, language)[:4],
+        ),
+        BVReportSection(
+            heading="Document Completeness",
+            items=[f"{item.document_key}: {item.status}" for item in bv_result.checklist_items[:4]],
+        ),
+        BVReportSection(
+            heading="Findings",
+            items=[
+                f"Blocking items: {len(blockers)}",
+                f"Risks and nonconformities: {len(bv_result.risks)}",
+                f"Review plan items: {len(bv_result.review_plan)}",
+            ],
+        ),
+    ]
+
+
 def _preset_or_custom_value(
     *,
     preset_label: str,
@@ -123,20 +218,25 @@ def _preset_or_custom_value(
             text_label,
             value=initial_value,
             key=f"{widget_prefix}_custom",
-        )
+    )
     return selected_value
 
 
-st.title(translate(ui_language, "portal_frame_screening_title"))
-st.caption(translate(ui_language, "portal_frame_screening_subtitle"))
+st.title("BV PV Design Review Workbench" if ui_language == "en" else "BV 光伏结构设计审核工作台")
+st.caption(
+    "Third-party PV civil, structural, mounting, foundation, and existing-rooftop design review workbench."
+    if ui_language == "en"
+    else "面向第三方审核工程师的光伏土建、钢结构、支架、基础与既有屋面增载设计审核工作台。"
+)
 
-assessment_tab, input_tab, basis_tab, export_tab, extension_tab = st.tabs(
+bv_review_tab, assessment_tab, input_tab, basis_tab, export_tab, extension_tab = st.tabs(
     [
+        "BV Review" if ui_language == "en" else "BV 审核总览",
         translate(ui_language, "assessment_tab"),
         translate(ui_language, "project_input_tab"),
         translate(ui_language, "basis_traceability_tab"),
         translate(ui_language, "report_export_tab"),
-        translate(ui_language, "calculation_extension_tab"),
+        "Portal-Frame Scenario Module" if ui_language == "en" else "门刚场景模块",
     ]
 )
 
@@ -389,6 +489,163 @@ report_preview = build_report_preview(
 report_filename = build_report_filename(selected_demo_key)
 report_docx_filename = report_filename.replace(".md", ".docx")
 report_pdf_filename = report_filename.replace(".md", ".pdf")
+
+with bv_review_tab:
+    default_bv_intake = default_bv_review_intake()
+    st.subheader("Project Review Intake" if ui_language == "en" else "项目设计审核输入")
+    st.caption(
+        "BV Review Mode organizes scope, basis, document completeness, ITP, risks, and report preview."
+        if ui_language == "en"
+        else "BV 审核模式用于组织审核范围、依据、资料完整性、ITP、风险清单和报告预览。"
+    )
+
+    bv_col_1, bv_col_2 = st.columns(2)
+    with bv_col_1:
+        bv_project_name = st.text_input(
+            "Project Name" if ui_language == "en" else "项目名称",
+            value=default_bv_intake.project_name,
+            key="bv_project_name",
+        )
+        bv_country_or_region = st.text_input(
+            "Country / Region" if ui_language == "en" else "国家 / 地区",
+            value=default_bv_intake.country_or_region,
+            key="bv_country_or_region",
+        )
+        bv_project_type = st.selectbox(
+            "Project Type" if ui_language == "en" else "项目类型",
+            list(BV_PROJECT_TYPE_LABELS),
+            index=list(BV_PROJECT_TYPE_LABELS).index(default_bv_intake.project_type),
+            format_func=lambda value: _label(BV_PROJECT_TYPE_LABELS, value, ui_language),
+            key="bv_project_type",
+        )
+        bv_design_stage = st.selectbox(
+            "Design Stage" if ui_language == "en" else "设计阶段",
+            list(BV_DESIGN_STAGE_LABELS),
+            index=list(BV_DESIGN_STAGE_LABELS).index(default_bv_intake.design_stage),
+            format_func=lambda value: _label(BV_DESIGN_STAGE_LABELS, value, ui_language),
+            key="bv_design_stage",
+        )
+    with bv_col_2:
+        bv_standards = st.multiselect(
+            "Standards Systems" if ui_language == "en" else "标准体系",
+            list(BV_STANDARD_LABELS),
+            default=list(default_bv_intake.standards_systems),
+            format_func=lambda value: _label(BV_STANDARD_LABELS, value, ui_language),
+            key="bv_standards",
+        )
+        bv_review_objects = st.multiselect(
+            "Review Objects" if ui_language == "en" else "审核对象",
+            list(BV_REVIEW_OBJECT_LABELS),
+            default=list(default_bv_intake.review_objects),
+            format_func=lambda value: _label(BV_REVIEW_OBJECT_LABELS, value, ui_language),
+            key="bv_review_objects",
+        )
+        bv_client_requirements_text = st.text_area(
+            "Client Requirements" if ui_language == "en" else "客户要求",
+            value="\n".join(default_bv_intake.client_requirements),
+            height=90,
+            key="bv_client_requirements",
+        )
+
+    st.markdown("#### Design Document Checklist" if ui_language == "en" else "设计资料完整性")
+    document_statuses = {}
+    doc_cols = st.columns(3)
+    for index, (document_key, labels) in enumerate(BV_DOCUMENT_LABELS.items()):
+        with doc_cols[index % 3]:
+            document_statuses[document_key] = st.selectbox(
+                labels[ui_language],
+                list(BV_DOCUMENT_STATUS_LABELS),
+                index=list(BV_DOCUMENT_STATUS_LABELS).index(default_bv_intake.documents[document_key]),
+                format_func=lambda value: _label(BV_DOCUMENT_STATUS_LABELS, value, ui_language),
+                key=f"bv_doc_{document_key}",
+            )
+
+    if not bv_standards:
+        st.warning("Select at least one standards system." if ui_language == "en" else "请至少选择一个标准体系。")
+    elif not bv_review_objects:
+        st.warning("Select at least one review object." if ui_language == "en" else "请至少选择一个审核对象。")
+    else:
+        bv_intake = build_bv_review_intake(
+            project_name=bv_project_name,
+            country_or_region=bv_country_or_region,
+            project_type=bv_project_type,
+            design_stage=bv_design_stage,
+            standards_systems=bv_standards,
+            review_objects=bv_review_objects,
+            client_requirements_text=bv_client_requirements_text,
+            documents=document_statuses,
+        )
+        bv_result = evaluate_bv_review(bv_intake)
+        blockers = [item for item in bv_result.risks if item.blocks_report_issue]
+
+        metric_1, metric_2, metric_3 = st.columns(3)
+        metric_1.metric("Decision" if ui_language == "en" else "审核结论", bv_result.decision)
+        metric_2.metric("Blocking Items" if ui_language == "en" else "阻塞项", len(blockers))
+        metric_3.metric("Review Paths" if ui_language == "en" else "审核路径", len(bv_result.review_paths))
+
+        overview_col, risk_col = st.columns([1.0, 1.0])
+        with overview_col:
+            _render_bv_section(
+                "Review Basis Builder" if ui_language == "en" else "审核依据",
+                _bv_basis_items(bv_result, ui_language),
+                limit=4,
+            )
+            _render_bv_section(
+                "Structural Review Path" if ui_language == "en" else "结构审核路径",
+                _bv_path_items(bv_result, ui_language),
+                limit=5,
+            )
+        with risk_col:
+            _render_bv_section(
+                "Risk & Nonconformity Register" if ui_language == "en" else "风险与不符合项清单",
+                _bv_risk_items(bv_result, ui_language),
+                limit=6,
+            )
+            _render_bv_section(
+                "ITP & Review Plan" if ui_language == "en" else "ITP 与审核计划",
+                _bv_plan_items(bv_result, ui_language),
+                limit=5,
+            )
+
+        bv_report_preview = bv_result.report_preview
+        bv_markdown_payload = build_bv_markdown_report(bv_intake, bv_result)
+        bv_markdown_filename = build_bv_report_filename(bv_intake.project_type)
+        bv_word_filename = bv_markdown_filename.replace(".md", ".docx")
+        bv_pdf_filename = bv_markdown_filename.replace(".md", ".pdf")
+        bv_docx_payload = build_docx_report_bytes(bv_report_preview)
+        bv_pdf_payload = build_pdf_report_bytes(bv_report_preview)
+
+        st.markdown("#### Design Review Report Preview" if ui_language == "en" else "设计审查报告预览")
+        bv_export_col_1, bv_export_col_2, bv_export_col_3 = st.columns(3)
+        with bv_export_col_1:
+            bv_markdown_download = st.download_button(
+                "Download Markdown Report" if ui_language == "en" else "下载 Markdown 报告",
+                data=bv_markdown_payload,
+                file_name=bv_markdown_filename,
+                mime="text/markdown",
+                use_container_width=True,
+            )
+        with bv_export_col_2:
+            bv_word_download = st.download_button(
+                "Download Word Report" if ui_language == "en" else "下载 Word 报告",
+                data=bv_docx_payload,
+                file_name=bv_word_filename,
+                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                use_container_width=True,
+            )
+        with bv_export_col_3:
+            bv_pdf_download = st.download_button(
+                "Download PDF Report" if ui_language == "en" else "下载 PDF 报告",
+                data=bv_pdf_payload,
+                file_name=bv_pdf_filename,
+                mime="application/pdf",
+                use_container_width=True,
+            )
+        for section in _bv_report_preview_sections(bv_intake, bv_result, ui_language):
+            with st.container(border=True):
+                st.markdown(f"**{section.heading}**")
+                for item in section.items[:4]:
+                    st.write(item)
 
 with assessment_tab:
     metric_columns = st.columns(min(3, max(len(view.assessment_metric_cards), 1)))
