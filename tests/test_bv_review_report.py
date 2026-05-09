@@ -1,5 +1,11 @@
+from datetime import date
+
 from structural_screening_agent.bv_review.models import BVReviewIntake
-from structural_screening_agent.bv_review.report import build_bv_report_preview
+from structural_screening_agent.bv_review.report import (
+    build_bv_markdown_report,
+    build_bv_report_filename,
+    build_bv_report_preview,
+)
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
 
@@ -49,3 +55,28 @@ def test_bv_report_boundary_statement_does_not_claim_formal_design_or_bv_officia
     assert "不替代正式设计" in text
     assert "不代表 BV 官方签发流程" in text
     assert "合格工程师复核" in text
+
+
+def test_bv_markdown_report_contains_required_sections_and_boundary_statement() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+
+    report = build_bv_markdown_report(intake, result)
+
+    assert report.startswith("# BV 光伏结构设计审查报告")
+    assert "## 项目与审核范围" in report
+    assert "## 审核依据" in report
+    assert "## 提交资料清单与完整性状态" in report
+    assert "## 审核路径与方法" in report
+    assert "## 不符合项与阻塞项" in report
+    assert "## 技术风险与优化建议" in report
+    assert "## 后续行动" in report
+    assert "## 审核边界声明" in report
+    assert "不替代正式设计" in report
+    assert "不代表 BV 官方签发流程" in report
+
+
+def test_bv_report_filename_uses_date_and_scope_key() -> None:
+    filename = build_bv_report_filename("rooftop_pv_review", report_date=date(2026, 5, 9))
+
+    assert filename == "2026-05-09-rooftop_pv_review-bv-review-report.md"

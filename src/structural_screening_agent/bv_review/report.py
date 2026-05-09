@@ -1,3 +1,5 @@
+from datetime import date
+
 from structural_screening_agent.bv_review.models import (
     BVReportPreview,
     BVReportSection,
@@ -71,3 +73,19 @@ def build_bv_report_preview(intake: BVReviewIntake, result: BVReviewResult) -> B
         ),
     ]
     return BVReportPreview(title="BV 光伏结构设计审查报告", sections=sections)
+
+
+def build_bv_markdown_report(intake: BVReviewIntake, result: BVReviewResult) -> str:
+    preview = result.report_preview or build_bv_report_preview(intake, result)
+    lines = [f"# {preview.title}", ""]
+    for section in preview.sections:
+        lines.append(f"## {section.heading}")
+        for item in section.items:
+            lines.append(f"- {item}")
+        lines.append("")
+    return "\n".join(lines).strip() + "\n"
+
+
+def build_bv_report_filename(scope_key: str, report_date: date | None = None) -> str:
+    current_date = report_date or date.today()
+    return f"{current_date.isoformat()}-{scope_key}-bv-review-report.md"
