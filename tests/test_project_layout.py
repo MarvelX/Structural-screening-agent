@@ -119,14 +119,17 @@ def test_showcase_docs_link_to_assets_and_each_other() -> None:
     readme = (root / "README.md").read_text()
     demo_guide = (root / "docs" / "showcase" / "demo-guide.md").read_text()
     brief = (root / "docs" / "showcase" / "project-brief.md").read_text()
+    assert "docs/showcase/assets/bv-review-overview.png" in readme
     assert "docs/showcase/assets/assessment-overview.png" in readme
     assert "docs/showcase/project-brief.md" in readme
+    assert "docs/showcase/assets/bv-review-overview.png" in demo_guide
     assert "docs/showcase/assets/report-export.png" in demo_guide
     assert "docs/showcase/demo-guide.md" in brief
 
 
 def test_showcase_screenshot_assets_exist() -> None:
     root = project_root()
+    assert (root / "docs" / "showcase" / "assets" / "bv-review-overview.png").exists()
     assert (root / "docs" / "showcase" / "assets" / "assessment-overview.png").exists()
     assert (root / "docs" / "showcase" / "assets" / "basis-traceability.png").exists()
     assert (root / "docs" / "showcase" / "assets" / "report-export.png").exists()

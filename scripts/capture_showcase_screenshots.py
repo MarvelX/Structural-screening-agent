@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
@@ -6,14 +7,14 @@ from playwright.sync_api import sync_playwright
 
 ROOT = Path(__file__).resolve().parents[1]
 ASSET_DIR = ROOT / "docs" / "showcase" / "assets"
-APP_URL = "http://localhost:8503"
+APP_URL = os.getenv("SSA_SHOWCASE_APP_URL", "http://localhost:8503")
 
 
 def _wait_for_ready_state(page) -> None:
     page.goto(APP_URL, wait_until="networkidle")
     page.set_viewport_size({"width": 1600, "height": 1400})
-    page.get_by_text("门式刚架屋面光伏增载初筛").wait_for(timeout=15000)
-    page.get_by_role("tab", name="评估结论").wait_for(timeout=15000)
+    page.get_by_text("BV 光伏结构设计审核工作台").wait_for(timeout=15000)
+    page.get_by_role("tab", name="BV 审核总览").wait_for(timeout=15000)
 
 
 def _dismiss_streamlit_overlays(page) -> None:
@@ -40,6 +41,7 @@ def main() -> None:
         page = browser.new_page()
         _wait_for_ready_state(page)
         _dismiss_streamlit_overlays(page)
+        _capture_tab(page, "BV 审核总览", "bv-review-overview.png")
         _capture_tab(page, "评估结论", "assessment-overview.png")
         _capture_tab(page, "依据与追溯", "basis-traceability.png")
         _capture_tab(page, "报告导出", "report-export.png")

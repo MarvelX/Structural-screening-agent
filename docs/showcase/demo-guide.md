@@ -35,6 +35,8 @@ python -m streamlit run app.py --server.port 8503
 
 这一页回答的是：**这次 BV 审核先看什么、边界在哪里、当前资料是否具备进入正式判断的条件。**
 
+![BV 审核总览页](docs/showcase/assets/bv-review-overview.png)
+
 ### 2. 再看“评估结论”
 
 重点看：

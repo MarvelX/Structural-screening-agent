@@ -35,23 +35,29 @@ BV 光伏结构设计审核工作台，面向第三方光伏项目的土建、�
 
 ## 关键界面
 
-### 1. 评估结论
+### 1. BV 审核总览
+
+![BV 审核总览页](docs/showcase/assets/bv-review-overview.png)
+
+首屏先展示 `审核范围 / 审核对象 / 资料完整性 / 风险与不符合项 / ITP 与设计审查报告预览`，让第三方审核工程师先判断当前项目是否具备进入正式技术判断的前提。
+
+### 2. 评估结论
 
 ![评估结论页](docs/showcase/assets/assessment-overview.png)
 
 首屏聚焦 `初步结构结论 / 控制因素 / 关键计算结果 / 证据状态`，让技术负责人先看到“是否能进入下一阶段正式复核”。
 
-### 2. 依据与追溯
+### 3. 依据与追溯
 
 ![依据与追溯页](docs/showcase/assets/basis-traceability.png)
 
 展示依据条目、触发条件、证据需求和输入追踪，证明结论不是黑箱。
 
-### 3. 报告导出
+### 4. 报告导出
 
 ![报告导出页](docs/showcase/assets/report-export.png)
 
-支持 Markdown / Word / PDF 导出，适合内部讨论、甲方汇报和顾问交接。
+支持 Markdown / Word / PDF 导出，既适合 BV 审核工作台报告整理，也适合门刚场景模块的内部讨论、甲方汇报和顾问交接。
 
 ## 快速运行
 
