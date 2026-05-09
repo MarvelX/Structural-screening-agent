@@ -103,7 +103,10 @@ def test_showcase_docs_contain_expected_sections() -> None:
     demo_guide = (root / "docs" / "showcase" / "demo-guide.md").read_text()
     brief = (root / "docs" / "showcase" / "project-brief.md").read_text()
     assert "3 分钟跑起来" in demo_guide
+    assert "BV 审核总览" in demo_guide
     assert "评估结论" in demo_guide
+    assert "设计审查报告预览" in demo_guide
+    assert "门刚场景模块" in demo_guide
     assert "项目一句话" in brief
     assert "不是一个通用 AI demo" in brief
 
