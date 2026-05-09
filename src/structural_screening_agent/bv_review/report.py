@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Optional
 
 from structural_screening_agent.bv_review.models import (
     BVReportPreview,
@@ -86,6 +87,6 @@ def build_bv_markdown_report(intake: BVReviewIntake, result: BVReviewResult) -> 
     return "\n".join(lines).strip() + "\n"
 
 
-def build_bv_report_filename(scope_key: str, report_date: date | None = None) -> str:
+def build_bv_report_filename(scope_key: str, report_date: Optional[date] = None) -> str:
     current_date = report_date or date.today()
     return f"{current_date.isoformat()}-{scope_key}-bv-review-report.md"
