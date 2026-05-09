@@ -90,9 +90,12 @@ def test_showcase_docs_exist() -> None:
 def test_readme_mentions_showcase_positioning() -> None:
     root = project_root()
     readme = (root / "README.md").read_text()
+    assert "BV PV Design Review Workbench" in readme
+    assert "BV 光伏结构设计审核工作台" in readme
+    assert "门式刚架屋面光伏增载场景模块" in readme
+    assert "docs/showcase/demo-guide.md" in readme
     assert "门式刚架屋面光伏增载" in readme
     assert "不是聊天机器人" in readme
-    assert "docs/showcase/demo-guide.md" in readme
 
 
 def test_showcase_docs_contain_expected_sections() -> None:
