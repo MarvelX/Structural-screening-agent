@@ -45,3 +45,12 @@ def test_pdf_attachment_exists_and_is_a_pdf() -> None:
     assert pdf_path.exists()
     assert pdf_path.read_bytes()[:4] == b"%PDF"
     assert pdf_path.stat().st_size > 20_000
+
+
+def test_ppt_attachment_exists_and_is_a_pptx() -> None:
+    root = project_root()
+    pptx_path = root / "docs" / "job-application" / "attachments" / "BV-job-application-deck.pptx"
+
+    assert pptx_path.exists()
+    assert pptx_path.read_bytes()[:2] == b"PK"
+    assert pptx_path.stat().st_size > 30_000
