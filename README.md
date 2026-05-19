@@ -75,15 +75,16 @@ python -m streamlit run app.py --server.port 8503
 - [Demo Guide](docs/showcase/demo-guide.md)
 - [Project Brief](docs/showcase/project-brief.md)
 - [Job Application Microsite](docs/job-application/index.html)
-- [Public Demo](https://bv-pv-design-review-workbench.streamlit.app/)
+- [Public Demo](https://valley-recognized-roads-qualified.trycloudflare.com)
 
 ## Public Demo
 
-- 在线演示：<https://bv-pv-design-review-workbench.streamlit.app/>
+- 在线演示：<https://valley-recognized-roads-qualified.trycloudflare.com>
 - 岗位投递展示页：<https://marvelx.github.io/Structural-screening-agent/job-application/>
 
 公开 demo 继续使用现有 `app.py` 的 Streamlit 工作台，定位为作品集展示与 walkthrough 入口。
 它保留 `BV 审核总览 / 评估结论 / 依据与追溯 / 报告导出 / 门刚场景模块`，同时显式声明 `screening-level only`，避免被误解为正式设计软件或签章审核工具。
+当前对外地址通过临时公网隧道发布；仓库已补齐 Streamlit Community Cloud 的部署准备文件，后续可切换为稳定子域名。
 
 ## 当前边界
 

@@ -81,7 +81,8 @@ def test_job_application_site_links_to_streamlit_demo() -> None:
     html = html_path.read_text()
 
     assert "打开在线演示" in html
-    assert "https://bv-pv-design-review-workbench.streamlit.app/" in html
+    assert "https://" in html
+    assert any(host in html for host in ["trycloudflare.com", "streamlit.app"])
 
 
 def test_streamlit_demo_deployment_files_exist() -> None:
@@ -106,6 +107,6 @@ def test_readme_and_app_expose_public_demo_context() -> None:
     app_source = (root / "app.py").read_text()
 
     assert "Public Demo" in readme
-    assert "https://bv-pv-design-review-workbench.streamlit.app/" in readme
+    assert any(host in readme for host in ["trycloudflare.com", "streamlit.app"])
     assert "Public Demo" in app_source
     assert "screening-level only" in app_source

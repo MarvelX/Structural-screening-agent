@@ -7,6 +7,9 @@
 公开展示页：
 - https://marvelx.github.io/Structural-screening-agent/job-application/
 
+在线演示：
+- https://valley-recognized-roads-qualified.trycloudflare.com
+
 附件包括：
 - 1 页 PDF：岗位匹配与产品证明摘要
 - 6-8 页 PPT：产品与审核职责映射说明
