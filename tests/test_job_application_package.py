@@ -72,3 +72,40 @@ def test_email_template_exists_and_site_links_to_attachments() -> None:
     assert "https://marvelx.github.io/Structural-screening-agent/job-application/" in email
     assert "./attachments/BV-job-application-one-pager.pdf" in html
     assert "./attachments/BV-job-application-deck.pptx" in html
+
+
+def test_job_application_site_links_to_streamlit_demo() -> None:
+    root = project_root()
+    html_path = root / "docs" / "job-application" / "index.html"
+
+    html = html_path.read_text()
+
+    assert "打开在线演示" in html
+    assert "https://bv-pv-design-review-workbench.streamlit.app/" in html
+
+
+def test_streamlit_demo_deployment_files_exist() -> None:
+    root = project_root()
+    requirements_path = root / "requirements.txt"
+    deploy_doc_path = root / "docs" / "job-application" / "streamlit-demo-deploy.md"
+
+    assert requirements_path.exists()
+    assert deploy_doc_path.exists()
+
+    requirements = requirements_path.read_text()
+    deploy_doc = deploy_doc_path.read_text()
+
+    assert "-e ." in requirements
+    assert "Streamlit Community Cloud" in deploy_doc
+    assert "app.py" in deploy_doc
+
+
+def test_readme_and_app_expose_public_demo_context() -> None:
+    root = project_root()
+    readme = (root / "README.md").read_text()
+    app_source = (root / "app.py").read_text()
+
+    assert "Public Demo" in readme
+    assert "https://bv-pv-design-review-workbench.streamlit.app/" in readme
+    assert "Public Demo" in app_source
+    assert "screening-level only" in app_source

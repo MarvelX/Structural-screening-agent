@@ -228,6 +228,16 @@ st.caption(
     if ui_language == "en"
     else "面向第三方审核工程师的光伏土建、钢结构、支架、基础与既有屋面增载设计审核工作台。"
 )
+st.info(
+    "Public Demo | screening-level only | uses demo inputs and does not replace formal engineering design, statutory approval, or stamped calculations."
+    if ui_language == "en"
+    else "Public Demo | 仅用于 screening-level 演示 | 使用示例输入，不替代正式工程设计、法定审批或签章计算。"
+)
+st.caption(
+    "This public build is intended for portfolio review and demo walkthroughs."
+    if ui_language == "en"
+    else "当前公开版本用于作品集展示和演示浏览，重点展示 BV 审核工作流与报告输出。"
+)
 
 bv_review_tab, assessment_tab, input_tab, basis_tab, export_tab, extension_tab = st.tabs(
     [
