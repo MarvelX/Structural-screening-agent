@@ -32,7 +32,7 @@ def test_job_application_site_exists_and_contains_required_sections() -> None:
     assert "第三方光伏结构设计审核岗位的工程化作品证明" in html
     assert "岗位匹配" in html
     assert "产品证明" in html
-    assert "为什么这不是一个普通 AI demo" in html
+    assert "为什么这不是一个普通演示页" in html
     assert "JD 条款 - 产品模块 - 当前覆盖度" in html
     assert "下载 PDF" in html
     assert "下载 PPT" in html
@@ -91,10 +91,14 @@ def test_job_application_page_uses_chinese_section_labels_and_no_english_kickers
 
     assert "岗位匹配" in source
     assert "产品证明" in source
-    assert "为什么这不是一个普通 AI demo" in source
+    assert "为什么这不是一个普通演示页" in source
     assert '<p class="section-kicker">Role Fit</p>' not in source
     assert '<p class="section-kicker">Workbench</p>' not in source
     assert '<p class="section-kicker">Engineering Boundary</p>' not in source
+    assert "review basis" not in source
+    assert "document completeness" not in source
+    assert "deterministic kernel" not in source
+    assert "screening-level" not in source
 
 
 def test_streamlit_demo_deployment_files_exist() -> None:
