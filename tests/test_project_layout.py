@@ -3,6 +3,8 @@ from pathlib import Path
 
 import pytest
 
+from structural_screening_agent.localization import TRANSLATIONS
+
 
 def project_root() -> Path:
     return Path(__file__).resolve().parents[1]
@@ -29,21 +31,28 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "default_bv_review_intake" in source
     assert "build_bv_review_intake" in source
     assert "bv_review_tab" in source
-    assert "BV Review" in source
-    assert "Risk & Nonconformity Register" in source
-    assert "Portal-Frame Scenario Module" in source
     assert "st.tabs(" in source
+    assert 'translate(ui_language, "bv_review_tab")' in source
+    assert 'translate(ui_language, "portal_frame_tab")' in source
     assert 'translate(ui_language, "assessment_tab")' in source
     assert 'translate(ui_language, "project_input_tab")' in source
     assert 'translate(ui_language, "basis_traceability_tab")' in source
     assert 'translate(ui_language, "report_export_tab")' in source
     assert 'translate(ui_language, "calculation_extension_tab")' in source
+    assert 'translate(ui_language, "public_demo_banner")' in source
+    assert 'translate(ui_language, "public_demo_caption")' in source
+    assert 'translate(ui_language, "bv_review_intake_heading")' in source
+    assert 'translate(ui_language, "bv_review_checklist_heading")' in source
+    assert 'translate(ui_language, "bv_review_basis_heading")' in source
+    assert 'translate(ui_language, "bv_review_path_heading")' in source
+    assert 'translate(ui_language, "bv_review_risk_heading")' in source
+    assert 'translate(ui_language, "bv_review_plan_heading")' in source
+    assert 'translate(ui_language, "bv_review_warning_standards")' in source
+    assert 'translate(ui_language, "bv_review_warning_objects")' in source
     assert "view.traceability_cards" in source
     assert "view.assessment_metric_cards" in source
     assert "view.conclusion_overview_card" in source
     assert "view.evidence_overview_cards" in source
-    assert "Select at least one standards system" in source
-    assert "Select at least one review object" in source
     assert "_bv_basis_items" in source
     assert "_bv_report_preview_sections" in source
     assert 'translate(ui_language, "critical_calculation_results")' in source
@@ -63,6 +72,27 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "bv_word_download" in source
     assert "bv_pdf_download" in source
     assert "st.file_uploader(" in source
+
+
+def test_public_demo_translation_keys_exist_for_both_languages() -> None:
+    required_keys = [
+        "public_demo_banner",
+        "public_demo_caption",
+        "bv_review_tab",
+        "portal_frame_tab",
+        "bv_review_intake_heading",
+        "bv_review_checklist_heading",
+        "bv_review_basis_heading",
+        "bv_review_path_heading",
+        "bv_review_risk_heading",
+        "bv_review_plan_heading",
+        "bv_review_warning_standards",
+        "bv_review_warning_objects",
+    ]
+
+    for key in required_keys:
+        assert TRANSLATIONS[key]["zh"]
+        assert TRANSLATIONS[key]["en"]
 
 
 def test_app_py_no_longer_renders_legacy_report_grid_on_main_surface() -> None:

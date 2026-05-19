@@ -85,6 +85,18 @@ def test_job_application_site_links_to_streamlit_demo() -> None:
     assert any(host in html for host in ["trycloudflare.com", "streamlit.app"])
 
 
+def test_job_application_page_uses_chinese_section_labels_and_no_english_kickers() -> None:
+    root = project_root()
+    source = (root / "docs" / "job-application" / "index.html").read_text()
+
+    assert "岗位匹配" in source
+    assert "产品证明" in source
+    assert "为什么这不是一个普通 AI demo" in source
+    assert '<p class="section-kicker">Role Fit</p>' not in source
+    assert '<p class="section-kicker">Workbench</p>' not in source
+    assert '<p class="section-kicker">Engineering Boundary</p>' not in source
+
+
 def test_streamlit_demo_deployment_files_exist() -> None:
     root = project_root()
     requirements_path = root / "requirements.txt"
@@ -108,5 +120,5 @@ def test_readme_and_app_expose_public_demo_context() -> None:
 
     assert "Public Demo" in readme
     assert any(host in readme for host in ["trycloudflare.com", "streamlit.app"])
-    assert "Public Demo" in app_source
-    assert "screening-level only" in app_source
+    assert 'translate(ui_language, "public_demo_banner")' in app_source
+    assert 'translate(ui_language, "public_demo_caption")' in app_source

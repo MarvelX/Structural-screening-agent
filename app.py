@@ -42,6 +42,58 @@ from structural_screening_agent.report_generator import build_report_filename, b
 
 st.set_page_config(page_title="BV PV Design Review Workbench", layout="wide")
 
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background: #f5f7fa;
+        color: #15202b;
+    }
+    .block-container {
+        padding-top: 2rem;
+        padding-bottom: 3rem;
+        max-width: 1220px;
+    }
+    [data-testid="stSidebar"] {
+        background: #f8fafc;
+        border-right: 1px solid #dde5ec;
+    }
+    [data-testid="stMetric"] {
+        background: #ffffff;
+        border: 1px solid #dde5ec;
+        border-radius: 8px;
+        padding: 0.85rem 1rem;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+    }
+    [data-testid="stTabs"] [data-baseweb="tab-list"] {
+        gap: 0.5rem;
+    }
+    [data-testid="stTabs"] button[role="tab"] {
+        border-radius: 8px;
+        border: 1px solid #dde5ec;
+        background: #ffffff;
+        padding: 0.5rem 0.9rem;
+    }
+    [data-testid="stTabs"] button[aria-selected="true"] {
+        color: #0b63ce;
+        border-color: #b7d0ee;
+        box-shadow: inset 0 0 0 1px rgba(11, 99, 206, 0.08);
+    }
+    [data-testid="stVerticalBlockBorderWrapper"] {
+        border-radius: 8px;
+        border-color: #dde5ec;
+        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.04);
+        background: #ffffff;
+    }
+    div[data-testid="stMarkdownContainer"] h3,
+    div[data-testid="stMarkdownContainer"] h4 {
+        letter-spacing: 0;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 repository = ScreeningRepository(Path(".local_data") / "screening.db")
 demo_cases = demo_case_options()
 default_packages = default_package_options()
@@ -222,31 +274,43 @@ def _preset_or_custom_value(
     return selected_value
 
 
-st.title("BV PV Design Review Workbench" if ui_language == "en" else "BV 光伏结构设计审核工作台")
-st.caption(
-    "Third-party PV civil, structural, mounting, foundation, and existing-rooftop design review workbench."
-    if ui_language == "en"
-    else "面向第三方审核工程师的光伏土建、钢结构、支架、基础与既有屋面增载设计审核工作台。"
-)
-st.info(
-    "Public Demo | screening-level only | uses demo inputs and does not replace formal engineering design, statutory approval, or stamped calculations."
-    if ui_language == "en"
-    else "Public Demo | 仅用于 screening-level 演示 | 使用示例输入，不替代正式工程设计、法定审批或签章计算。"
-)
-st.caption(
-    "This public build is intended for portfolio review and demo walkthroughs."
-    if ui_language == "en"
-    else "当前公开版本用于作品集展示和演示浏览，重点展示 BV 审核工作流与报告输出。"
-)
+with st.container(border=True):
+    overview_col, focus_col = st.columns([1.8, 1.0])
+    with overview_col:
+        st.title("BV PV Design Review Workbench" if ui_language == "en" else "BV 光伏结构设计审核工作台")
+        st.caption(
+            "Third-party PV civil, structural, mounting, foundation, and existing-rooftop design review workbench."
+            if ui_language == "en"
+            else "面向第三方审核工程师的光伏土建、钢结构、支架、基础与既有屋面增载设计审核工作台。"
+        )
+        st.caption(translate(ui_language, "public_demo_caption"))
+    with focus_col:
+        st.markdown(f"**{'Demo Focus' if ui_language == 'en' else '当前演示焦点'}**")
+        st.write(
+            "- Review workflow, basis traceability, risk register, and report export"
+            if ui_language == "en"
+            else "- 审核工作流、依据追溯、风险台账与报告导出"
+        )
+        st.write(
+            "- Existing portal-frame rooftop PV screening module remains available"
+            if ui_language == "en"
+            else "- 既有门式刚架屋面光伏增载筛查模块继续保留"
+        )
+        st.write(
+            "- Uses example inputs for public walkthroughs"
+            if ui_language == "en"
+            else "- 使用示例输入进行公开演示"
+        )
+st.info(translate(ui_language, "public_demo_banner"))
 
 bv_review_tab, assessment_tab, input_tab, basis_tab, export_tab, extension_tab = st.tabs(
     [
-        "BV Review" if ui_language == "en" else "BV 审核总览",
+        translate(ui_language, "bv_review_tab"),
         translate(ui_language, "assessment_tab"),
         translate(ui_language, "project_input_tab"),
         translate(ui_language, "basis_traceability_tab"),
         translate(ui_language, "report_export_tab"),
-        "Portal-Frame Scenario Module" if ui_language == "en" else "门刚场景模块",
+        translate(ui_language, "portal_frame_tab"),
     ]
 )
 
@@ -502,7 +566,7 @@ report_pdf_filename = report_filename.replace(".md", ".pdf")
 
 with bv_review_tab:
     default_bv_intake = default_bv_review_intake()
-    st.subheader("Project Review Intake" if ui_language == "en" else "项目设计审核输入")
+    st.subheader(translate(ui_language, "bv_review_intake_heading"))
     st.caption(
         "BV Review Mode organizes scope, basis, document completeness, ITP, risks, and report preview."
         if ui_language == "en"
@@ -557,7 +621,7 @@ with bv_review_tab:
             key="bv_client_requirements",
         )
 
-    st.markdown("#### Design Document Checklist" if ui_language == "en" else "设计资料完整性")
+    st.markdown(f'#### {translate(ui_language, "bv_review_checklist_heading")}')
     document_statuses = {}
     doc_cols = st.columns(3)
     for index, (document_key, labels) in enumerate(BV_DOCUMENT_LABELS.items()):
@@ -571,9 +635,9 @@ with bv_review_tab:
             )
 
     if not bv_standards:
-        st.warning("Select at least one standards system." if ui_language == "en" else "请至少选择一个标准体系。")
+        st.warning(translate(ui_language, "bv_review_warning_standards"))
     elif not bv_review_objects:
-        st.warning("Select at least one review object." if ui_language == "en" else "请至少选择一个审核对象。")
+        st.warning(translate(ui_language, "bv_review_warning_objects"))
     else:
         bv_intake = build_bv_review_intake(
             project_name=bv_project_name,
@@ -596,23 +660,23 @@ with bv_review_tab:
         overview_col, risk_col = st.columns([1.0, 1.0])
         with overview_col:
             _render_bv_section(
-                "Review Basis Builder" if ui_language == "en" else "审核依据",
+                translate(ui_language, "bv_review_basis_heading"),
                 _bv_basis_items(bv_result, ui_language),
                 limit=4,
             )
             _render_bv_section(
-                "Structural Review Path" if ui_language == "en" else "结构审核路径",
+                translate(ui_language, "bv_review_path_heading"),
                 _bv_path_items(bv_result, ui_language),
                 limit=5,
             )
         with risk_col:
             _render_bv_section(
-                "Risk & Nonconformity Register" if ui_language == "en" else "风险与不符合项清单",
+                translate(ui_language, "bv_review_risk_heading"),
                 _bv_risk_items(bv_result, ui_language),
                 limit=6,
             )
             _render_bv_section(
-                "ITP & Review Plan" if ui_language == "en" else "ITP 与审核计划",
+                translate(ui_language, "bv_review_plan_heading"),
                 _bv_plan_items(bv_result, ui_language),
                 limit=5,
             )
@@ -629,7 +693,7 @@ with bv_review_tab:
         bv_export_col_1, bv_export_col_2, bv_export_col_3 = st.columns(3)
         with bv_export_col_1:
             bv_markdown_download = st.download_button(
-                "Download Markdown Report" if ui_language == "en" else "下载 Markdown 报告",
+                translate(ui_language, "download_text_report"),
                 data=bv_markdown_payload,
                 file_name=bv_markdown_filename,
                 mime="text/markdown",
@@ -637,7 +701,7 @@ with bv_review_tab:
             )
         with bv_export_col_2:
             bv_word_download = st.download_button(
-                "Download Word Report" if ui_language == "en" else "下载 Word 报告",
+                translate(ui_language, "download_word_report"),
                 data=bv_docx_payload,
                 file_name=bv_word_filename,
                 mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -645,7 +709,7 @@ with bv_review_tab:
             )
         with bv_export_col_3:
             bv_pdf_download = st.download_button(
-                "Download PDF Report" if ui_language == "en" else "下载 PDF 报告",
+                translate(ui_language, "download_pdf_report"),
                 data=bv_pdf_payload,
                 file_name=bv_pdf_filename,
                 mime="application/pdf",
