@@ -74,6 +74,7 @@ python -m streamlit run app.py --server.port 8503
 
 - [Demo Guide](docs/showcase/demo-guide.md)
 - [Project Brief](docs/showcase/project-brief.md)
+- [Job Application Microsite](docs/job-application/index.html)
 
 ## 当前边界
 
