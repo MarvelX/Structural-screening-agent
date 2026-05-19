@@ -54,3 +54,21 @@ def test_ppt_attachment_exists_and_is_a_pptx() -> None:
     assert pptx_path.exists()
     assert pptx_path.read_bytes()[:2] == b"PK"
     assert pptx_path.stat().st_size > 30_000
+
+
+def test_email_template_exists_and_site_links_to_attachments() -> None:
+    root = project_root()
+    email_path = root / "docs" / "job-application" / "attachments" / "bv-application-email.md"
+    html_path = root / "docs" / "job-application" / "index.html"
+
+    assert email_path.exists()
+    email = email_path.read_text()
+    html = html_path.read_text()
+
+    assert "BV PV Design Review Workbench" in email
+    assert "公开展示页" in email
+    assert "PDF" in email
+    assert "PPT" in email
+    assert "https://marvelx.github.io/Structural-screening-agent/job-application/" in email
+    assert "./attachments/BV-job-application-one-pager.pdf" in html
+    assert "./attachments/BV-job-application-deck.pptx" in html
