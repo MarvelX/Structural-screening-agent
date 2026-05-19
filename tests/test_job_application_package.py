@@ -36,3 +36,12 @@ def test_job_application_site_exists_and_contains_required_sections() -> None:
     assert "JD 条款 - 产品模块 - 当前覆盖度" in html
     assert "下载 PDF" in html
     assert "下载 PPT" in html
+
+
+def test_pdf_attachment_exists_and_is_a_pdf() -> None:
+    root = project_root()
+    pdf_path = root / "docs" / "job-application" / "attachments" / "BV-job-application-one-pager.pdf"
+
+    assert pdf_path.exists()
+    assert pdf_path.read_bytes()[:4] == b"%PDF"
+    assert pdf_path.stat().st_size > 20_000
