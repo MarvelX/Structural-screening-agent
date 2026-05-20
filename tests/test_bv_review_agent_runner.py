@@ -48,10 +48,18 @@ def test_local_agent_workflow_applies_calculation_risk_and_report_after_locked_g
                 run_id="foundation-run-001",
                 engine_name="foundation",
                 engine_version="phase1-deterministic-screening",
-                input_field_ids=["pile_length_m"],
+                input_field_ids=[
+                    "uplift_force_kn",
+                    "compression_force_kn",
+                    "horizontal_force_kn",
+                ],
                 input_locked=True,
                 status="completed",
-                result_summary={"screening_boundary": "screening-level review support only"},
+                result_summary={
+                    "screening_boundary": "screening-level review support only",
+                    "screening_status": "review_required",
+                    "controlling_utilization_ratio": 1.21,
+                },
             )
         ],
     )
@@ -63,6 +71,11 @@ def test_local_agent_workflow_applies_calculation_risk_and_report_after_locked_g
     assert final_state.phase_statuses["risk_register"] == "waiting_for_engineer"
     assert final_state.phase_statuses["report_draft"] == "waiting_for_engineer"
     assert final_state.risks
+    assert any(
+        item.risk_id == "calculation_review_required_foundation_run_001"
+        and item.blocks_report_issue
+        for item in final_state.risks
+    )
     assert final_state.report_sections
     assert all(item.status == "open" for item in final_state.rfi_items)
     assert [event.agent_role for event in final_state.agent_events] == [

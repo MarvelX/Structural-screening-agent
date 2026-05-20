@@ -9,6 +9,7 @@ from structural_screening_agent.bv_review.risk_register import build_risk_regist
 from structural_screening_agent.bv_review.review_plan import build_review_plan
 from structural_screening_agent.bv_review.review_path import build_structural_review_path
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
+from structural_screening_agent.bv_review.project_state import CalculationRun
 
 
 def _sample_intake() -> BVReviewIntake:
@@ -229,6 +230,122 @@ def test_risk_register_treats_all_missing_documents_as_blocking_nonconformities(
     assert missing_risk.severity == "critical"
     assert missing_risk.blocks_report_issue is True
     assert missing_risk.linked_field_ids == ["manually_missing_input"]
+
+
+def test_risk_register_creates_traceable_risk_from_calculation_review_required_run() -> None:
+    checklist = build_document_checklist(_sample_intake())
+    paths = build_structural_review_path(_sample_intake(), checklist)
+    risks = build_risk_register(
+        _sample_intake(),
+        checklist,
+        paths,
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=[
+                    "uplift_force_kn",
+                    "compression_force_kn",
+                    "horizontal_force_kn",
+                ],
+                input_locked=True,
+                status="completed",
+                result_summary={
+                    "screening_boundary": "screening-level review support only",
+                    "screening_status": "review_required",
+                    "controlling_utilization_ratio": 1.21,
+                },
+            )
+        ],
+    )
+
+    calculation_risk = next(
+        item
+        for item in risks
+        if item.risk_id == "calculation_review_required_foundation_run_001"
+    )
+
+    assert calculation_risk.category == "risk"
+    assert calculation_risk.severity == "high"
+    assert calculation_risk.blocks_report_issue is True
+    assert calculation_risk.linked_field_ids == [
+        "uplift_force_kn",
+        "compression_force_kn",
+        "horizontal_force_kn",
+    ]
+    assert "foundation-run-001" in calculation_risk.trigger_basis
+    assert "phase1-deterministic-screening" in calculation_risk.trigger_basis
+    assert "screening-level review support only" in calculation_risk.trigger_basis
+    assert "1.21" in calculation_risk.trigger_basis
+    assert "筛查级" in calculation_risk.recommendation
+
+
+def test_risk_register_skips_passed_and_non_completed_calculation_runs() -> None:
+    risks = build_risk_register(
+        _sample_intake(),
+        [],
+        [],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-pass-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["uplift_force_kn"],
+                input_locked=True,
+                status="completed",
+                result_summary={
+                    "screening_boundary": "screening-level review support only",
+                    "screening_status": "pass",
+                    "controlling_utilization_ratio": 0.82,
+                },
+            ),
+            CalculationRun(
+                run_id="foundation-blocked-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["uplift_force_kn"],
+                input_locked=False,
+                status="blocked",
+                structured_errors=["uplift_force_kn is required."],
+            ),
+        ],
+    )
+
+    assert not any(item.risk_id.startswith("calculation_review_required_") for item in risks)
+
+
+def test_risk_register_creates_calculation_risk_when_ratio_exceeds_one_without_status() -> None:
+    risks = build_risk_register(
+        _sample_intake(),
+        [],
+        [],
+        calculation_runs=[
+            CalculationRun(
+                run_id="superstructure-run-002",
+                engine_name="superstructure",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["section_area_mm2", "bending_moment_knm"],
+                input_locked=True,
+                status="completed",
+                result_summary={
+                    "screening_boundary": "screening-level review support only",
+                    "controlling_utilization_ratio": 1.08,
+                },
+            )
+        ],
+    )
+
+    calculation_risk = next(
+        item
+        for item in risks
+        if item.risk_id == "calculation_review_required_superstructure_run_002"
+    )
+    assert calculation_risk.title == "上部支架构件筛查结果需工程师复核"
+    assert calculation_risk.linked_field_ids == [
+        "section_area_mm2",
+        "bending_moment_knm",
+    ]
 
 
 def test_bv_review_workflow_composes_basis_checklist_paths_risks_and_plan() -> None:

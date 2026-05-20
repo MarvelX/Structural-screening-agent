@@ -109,7 +109,12 @@ def _build_local_agent_output_for_current_phase(
         )
         return RiskNCRAgentOutput(
             project_id=state.project_id,
-            risks=build_risk_register(state.intake, checklist, review_paths),
+            risks=build_risk_register(
+                state.intake,
+                checklist,
+                review_paths,
+                calculation_runs=state.calculation_runs,
+            ),
             source_calculation_run_ids=[run.run_id for run in state.calculation_runs],
         )
 
