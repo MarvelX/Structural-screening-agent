@@ -157,6 +157,8 @@ def test_report_draft_gate_blocks_pending_agent_engineer_review() -> None:
     gate = build_report_draft_gate_result(state, result)
 
     assert gate.status == "blocked"
+    assert gate.pending_agent_review_event_ids == ["agent-event-001"]
+    assert gate.rejected_agent_review_event_ids == []
     assert any("pending agent engineer review" in reason.lower() for reason in gate.reasons)
 
 
@@ -197,6 +199,8 @@ def test_report_draft_gate_allows_approved_agent_engineer_review() -> None:
     gate = build_report_draft_gate_result(state, result)
 
     assert gate.status == "ready"
+    assert gate.pending_agent_review_event_ids == []
+    assert gate.rejected_agent_review_event_ids == []
     assert not any("pending agent engineer review" in reason.lower() for reason in gate.reasons)
 
 
@@ -237,6 +241,8 @@ def test_report_draft_gate_blocks_rejected_agent_engineer_review() -> None:
     gate = build_report_draft_gate_result(state, result)
 
     assert gate.status == "blocked"
+    assert gate.pending_agent_review_event_ids == []
+    assert gate.rejected_agent_review_event_ids == ["agent-event-001"]
     assert any("rejected agent engineer review" in reason.lower() for reason in gate.reasons)
 
 
