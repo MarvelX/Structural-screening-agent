@@ -16,6 +16,7 @@ def test_project_layout_exists() -> None:
     assert (root / "app.py").exists()
     assert (root / "pyproject.toml").exists()
     assert (root / "src" / "structural_screening_agent").exists()
+    assert (root / "src" / "structural_screening_agent" / "bv_review" / "ui.py").exists()
 
 
 def test_app_py_compiles() -> None:
@@ -95,8 +96,8 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "view.assessment_metric_cards" in source
     assert "view.conclusion_overview_card" in source
     assert "view.evidence_overview_cards" in source
-    assert "_bv_basis_items" in source
-    assert "_bv_report_preview_sections" in source
+    assert "build_bv_basis_items" in source
+    assert "build_bv_report_preview_sections" in source
     assert 'translate(ui_language, "critical_calculation_results")' in source
     assert 'translate(ui_language, "detailed_calculation_results")' in source
     assert 'translate(ui_language, "detailed_evidence_status")' in source

@@ -48,9 +48,15 @@ from structural_screening_agent.bv_review.human_gate import (
     build_report_draft_gate_result,
     record_agent_review_decision,
 )
-from structural_screening_agent.bv_review.models import BVReportSection
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.report import build_bv_markdown_report, build_bv_report_filename
+from structural_screening_agent.bv_review.ui import (
+    build_bv_basis_items,
+    build_bv_path_items,
+    build_bv_plan_items,
+    build_bv_report_preview_sections,
+    build_bv_risk_items,
+)
 from structural_screening_agent.bv_review import run_local_agent_workflow_until_blocked
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.core.persistence import ScreeningRepository
@@ -194,86 +200,11 @@ def _render_key_calculation_cards(cards: list[ContentCard], language: Language, 
                         st.write(line)
 
 
-def _label(label_map: dict[str, dict[str, str]], value: str, language: Language) -> str:
-    return label_map.get(value, {}).get(language, value)
-
-
 def _render_bv_section(title: str, items: list[str], limit: Optional[int] = None) -> None:
     st.markdown(f"#### {title}")
     visible_items = items if limit is None else items[:limit]
     for item in visible_items:
         st.write(f"- {item}")
-
-
-def _bv_object_labels(values: list[str], language: Language) -> str:
-    return ", ".join(_label(BV_REVIEW_OBJECT_LABELS, value, language) for value in values)
-
-
-def _bv_basis_items(bv_result, language: Language) -> list[str]:
-    if language == "zh":
-        return [f"{item.title}: {'; '.join(item.review_actions)}" for item in bv_result.basis_references]
-    return [
-        f"{item.basis_id}: {item.source_type}; objects: {_bv_object_labels(item.review_objects, language)}"
-        for item in bv_result.basis_references
-    ]
-
-
-def _bv_path_items(bv_result, language: Language) -> list[str]:
-    if language == "zh":
-        return [f"{item.title}: {item.status} | {item.method}" for item in bv_result.review_paths]
-    return [
-        f"{_label(BV_REVIEW_OBJECT_LABELS, item.review_object, language)}: {item.status}; deliverables: {len(item.deliverables)}"
-        for item in bv_result.review_paths
-    ]
-
-
-def _bv_risk_items(bv_result, language: Language) -> list[str]:
-    if language == "zh":
-        return [f"{item.severity} | {item.title}: {item.recommendation}" for item in bv_result.risks]
-    return [
-        f"{item.severity} | {item.category}: {item.risk_id}; blocks report: {item.blocks_report_issue}"
-        for item in bv_result.risks
-    ]
-
-
-def _bv_plan_items(bv_result, language: Language) -> list[str]:
-    if language == "zh":
-        return [f"{item.phase}: {item.method} | {item.deliverable}" for item in bv_result.review_plan]
-    return [f"{item.phase}: {item.responsible_role}; item: {item.item_id}" for item in bv_result.review_plan]
-
-
-def _bv_report_preview_sections(bv_intake, bv_result, language: Language) -> list[BVReportSection]:
-    if language == "zh" and bv_result.report_preview is not None:
-        return bv_result.report_preview.sections[:4]
-
-    blockers = [item for item in bv_result.risks if item.blocks_report_issue]
-    return [
-        BVReportSection(
-            heading="Project and Review Scope",
-            items=[
-                f"Project name: {bv_intake.project_name}",
-                f"Country / region: {bv_intake.country_or_region}",
-                f"Design stage: {bv_intake.design_stage}",
-                f"Decision: {bv_result.decision}",
-            ],
-        ),
-        BVReportSection(
-            heading="Review Basis",
-            items=_bv_basis_items(bv_result, language)[:4],
-        ),
-        BVReportSection(
-            heading="Document Completeness",
-            items=[f"{item.document_key}: {item.status}" for item in bv_result.checklist_items[:4]],
-        ),
-        BVReportSection(
-            heading="Findings",
-            items=[
-                f"Blocking items: {len(blockers)}",
-                f"Risks and nonconformities: {len(bv_result.risks)}",
-                f"Review plan items: {len(bv_result.review_plan)}",
-            ],
-        ),
-    ]
 
 
 def _preset_or_custom_value(
@@ -1070,23 +1001,23 @@ with bv_review_tab:
         with overview_col:
             _render_bv_section(
                 translate(ui_language, "bv_review_basis_heading"),
-                _bv_basis_items(bv_result, ui_language),
+                build_bv_basis_items(bv_result, ui_language),
                 limit=4,
             )
             _render_bv_section(
                 translate(ui_language, "bv_review_path_heading"),
-                _bv_path_items(bv_result, ui_language),
+                build_bv_path_items(bv_result, ui_language),
                 limit=5,
             )
         with risk_col:
             _render_bv_section(
                 translate(ui_language, "bv_review_risk_heading"),
-                _bv_risk_items(bv_result, ui_language),
+                build_bv_risk_items(bv_result, ui_language),
                 limit=6,
             )
             _render_bv_section(
                 translate(ui_language, "bv_review_plan_heading"),
-                _bv_plan_items(bv_result, ui_language),
+                build_bv_plan_items(bv_result, ui_language),
                 limit=5,
             )
 
@@ -1155,7 +1086,9 @@ with bv_review_tab:
                     mime="application/pdf",
                     use_container_width=True,
                 )
-            for section in _bv_report_preview_sections(bv_intake, bv_result, ui_language):
+            for section in build_bv_report_preview_sections(
+                bv_intake, bv_result, ui_language
+            ):
                 with st.container(border=True):
                     st.markdown(f"**{section.heading}**")
                     for item in section.items[:4]:
