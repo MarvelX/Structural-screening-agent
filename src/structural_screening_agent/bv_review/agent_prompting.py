@@ -114,6 +114,23 @@ class AgentResponseSandboxResult(BaseModel):
     )
 
 
+class AgentResponseEngineerHandoff(BaseModel):
+    review_packet_id: str = Field(min_length=1)
+    agent_role: AgentRole
+    handoff_status: Literal["ready_for_engineer_review", "blocked"]
+    target_phase: ReviewPhase | None = None
+    validation_ok: bool
+    apply_prechecks_ok: bool
+    requires_engineer_review: bool
+    blockers: list[str] = Field(default_factory=list)
+    suggested_action: str = Field(min_length=1)
+    network_request_sent: bool = False
+    project_state_changed: bool = False
+    boundary_statement: str = (
+        "Handoff preview only; engineer review must be recorded through controlled workflow state."
+    )
+
+
 def build_agent_prompt_package(
     agent_role: AgentRole,
     state: ProjectReviewState,
@@ -261,6 +278,7 @@ def build_agent_response_sandbox_result(
             validation_result.ok
             and impact_preview is not None
             and impact_preview.requires_engineer_review
+            and impact_preview.passes_apply_prechecks
         ),
     )
 
@@ -318,6 +336,99 @@ def build_agent_response_sandbox_rows(
             "Value": "Changed" if sandbox.project_state_changed else "Unchanged",
         },
         {"Item": "Boundary", "Value": sandbox.boundary_statement},
+    ]
+
+
+def build_agent_response_engineer_handoff(
+    sandbox: AgentResponseSandboxResult,
+) -> AgentResponseEngineerHandoff:
+    impact_preview = sandbox.impact_preview
+    blockers = _agent_response_handoff_blockers(sandbox)
+    handoff_is_ready = not blockers
+    return AgentResponseEngineerHandoff(
+        review_packet_id=f"sandbox-review-{sandbox.agent_role}",
+        agent_role=sandbox.agent_role,
+        handoff_status=(
+            "ready_for_engineer_review" if handoff_is_ready else "blocked"
+        ),
+        target_phase=impact_preview.target_phase if impact_preview else None,
+        validation_ok=sandbox.validation_result.ok,
+        apply_prechecks_ok=bool(
+            impact_preview and impact_preview.passes_apply_prechecks
+        ),
+        requires_engineer_review=bool(
+            impact_preview and impact_preview.requires_engineer_review
+        ),
+        blockers=blockers,
+        suggested_action=(
+            "Review validated agent output and impact preview before any state application."
+            if handoff_is_ready
+            else "Resolve validation or workflow pre-check blockers before engineer review."
+        ),
+        network_request_sent=sandbox.network_request_sent,
+        project_state_changed=sandbox.project_state_changed,
+    )
+
+
+def build_agent_response_engineer_handoff_rows(
+    handoff: AgentResponseEngineerHandoff,
+    language: AgentPromptLanguage,
+) -> list[dict[str, object]]:
+    target_phase = handoff.target_phase or "-"
+    blockers = _format_apply_blockers(handoff.blockers, language)
+    if language == "zh":
+        return [
+            {"项目": "复核包", "内容": handoff.review_packet_id},
+            {"项目": "Agent", "内容": _agent_label(handoff.agent_role, "zh")},
+            {
+                "项目": "移交状态",
+                "内容": (
+                    "可进入工程师复核"
+                    if handoff.handoff_status == "ready_for_engineer_review"
+                    else "阻塞"
+                ),
+            },
+            {"项目": "目标阶段", "内容": target_phase},
+            {"项目": "校验通过", "内容": "是" if handoff.validation_ok else "否"},
+            {
+                "项目": "应用前置检查",
+                "内容": "通过" if handoff.apply_prechecks_ok else "阻塞",
+            },
+            {"项目": "阻断项", "内容": blockers},
+            {"项目": "建议动作", "内容": _localized_handoff_action(handoff, "zh")},
+            {"项目": "网络调用", "内容": "是" if handoff.network_request_sent else "否"},
+            {
+                "项目": "项目状态",
+                "内容": "已修改" if handoff.project_state_changed else "未修改",
+            },
+        ]
+    return [
+        {"Item": "Review Packet", "Value": handoff.review_packet_id},
+        {"Item": "Agent", "Value": _agent_label(handoff.agent_role, "en")},
+        {
+            "Item": "Handoff Status",
+            "Value": (
+                "Ready For Engineer Review"
+                if handoff.handoff_status == "ready_for_engineer_review"
+                else "Blocked"
+            ),
+        },
+        {"Item": "Target Phase", "Value": target_phase},
+        {"Item": "Validation", "Value": "Pass" if handoff.validation_ok else "Fail"},
+        {
+            "Item": "Apply Pre-checks",
+            "Value": "Pass" if handoff.apply_prechecks_ok else "Blocked",
+        },
+        {"Item": "Blockers", "Value": blockers},
+        {"Item": "Suggested Action", "Value": handoff.suggested_action},
+        {
+            "Item": "Network Request",
+            "Value": "Yes" if handoff.network_request_sent else "No",
+        },
+        {
+            "Item": "Project State",
+            "Value": "Changed" if handoff.project_state_changed else "Unchanged",
+        },
     ]
 
 
@@ -547,6 +658,31 @@ def _apply_precheck_blockers(
                 + ", ".join(non_open_rfi_ids)
             )
     return blockers
+
+
+def _agent_response_handoff_blockers(
+    sandbox: AgentResponseSandboxResult,
+) -> list[str]:
+    if not sandbox.validation_result.ok:
+        return [sandbox.validation_result.error or "Agent response validation failed."]
+    if sandbox.impact_preview is None:
+        return ["Impact preview is unavailable for this agent response."]
+    blockers: list[str] = []
+    if not sandbox.impact_preview.requires_engineer_review:
+        blockers.append("Agent response does not require engineer review.")
+    blockers.extend(sandbox.impact_preview.apply_blockers)
+    return blockers
+
+
+def _localized_handoff_action(
+    handoff: AgentResponseEngineerHandoff,
+    language: AgentPromptLanguage,
+) -> str:
+    if language == "en":
+        return handoff.suggested_action
+    if handoff.handoff_status == "ready_for_engineer_review":
+        return "复核已校验的 Agent 产物和影响预览，再决定是否进入受控工作流。"
+    return "先处理校验或工作流前置检查阻断项，再进入工程师复核。"
 
 
 def _format_summary_counts(summary_counts: dict[str, int]) -> str:

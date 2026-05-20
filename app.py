@@ -73,6 +73,8 @@ from structural_screening_agent.bv_review.project_management import (
 from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_provider_invocation_request,
     build_agent_provider_invocation_rows,
+    build_agent_response_engineer_handoff,
+    build_agent_response_engineer_handoff_rows,
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
     build_agent_response_impact_rows,
@@ -1320,6 +1322,21 @@ with bv_review_tab:
                 "Sandbox result only; no network request is sent and project state is unchanged."
                 if ui_language == "en"
                 else "仅沙盒结果；不发送网络请求，项目状态不变。"
+            )
+            engineer_handoff = build_agent_response_engineer_handoff(sandbox_result)
+            engineer_handoff_heading = (
+                "Agent Engineer Review Handoff"
+                if ui_language == "en"
+                else "Agent 工程师复核移交"
+            )
+            st.markdown(f"##### {engineer_handoff_heading}")
+            st.dataframe(
+                build_agent_response_engineer_handoff_rows(
+                    engineer_handoff,
+                    ui_language,
+                ),
+                hide_index=True,
+                use_container_width=True,
             )
             if validation_result.ok:
                 st.success(

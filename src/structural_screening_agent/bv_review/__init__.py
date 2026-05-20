@@ -25,6 +25,7 @@ from structural_screening_agent.bv_review.agent_runner import (
 )
 from structural_screening_agent.bv_review.agent_prompting import (
     AgentProviderInvocationRequest,
+    AgentResponseEngineerHandoff,
     AgentPromptPackage,
     AgentResponseImpactPreview,
     AgentResponseSandboxResult,
@@ -34,6 +35,8 @@ from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_prompt_package,
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
+    build_agent_response_engineer_handoff,
+    build_agent_response_engineer_handoff_rows,
     build_agent_response_impact_rows,
     build_agent_response_sandbox_result,
     build_agent_response_sandbox_rows,
@@ -102,6 +105,7 @@ __all__ = [
     "AGENT_CONTRACT_SCHEMA_VERSION",
     "AGENT_ROLE_SEQUENCE",
     "AgentProviderInvocationRequest",
+    "AgentResponseEngineerHandoff",
     "AgentPromptPackage",
     "AgentResponseImpactPreview",
     "AgentResponseSandboxResult",
@@ -145,6 +149,8 @@ __all__ = [
     "build_agent_prompt_package",
     "build_agent_prompt_package_rows",
     "build_agent_prompt_packages",
+    "build_agent_response_engineer_handoff",
+    "build_agent_response_engineer_handoff_rows",
     "build_agent_response_impact_rows",
     "build_agent_response_sandbox_result",
     "build_agent_response_sandbox_rows",

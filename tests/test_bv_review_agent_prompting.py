@@ -9,6 +9,8 @@ from structural_screening_agent.bv_review import (
 from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_provider_invocation_request,
     build_agent_provider_invocation_rows,
+    build_agent_response_engineer_handoff,
+    build_agent_response_engineer_handoff_rows,
     build_agent_prompt_package,
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
@@ -198,6 +200,93 @@ def test_agent_response_sandbox_rows_are_localized_for_workbench() -> None:
     assert {"项目": "项目状态", "内容": "未修改"} in zh_rows
     assert {"Item": "Validation", "Value": "Pass"} in en_rows
     assert {"Item": "Ready For Engineer Review", "Value": "Yes"} in en_rows
+    assert {"Item": "Project State", "Value": "Unchanged"} in en_rows
+
+
+def test_agent_response_engineer_handoff_marks_valid_response_ready_for_review() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    package = build_agent_prompt_package("document_intake", state)
+    sandbox = build_agent_response_sandbox_result(
+        package,
+        build_sample_agent_response_json("document_intake", state),
+        state=state,
+    )
+
+    handoff = build_agent_response_engineer_handoff(sandbox)
+
+    assert handoff.review_packet_id == "sandbox-review-document_intake"
+    assert handoff.handoff_status == "ready_for_engineer_review"
+    assert handoff.target_phase == "document_check"
+    assert handoff.validation_ok is True
+    assert handoff.apply_prechecks_ok is True
+    assert handoff.requires_engineer_review is True
+    assert handoff.blockers == []
+    assert handoff.project_state_changed is False
+    assert handoff.suggested_action == (
+        "Review validated agent output and impact preview before any state application."
+    )
+
+
+def test_agent_response_engineer_handoff_blocks_invalid_or_precheck_failed_response() -> None:
+    state = ProjectReviewState(
+        project_id="pv-prompt-001",
+        intake=_sample_intake(),
+        current_phase="calculation_check",
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_locked=True,
+                status="completed",
+                result_summary={"screening_boundary": "screening-level review support only"},
+            )
+        ],
+    )
+    invalid_sandbox = build_agent_response_sandbox_result(
+        build_agent_prompt_package("document_intake", state),
+        "not json",
+        state=state,
+    )
+    blocked_sandbox = build_agent_response_sandbox_result(
+        build_agent_prompt_package("calculation_check", state),
+        json.dumps(
+            {
+                "project_id": "pv-prompt-001",
+                "calculation_run_ids": ["foundation-run-001"],
+            }
+        ),
+        state=state,
+    )
+
+    invalid_handoff = build_agent_response_engineer_handoff(invalid_sandbox)
+    blocked_handoff = build_agent_response_engineer_handoff(blocked_sandbox)
+
+    assert invalid_handoff.handoff_status == "blocked"
+    assert "valid JSON object" in invalid_handoff.blockers[0]
+    assert blocked_handoff.handoff_status == "blocked"
+    assert blocked_handoff.validation_ok is True
+    assert blocked_handoff.apply_prechecks_ok is False
+    assert blocked_handoff.blockers == [
+        "Calculation gate must be locked before applying calculation check output."
+    ]
+
+
+def test_agent_response_engineer_handoff_rows_are_localized_for_workbench() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    sandbox = build_agent_response_sandbox_result(
+        build_agent_prompt_package("document_intake", state),
+        build_sample_agent_response_json("document_intake", state),
+        state=state,
+    )
+    handoff = build_agent_response_engineer_handoff(sandbox)
+
+    zh_rows = build_agent_response_engineer_handoff_rows(handoff, "zh")
+    en_rows = build_agent_response_engineer_handoff_rows(handoff, "en")
+
+    assert {"项目": "移交状态", "内容": "可进入工程师复核"} in zh_rows
+    assert {"项目": "项目状态", "内容": "未修改"} in zh_rows
+    assert {"Item": "Handoff Status", "Value": "Ready For Engineer Review"} in en_rows
     assert {"Item": "Project State", "Value": "Unchanged"} in en_rows
 
 
