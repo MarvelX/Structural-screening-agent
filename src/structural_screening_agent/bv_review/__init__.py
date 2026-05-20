@@ -53,6 +53,7 @@ from structural_screening_agent.bv_review.project_state import (
     PVStructuralSpec,
     REVIEW_PHASES,
     RFIItem,
+    ReportRevision,
 )
 from structural_screening_agent.bv_review.report import build_bv_open_rfi_items
 from structural_screening_agent.bv_review.state_repository import JsonProjectReviewStateRepository
@@ -60,6 +61,7 @@ from structural_screening_agent.bv_review.state_machine import advance_project_p
 from structural_screening_agent.bv_review.human_gate import (
     close_rfi_after_engineer_review,
     record_agent_review_decision,
+    record_report_revision,
     record_rfi_client_response,
 )
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
@@ -87,6 +89,7 @@ __all__ = [
     "PersistedWorkflowRunSummary",
     "REVIEW_PHASES",
     "RFIItem",
+    "ReportRevision",
     "ReportComposerAgentOutput",
     "ReviewPlanAgentOutput",
     "RiskNCRAgentOutput",
@@ -111,6 +114,7 @@ __all__ = [
     "diff_extracted_fields",
     "evaluate_bv_review",
     "record_rfi_client_response",
+    "record_report_revision",
     "resolve_calculation_check_output_against_state",
     "record_agent_review_decision",
     "validate_calculation_check_output_against_state",

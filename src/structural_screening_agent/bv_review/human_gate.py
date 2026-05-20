@@ -5,13 +5,14 @@ from pydantic import BaseModel, Field
 from structural_screening_agent.bv_review.field_diff import (
     rfi_incremental_recheck_is_complete,
 )
-from structural_screening_agent.bv_review.models import BVReviewResult
+from structural_screening_agent.bv_review.models import BVReportPreview, BVReviewResult
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
     EngineerApproval,
     ExtractedField,
     ProjectReviewState,
     RFIItem,
+    ReportRevision,
 )
 
 
@@ -359,4 +360,42 @@ def build_report_draft_gate_result(
         rejected_agent_review_event_ids=rejected_agent_review_event_ids,
         calculation_run_ids=calculation_run_ids,
         notes=notes,
+    )
+
+
+def record_report_revision(
+    state: ProjectReviewState,
+    *,
+    revision_id: str,
+    report_preview: BVReportPreview,
+    gate_result: ReportDraftGateResult,
+    reviewer: str,
+    note: str = "",
+    created_at: str | None = None,
+) -> ProjectReviewState:
+    if gate_result.status != "ready":
+        raise ValueError(
+            "Cannot record report revision while report draft gate is blocked."
+        )
+    if not state.is_gate_locked("report"):
+        raise ValueError(
+            "Report gate must be approved by an engineer before recording a report revision."
+        )
+    if any(revision.revision_id == revision_id for revision in state.report_revisions):
+        raise ValueError(f"Report revision {revision_id!r} already exists.")
+
+    revision = ReportRevision(
+        revision_id=revision_id,
+        source_phase=state.current_phase,
+        report_title=report_preview.title,
+        section_count=len(report_preview.sections),
+        rfi_count=len(state.rfi_items),
+        blocking_risk_ids=list(gate_result.blocking_risk_ids),
+        calculation_run_ids=list(gate_result.calculation_run_ids),
+        created_by=reviewer,
+        created_at=created_at,
+        note=note or None,
+    )
+    return state.model_copy(
+        update={"report_revisions": [*state.report_revisions, revision]}
     )

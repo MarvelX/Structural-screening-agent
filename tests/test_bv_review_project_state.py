@@ -9,6 +9,7 @@ from structural_screening_agent.bv_review import (
     PersistedWorkflowRunResult,
     PersistedWorkflowRunSummary,
     ProjectReviewState,
+    ReportRevision,
     SuperstructureEngineInput,
     advance_project_phase,
     close_rfi_after_engineer_review,
@@ -21,6 +22,7 @@ from structural_screening_agent.bv_review import (
     build_incremental_recheck_plan_from_closed_rfis,
     record_rfi_client_response,
     run_persisted_local_agent_workflow_with_summary,
+    record_report_revision,
 )
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
@@ -271,3 +273,36 @@ def test_bv_review_package_exports_existing_and_phase1_state_objects() -> None:
     assert PersistedWorkflowRunResult is not None
     assert PersistedWorkflowRunSummary is not None
     assert run_persisted_local_agent_workflow_with_summary is not None
+    assert ReportRevision is not None
+    assert record_report_revision is not None
+
+
+def test_report_revision_records_traceable_report_snapshot_metadata() -> None:
+    revision = ReportRevision(
+        revision_id="report-rev-001",
+        source_phase="report_draft",
+        report_title="BV 光伏结构设计审查报告",
+        section_count=9,
+        rfi_count=1,
+        blocking_risk_ids=["risk-001"],
+        calculation_run_ids=["foundation-run-001"],
+        created_by="Engineer A",
+        created_at="2026-05-21T10:00:00+08:00",
+        note="Internal report package ready for review.",
+    )
+
+    assert revision.source_phase == "report_draft"
+    assert revision.section_count == 9
+    assert revision.rfi_count == 1
+    assert revision.blocking_risk_ids == ["risk-001"]
+    assert revision.calculation_run_ids == ["foundation-run-001"]
+
+    with pytest.raises(ValidationError):
+        ReportRevision(
+            revision_id="report-rev-002",
+            source_phase="report_draft",
+            report_title="BV 光伏结构设计审查报告",
+            section_count=0,
+            rfi_count=0,
+            created_by="Engineer A",
+        )

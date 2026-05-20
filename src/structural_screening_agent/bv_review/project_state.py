@@ -176,6 +176,19 @@ class RFIItem(BaseModel):
         return self
 
 
+class ReportRevision(BaseModel):
+    revision_id: str = Field(min_length=1)
+    source_phase: ReviewPhase
+    report_title: str = Field(min_length=1)
+    section_count: int = Field(ge=1)
+    rfi_count: int = Field(ge=0)
+    blocking_risk_ids: List[str] = Field(default_factory=list)
+    calculation_run_ids: List[str] = Field(default_factory=list)
+    created_by: str = Field(min_length=1)
+    created_at: Optional[str] = None
+    note: Optional[str] = None
+
+
 class AgentWorkflowEvent(BaseModel):
     event_id: str = Field(min_length=1)
     agent_role: str = Field(min_length=1)
@@ -208,6 +221,7 @@ class ProjectReviewState(BaseModel):
     rfi_items: List[RFIItem] = Field(default_factory=list)
     risks: List[BVRiskItem] = Field(default_factory=list)
     report_sections: List[BVReportSection] = Field(default_factory=list)
+    report_revisions: List[ReportRevision] = Field(default_factory=list)
     agent_events: List[AgentWorkflowEvent] = Field(default_factory=list)
 
     def locked_calculation_fields(self) -> list[ExtractedField]:

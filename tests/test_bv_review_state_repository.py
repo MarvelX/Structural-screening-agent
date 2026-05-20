@@ -10,6 +10,7 @@ from structural_screening_agent.bv_review.project_state import (
     EngineerApproval,
     ExtractedField,
     RFIItem,
+    ReportRevision,
 )
 from structural_screening_agent.bv_review.state_repository import JsonProjectReviewStateRepository
 
@@ -83,6 +84,16 @@ def _sample_state() -> ProjectReviewState:
                 summary_counts={"document_versions": 1, "extracted_fields": 1},
             )
         ],
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-001",
+                source_phase="report_draft",
+                report_title="BV 光伏结构设计审查报告",
+                section_count=9,
+                rfi_count=1,
+                created_by="Engineer A",
+            )
+        ],
     )
 
 
@@ -101,6 +112,7 @@ def test_json_state_repository_round_trips_project_review_state(tmp_path: Path) 
     assert loaded.rfi_items[0].status == "open"
     assert loaded.agent_events[0].agent_role == "document_intake"
     assert loaded.agent_events[0].summary_counts["document_versions"] == 1
+    assert loaded.report_revisions[0].revision_id == "report-rev-001"
     assert repository.list_project_ids() == ["pv-ground-001"]
 
 
@@ -121,6 +133,7 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
             "current_phase": "report_draft",
             "agent_events": [],
             "rfi_items": [],
+            "report_revisions": [],
         }
     )
     repository.save(first_state)
@@ -134,10 +147,12 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[0].agent_event_count == 1
     assert summaries[0].pending_agent_review_count == 1
     assert summaries[0].active_rfi_count == 1
+    assert summaries[0].report_revision_count == 1
     assert summaries[1].current_phase == "report_draft"
     assert summaries[1].agent_event_count == 0
     assert summaries[1].pending_agent_review_count == 0
     assert summaries[1].active_rfi_count == 0
+    assert summaries[1].report_revision_count == 0
 
 
 def test_json_state_repository_inventory_reports_invalid_project_files(

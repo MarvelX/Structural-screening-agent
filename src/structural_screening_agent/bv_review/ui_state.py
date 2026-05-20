@@ -691,6 +691,7 @@ def build_project_review_state_summary_rows(
             "agent_event_count": "Agent 事件",
             "pending_agent_review_count": "待工程师复核",
             "active_rfi_count": "未关闭 RFI",
+            "report_revision_count": "报告修订",
         }
         if language == "zh"
         else {
@@ -700,6 +701,7 @@ def build_project_review_state_summary_rows(
             "agent_event_count": "Agent Events",
             "pending_agent_review_count": "Pending Engineer Reviews",
             "active_rfi_count": "Active RFIs",
+            "report_revision_count": "Report Revisions",
         }
     )
     return [
@@ -712,6 +714,7 @@ def build_project_review_state_summary_rows(
             labels["agent_event_count"]: summary.agent_event_count,
             labels["pending_agent_review_count"]: summary.pending_agent_review_count,
             labels["active_rfi_count"]: summary.active_rfi_count,
+            labels["report_revision_count"]: summary.report_revision_count,
         }
         for summary in summaries
     ]

@@ -20,6 +20,7 @@ class ProjectReviewStateSummary(BaseModel):
     agent_event_count: int
     pending_agent_review_count: int
     active_rfi_count: int
+    report_revision_count: int
 
 
 class ProjectReviewStateInventory(BaseModel):
@@ -101,4 +102,5 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
         agent_event_count=len(state.agent_events),
         pending_agent_review_count=pending_agent_review_count,
         active_rfi_count=active_rfi_count,
+        report_revision_count=len(state.report_revisions),
     )

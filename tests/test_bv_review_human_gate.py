@@ -3,12 +3,17 @@ import pytest
 from structural_screening_agent.bv_review.human_gate import (
     build_calculation_gate_run,
     build_engineer_approval,
+    build_report_draft_gate_result,
+    record_report_revision,
     record_agent_review_decision,
     fields_ready_for_calculation,
 )
 from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.report import build_bv_report_preview
+from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
+    CalculationRun,
     EngineerApproval,
     ExtractedField,
     ProjectReviewState,
@@ -52,6 +57,25 @@ def _review_state() -> ProjectReviewState:
                 summary_counts={"document_versions": 1},
             )
         ],
+    )
+
+
+def _report_ready_intake() -> BVReviewIntake:
+    return BVReviewIntake(
+        project_name="Ground PV design review",
+        country_or_region="China",
+        project_type="utility_pv",
+        design_stage="detailed_design",
+        standards_systems=["gb", "iec"],
+        review_objects=["mounting_structure", "foundation", "load_calculation"],
+        documents={
+            "structural_drawings": "available",
+            "calculation_report": "available",
+            "technical_specification": "available",
+            "geotechnical_report": "available",
+            "vendor_datasheets": "available",
+            "contract_requirements": "available",
+        },
     )
 
 
@@ -259,3 +283,126 @@ def test_build_calculation_gate_run_returns_ready_placeholder_for_confirmed_fiel
     assert run.input_locked is True
     assert run.input_field_ids == ["tilt", "pile_length"]
     assert run.result_summary == {}
+
+
+def test_record_report_revision_requires_ready_gate_and_report_engineer_approval() -> None:
+    result = evaluate_bv_review(_review_state().intake)
+    preview = build_bv_report_preview(_review_state().intake, result)
+    gate = build_report_draft_gate_result(_review_state(), result)
+
+    with pytest.raises(ValueError, match="report draft gate"):
+        record_report_revision(
+            _review_state(),
+            revision_id="report-rev-001",
+            report_preview=preview,
+            gate_result=gate,
+            reviewer="Engineer A",
+        )
+
+    ready_intake = _report_ready_intake()
+    ready_result = evaluate_bv_review(ready_intake)
+    ready_preview = build_bv_report_preview(ready_intake, ready_result)
+    ready_state = ProjectReviewState(
+        project_id="pv-report-ready",
+        intake=ready_intake,
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            )
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-human-gate",
+                input_field_ids=["pile_length"],
+                input_locked=True,
+                status="ready",
+            )
+        ],
+    )
+    ready_gate = build_report_draft_gate_result(ready_state, ready_result)
+
+    with pytest.raises(ValueError, match="Report gate"):
+        record_report_revision(
+            ready_state,
+            revision_id="report-rev-001",
+            report_preview=ready_preview,
+            gate_result=ready_gate,
+            reviewer="Engineer A",
+        )
+
+
+def test_record_report_revision_appends_traceable_ready_report_snapshot() -> None:
+    intake = _report_ready_intake()
+    result = evaluate_bv_review(intake)
+    preview = build_bv_report_preview(intake, result)
+    state = ProjectReviewState(
+        project_id="pv-report-ready",
+        intake=intake,
+        current_phase="report_draft",
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            ),
+            EngineerApproval(
+                approval_id="approval-report",
+                target_type="gate",
+                target_id="report",
+                status="approved",
+                locked=True,
+                reviewer="Engineer A",
+            ),
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-human-gate",
+                input_field_ids=["pile_length"],
+                input_locked=True,
+                status="ready",
+            )
+        ],
+    )
+    gate = build_report_draft_gate_result(state, result)
+
+    updated = record_report_revision(
+        state,
+        revision_id="report-rev-001",
+        report_preview=preview,
+        gate_result=gate,
+        reviewer="Engineer A",
+        note="Ready for internal review package.",
+        created_at="2026-05-21T10:00:00+08:00",
+    )
+
+    revision = updated.report_revisions[-1]
+    assert revision.revision_id == "report-rev-001"
+    assert revision.report_title == preview.title
+    assert revision.source_phase == "report_draft"
+    assert revision.section_count == len(preview.sections)
+    assert revision.rfi_count == len(updated.rfi_items)
+    assert revision.blocking_risk_ids == []
+    assert revision.calculation_run_ids == ["foundation-run-001"]
+    assert revision.created_by == "Engineer A"
+    assert revision.created_at == "2026-05-21T10:00:00+08:00"
+    assert revision.note == "Ready for internal review package."
+    assert state.report_revisions == []
+
+    with pytest.raises(ValueError, match="already exists"):
+        record_report_revision(
+            updated,
+            revision_id="report-rev-001",
+            report_preview=preview,
+            gate_result=gate,
+            reviewer="Engineer A",
+        )
