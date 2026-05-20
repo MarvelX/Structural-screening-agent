@@ -10,8 +10,10 @@ from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_prompt_package,
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
+    build_agent_response_impact_rows,
     build_sample_agent_response_json,
     parse_agent_json_response,
+    preview_agent_response_impact,
     validate_agent_json_response,
 )
 from structural_screening_agent.bv_review.agent_contracts import (
@@ -198,6 +200,36 @@ def test_parse_agent_json_response_rejects_response_role_mismatch() -> None:
         )
 
 
+def test_parse_agent_json_response_rejects_project_id_mismatch_when_state_is_provided() -> None:
+    with pytest.raises(ValueError, match="project_id"):
+        parse_agent_json_response(
+            "document_intake",
+            json.dumps(
+                {
+                    "project_id": "other-project",
+                    "document_versions": [],
+                    "extracted_fields": [],
+                }
+            ),
+            state=ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake()),
+        )
+
+    validation = validate_agent_json_response(
+        "document_intake",
+        json.dumps(
+            {
+                "project_id": "other-project",
+                "document_versions": [],
+                "extracted_fields": [],
+            }
+        ),
+        state=ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake()),
+    )
+
+    assert validation.ok is False
+    assert "project_id" in validation.error
+
+
 def test_parse_agent_json_response_rejects_non_json_extra_fields_and_signing_claims() -> None:
     with pytest.raises(ValueError, match="valid JSON object"):
         parse_agent_json_response("document_intake", "not json")
@@ -321,6 +353,163 @@ def test_sample_agent_response_json_matches_selected_contract() -> None:
     assert json.loads(document_sample)["project_id"] == "pv-prompt-001"
     assert json.loads(document_sample)["document_versions"][0]["document_id"]
     assert json.loads(calculation_sample)["calculation_run_ids"] == ["foundation-run-001"]
+
+
+def test_preview_agent_response_impact_reports_artifact_counts_without_mutating_state() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    response_text = json.dumps(
+        {
+            "project_id": "pv-prompt-001",
+            "document_versions": [
+                {
+                    "document_id": "foundation-drawing-f201",
+                    "document_type": "foundation_drawing",
+                    "revision": "A",
+                    "source_name": "F-201 Foundation Schedule Rev A.pdf",
+                    "status": "available",
+                }
+            ],
+            "extracted_fields": [
+                {
+                    "field_id": "pile-length",
+                    "name": "Pile length",
+                    "candidate_value": 2.8,
+                    "unit": "m",
+                    "source_document_id": "foundation-drawing-f201",
+                    "page_or_section": "Foundation schedule",
+                    "quote": "Pile length 2.8 m",
+                    "confidence": 0.86,
+                }
+            ],
+        }
+    )
+
+    preview = preview_agent_response_impact(
+        "document_intake",
+        response_text,
+        state=state,
+    )
+
+    assert preview.agent_role == "document_intake"
+    assert preview.output_model_name == "DocumentIntakeAgentOutput"
+    assert preview.target_phase == "document_check"
+    assert preview.summary_counts == {
+        "document_versions": 1,
+        "extracted_fields": 1,
+        "missing_document_keys": 0,
+    }
+    assert preview.would_update == ["document_versions", "extracted_fields"]
+    assert preview.requires_engineer_review is True
+    assert preview.blocks_direct_apply is True
+    assert preview.passes_apply_prechecks is True
+    assert preview.apply_blockers == []
+    assert (
+        preview.boundary_statement
+        == "Preview only; engineer approval is still required before applying agent output."
+    )
+    assert state.document_versions == []
+    assert state.extracted_fields == []
+
+
+def test_preview_agent_response_impact_preserves_calculation_check_state_validation() -> None:
+    state = ProjectReviewState(
+        project_id="pv-prompt-001",
+        intake=_sample_intake(),
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_locked=True,
+                status="completed",
+                result_summary={"screening_boundary": "screening-level review support only"},
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="fabricated-run-999"):
+        preview_agent_response_impact(
+            "calculation_check",
+            json.dumps(
+                {
+                    "project_id": "pv-prompt-001",
+                    "calculation_run_ids": ["fabricated-run-999"],
+                }
+            ),
+            state=state,
+        )
+
+
+def test_preview_agent_response_impact_reports_apply_precheck_blockers() -> None:
+    state = ProjectReviewState(
+        project_id="pv-prompt-001",
+        intake=_sample_intake(),
+        current_phase="calculation_check",
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_locked=True,
+                status="completed",
+                result_summary={"screening_boundary": "screening-level review support only"},
+            )
+        ],
+    )
+
+    preview = preview_agent_response_impact(
+        "calculation_check",
+        json.dumps(
+            {
+                "project_id": "pv-prompt-001",
+                "calculation_run_ids": ["foundation-run-001"],
+            }
+        ),
+        state=state,
+    )
+
+    assert preview.target_phase == "calculation_check"
+    assert preview.summary_counts == {"calculation_run_ids": 1}
+    assert preview.passes_apply_prechecks is False
+    assert preview.apply_blockers == [
+        "Calculation gate must be locked before applying calculation check output."
+    ]
+
+
+def test_agent_response_impact_rows_are_localized_for_workbench() -> None:
+    preview = preview_agent_response_impact(
+        "report_composer",
+        json.dumps(
+            {
+                "project_id": "pv-prompt-001",
+                "report_sections": [
+                    {
+                        "heading": "Review boundary",
+                        "items": ["This draft is for screening-level review support only."],
+                    }
+                ],
+                "boundary_statement": "This draft is for screening-level review-support only.",
+            }
+        ),
+        state=ProjectReviewState(
+            project_id="pv-prompt-001",
+            intake=_sample_intake(),
+            current_phase="report_draft",
+        ),
+    )
+
+    zh_rows = build_agent_response_impact_rows(preview, "zh")
+    en_rows = build_agent_response_impact_rows(preview, "en")
+
+    assert zh_rows[0] == {"项目": "目标阶段", "值": "report_draft"}
+    assert {"项目": "会更新", "值": "report_sections"} in zh_rows
+    assert {"项目": "应用前置检查", "值": "通过"} in zh_rows
+    assert {"Item": "Target Phase", "Value": "report_draft"} in en_rows
+    assert {"Item": "Apply Pre-checks", "Value": "Pass"} in en_rows
+    assert {
+        "Item": "Boundary",
+        "Value": "Preview only; engineer approval is still required before applying agent output.",
+    } in en_rows
 
 
 def _sample_intake() -> BVReviewIntake:

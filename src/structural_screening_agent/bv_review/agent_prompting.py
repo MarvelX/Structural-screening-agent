@@ -18,7 +18,11 @@ from structural_screening_agent.bv_review.agent_contracts import (
     StructuralReviewAgentOutput,
     validate_calculation_check_output_against_state,
 )
-from structural_screening_agent.bv_review.project_state import ProjectReviewState
+from structural_screening_agent.bv_review.project_state import (
+    REVIEW_PHASES,
+    ProjectReviewState,
+    ReviewPhase,
+)
 
 
 AgentOutputModel: TypeAlias = (
@@ -57,6 +61,21 @@ class AgentResponseValidationResult(BaseModel):
     output_model_name: str = Field(min_length=1)
     summary: str = ""
     error: str = ""
+
+
+class AgentResponseImpactPreview(BaseModel):
+    agent_role: AgentRole
+    output_model_name: str = Field(min_length=1)
+    target_phase: ReviewPhase
+    requires_engineer_review: bool
+    summary_counts: dict[str, int] = Field(default_factory=dict)
+    would_update: list[str] = Field(default_factory=list)
+    passes_apply_prechecks: bool
+    apply_blockers: list[str] = Field(default_factory=list)
+    blocks_direct_apply: bool = True
+    boundary_statement: str = (
+        "Preview only; engineer approval is still required before applying agent output."
+    )
 
 
 def build_agent_prompt_package(
@@ -127,6 +146,9 @@ def parse_agent_json_response(
     except ValidationError as exc:
         raise ValueError(str(exc)) from exc
 
+    if state is not None and parsed.project_id != state.project_id:
+        raise ValueError("Agent response project_id must match project state project_id.")
+
     if isinstance(parsed, CalculationCheckAgentOutput):
         validate_calculation_check_output_against_state(parsed, state)
     return parsed
@@ -156,6 +178,79 @@ def validate_agent_json_response(
     )
 
 
+def preview_agent_response_impact(
+    agent_role: AgentRole,
+    response_text: str,
+    *,
+    state: ProjectReviewState,
+) -> AgentResponseImpactPreview:
+    parsed = parse_agent_json_response(agent_role, response_text, state=state)
+    summary_counts = _summary_counts_for_parsed_output(parsed)
+    target_phase = _target_phase_for_parsed_output(parsed)
+    apply_blockers = _apply_precheck_blockers(state, parsed, target_phase)
+    return AgentResponseImpactPreview(
+        agent_role=agent_role,
+        output_model_name=type(parsed).__name__,
+        target_phase=target_phase,
+        requires_engineer_review=parsed.requires_engineer_review,
+        summary_counts=summary_counts,
+        would_update=[
+            artifact_name
+            for artifact_name, count in summary_counts.items()
+            if count > 0
+        ],
+        passes_apply_prechecks=not apply_blockers,
+        apply_blockers=apply_blockers,
+    )
+
+
+def build_agent_response_impact_rows(
+    preview: AgentResponseImpactPreview,
+    language: AgentPromptLanguage,
+) -> list[dict[str, object]]:
+    summary = _format_summary_counts(preview.summary_counts)
+    would_update = ", ".join(preview.would_update) if preview.would_update else "-"
+    if language == "zh":
+        return [
+            {"项目": "目标阶段", "值": preview.target_phase},
+            {"项目": "输出模型", "值": preview.output_model_name},
+            {"项目": "统计", "值": summary},
+            {"项目": "会更新", "值": would_update},
+            {
+                "项目": "应用前置检查",
+                "值": "通过" if preview.passes_apply_prechecks else "阻塞",
+            },
+            {
+                "项目": "应用阻断项",
+                "值": _format_apply_blockers(preview.apply_blockers, "zh"),
+            },
+            {
+                "项目": "需要工程师复核",
+                "值": "是" if preview.requires_engineer_review else "否",
+            },
+            {"项目": "边界", "值": "仅预览；应用 Agent 输出前仍需工程师批准。"},
+        ]
+    return [
+        {"Item": "Target Phase", "Value": preview.target_phase},
+        {"Item": "Output Model", "Value": preview.output_model_name},
+        {"Item": "Summary Counts", "Value": summary},
+        {"Item": "Would Update", "Value": would_update},
+        {
+            "Item": "Apply Pre-checks",
+            "Value": "Pass" if preview.passes_apply_prechecks else "Blocked",
+        },
+        {
+            "Item": "Apply Blockers",
+            "Value": _format_apply_blockers(preview.apply_blockers, "en"),
+        },
+        {
+            "Item": "Requires Engineer Review",
+            "Value": "Yes" if preview.requires_engineer_review else "No",
+        },
+        {"Item": "Boundary", "Value": preview.boundary_statement},
+    ]
+
+
 def build_sample_agent_response_json(
     agent_role: AgentRole,
     state: ProjectReviewState,
@@ -165,6 +260,110 @@ def build_sample_agent_response_json(
         ensure_ascii=False,
         indent=2,
     )
+
+
+def _target_phase_for_parsed_output(output: AgentParsedOutput) -> ReviewPhase:
+    if isinstance(output, DocumentIntakeAgentOutput):
+        return "document_check"
+    if isinstance(output, BasisCodeAgentOutput):
+        return "basis_build"
+    if isinstance(output, ReviewPlanAgentOutput):
+        return "review_plan"
+    if isinstance(output, StructuralReviewAgentOutput):
+        return "engineer_data_lock"
+    if isinstance(output, CalculationCheckAgentOutput):
+        return "calculation_check"
+    if isinstance(output, RiskNCRAgentOutput):
+        return "risk_register"
+    if isinstance(output, ReportComposerAgentOutput):
+        return "report_draft"
+    raise TypeError(f"Unsupported agent output type: {type(output).__name__}")
+
+
+def _summary_counts_for_parsed_output(output: AgentParsedOutput) -> dict[str, int]:
+    if isinstance(output, DocumentIntakeAgentOutput):
+        return {
+            "document_versions": len(output.document_versions),
+            "extracted_fields": len(output.extracted_fields),
+            "missing_document_keys": len(output.missing_document_keys),
+        }
+    if isinstance(output, BasisCodeAgentOutput):
+        return {"basis_references": len(output.basis_references)}
+    if isinstance(output, ReviewPlanAgentOutput):
+        return {"review_plan": len(output.review_plan)}
+    if isinstance(output, StructuralReviewAgentOutput):
+        return {"review_paths": len(output.review_paths)}
+    if isinstance(output, CalculationCheckAgentOutput):
+        return {"calculation_run_ids": len(output.calculation_run_ids)}
+    if isinstance(output, RiskNCRAgentOutput):
+        return {
+            "risks": len(output.risks),
+            "source_calculation_run_ids": len(output.source_calculation_run_ids),
+        }
+    if isinstance(output, ReportComposerAgentOutput):
+        return {
+            "report_sections": len(output.report_sections),
+            "rfi_items": len(output.rfi_items),
+        }
+    raise TypeError(f"Unsupported agent output type: {type(output).__name__}")
+
+
+def _apply_precheck_blockers(
+    state: ProjectReviewState,
+    output: AgentParsedOutput,
+    target_phase: ReviewPhase,
+) -> list[str]:
+    blockers: list[str] = []
+    current_index = REVIEW_PHASES.index(state.current_phase)
+    target_index = REVIEW_PHASES.index(target_phase)
+    if target_index > current_index + 1:
+        blockers.append(
+            f"Cannot apply {output.agent_role} output while project is in "
+            f"{state.current_phase!r}; target phase {target_phase!r} is not current or next."
+        )
+    if isinstance(output, CalculationCheckAgentOutput) and not state.is_gate_locked(
+        "calculation"
+    ):
+        blockers.append(
+            "Calculation gate must be locked before applying calculation check output."
+        )
+    if isinstance(output, RiskNCRAgentOutput):
+        state_run_ids = {run.run_id for run in state.calculation_runs}
+        missing_run_ids = [
+            run_id
+            for run_id in output.source_calculation_run_ids
+            if run_id not in state_run_ids
+        ]
+        if missing_run_ids:
+            blockers.append(
+                "Risk/NCR agent output references calculation runs that do not exist: "
+                + ", ".join(missing_run_ids)
+            )
+    if isinstance(output, ReportComposerAgentOutput):
+        non_open_rfi_ids = [
+            rfi_item.rfi_id for rfi_item in output.rfi_items if rfi_item.status != "open"
+        ]
+        if non_open_rfi_ids:
+            blockers.append(
+                "Report composer output can only draft open RFI items: "
+                + ", ".join(non_open_rfi_ids)
+            )
+    return blockers
+
+
+def _format_summary_counts(summary_counts: dict[str, int]) -> str:
+    if not summary_counts:
+        return "-"
+    return ", ".join(
+        f"{artifact_name}={count}"
+        for artifact_name, count in summary_counts.items()
+    )
+
+
+def _format_apply_blockers(blockers: list[str], language: AgentPromptLanguage) -> str:
+    if not blockers:
+        return "-" if language == "en" else "无"
+    return " | ".join(blockers)
 
 
 def _build_system_prompt(

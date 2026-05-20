@@ -73,7 +73,9 @@ from structural_screening_agent.bv_review.project_management import (
 from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
+    build_agent_response_impact_rows,
     build_sample_agent_response_json,
+    preview_agent_response_impact,
     validate_agent_json_response,
 )
 from structural_screening_agent.bv_review.report import (
@@ -1265,6 +1267,27 @@ with bv_review_tab:
                     validation_result.summary
                     if ui_language == "en"
                     else "Agent JSON 响应已通过结构化契约校验。"
+                )
+                impact_preview = preview_agent_response_impact(
+                    selected_agent_prompt_package.agent_role,
+                    agent_response_json,
+                    state=reviewed_workflow_state,
+                )
+                impact_preview_heading = (
+                    "Agent Response Impact Preview"
+                    if ui_language == "en"
+                    else "Agent 响应影响预览"
+                )
+                st.markdown(f"##### {impact_preview_heading}")
+                st.dataframe(
+                    build_agent_response_impact_rows(impact_preview, ui_language),
+                    hide_index=True,
+                    use_container_width=True,
+                )
+                st.caption(
+                    "Preview only; engineer approval is still required before applying agent output."
+                    if ui_language == "en"
+                    else "仅预览；应用 Agent 输出前仍需工程师批准。"
                 )
             else:
                 st.warning(

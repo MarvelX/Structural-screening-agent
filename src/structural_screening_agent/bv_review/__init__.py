@@ -25,12 +25,15 @@ from structural_screening_agent.bv_review.agent_runner import (
 )
 from structural_screening_agent.bv_review.agent_prompting import (
     AgentPromptPackage,
+    AgentResponseImpactPreview,
     AgentResponseValidationResult,
     build_agent_prompt_package,
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
+    build_agent_response_impact_rows,
     build_sample_agent_response_json,
     parse_agent_json_response,
+    preview_agent_response_impact,
     validate_agent_json_response,
 )
 from structural_screening_agent.bv_review.basis import build_review_basis
@@ -92,6 +95,7 @@ __all__ = [
     "AGENT_CONTRACT_SCHEMA_VERSION",
     "AGENT_ROLE_SEQUENCE",
     "AgentPromptPackage",
+    "AgentResponseImpactPreview",
     "AgentResponseValidationResult",
     "AffectedReviewItem",
     "AgentWorkflowOutput",
@@ -130,6 +134,7 @@ __all__ = [
     "build_agent_prompt_package",
     "build_agent_prompt_package_rows",
     "build_agent_prompt_packages",
+    "build_agent_response_impact_rows",
     "build_sample_agent_response_json",
     "build_foundation_calculation_run_from_fields",
     "build_bv_open_rfi_items",
@@ -150,6 +155,7 @@ __all__ = [
     "resolve_calculation_check_output_against_state",
     "record_agent_review_decision",
     "parse_agent_json_response",
+    "preview_agent_response_impact",
     "validate_calculation_check_output_against_state",
     "validate_agent_json_response",
 ]
