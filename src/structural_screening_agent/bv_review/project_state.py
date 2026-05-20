@@ -116,7 +116,9 @@ class PVStructuralSpec(BaseModel):
 
 class EngineerApproval(BaseModel):
     approval_id: str = Field(min_length=1)
-    target_type: Literal["field", "basis", "calculation", "report", "gate"]
+    target_type: Literal[
+        "field", "basis", "calculation", "report", "gate", "agent_event"
+    ]
     target_id: str = Field(min_length=1)
     status: Literal["pending", "approved", "rejected"]
     reviewer: Optional[str] = None

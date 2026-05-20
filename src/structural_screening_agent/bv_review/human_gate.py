@@ -36,6 +36,51 @@ def build_engineer_approval(
     )
 
 
+def record_agent_review_decision(
+    state: ProjectReviewState,
+    *,
+    event_id: str,
+    decision: Literal["approved", "rejected"],
+    reviewer: str,
+    comment: str = "",
+) -> ProjectReviewState:
+    event = next(
+        (item for item in state.agent_events if item.event_id == event_id),
+        None,
+    )
+    if event is None:
+        raise ValueError(f"Agent event {event_id!r} does not exist.")
+    if not event.requires_engineer_review:
+        raise ValueError(f"Agent event {event_id!r} does not require engineer review.")
+    if any(
+        approval.target_type == "agent_event" and approval.target_id == event_id
+        for approval in state.approvals
+    ):
+        raise ValueError(
+            f"Agent event {event_id!r} already has an engineer review decision."
+        )
+    if state.phase_statuses.get(event.target_phase) != "waiting_for_engineer":
+        raise ValueError(f"Agent event {event_id!r} is not pending engineer review.")
+
+    approval = EngineerApproval(
+        approval_id=f"agent-review-{event_id}",
+        target_type="agent_event",
+        target_id=event_id,
+        status=decision,
+        reviewer=reviewer,
+        comment=comment,
+        locked=decision == "approved",
+    )
+    phase_statuses = dict(state.phase_statuses)
+    phase_statuses[event.target_phase] = decision
+    return state.model_copy(
+        update={
+            "phase_statuses": phase_statuses,
+            "approvals": [*state.approvals, approval],
+        }
+    )
+
+
 def build_calculation_gate_run(
     run_id: str,
     engine_name: str,

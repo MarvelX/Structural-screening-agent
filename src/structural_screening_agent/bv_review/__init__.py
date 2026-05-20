@@ -51,6 +51,7 @@ from structural_screening_agent.bv_review.project_state import (
 )
 from structural_screening_agent.bv_review.state_repository import JsonProjectReviewStateRepository
 from structural_screening_agent.bv_review.state_machine import advance_project_phase
+from structural_screening_agent.bv_review.human_gate import record_agent_review_decision
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
 __all__ = [
@@ -93,5 +94,6 @@ __all__ = [
     "diff_extracted_fields",
     "evaluate_bv_review",
     "resolve_calculation_check_output_against_state",
+    "record_agent_review_decision",
     "validate_calculation_check_output_against_state",
 ]
