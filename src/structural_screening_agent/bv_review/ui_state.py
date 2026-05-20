@@ -114,6 +114,18 @@ def build_ground_fixed_human_gate_rows(language: Language) -> list[dict[str, obj
                 "quote": "支架安装倾角 25 deg。",
                 "confidence": 0.95,
                 "is_confirmed": True,
+                "include_in_calculation": False,
+            },
+            {
+                "field_id": "pile_diameter_mm",
+                "field_name": "桩径",
+                "candidate_value": "300",
+                "unit": "mm",
+                "source_document_id": "foundation-drawing-f201",
+                "page_or_section": "F-201 基础表",
+                "quote": "PHC 桩径 D=300mm。",
+                "confidence": 0.9,
+                "is_confirmed": True,
                 "include_in_calculation": True,
             },
             {
@@ -137,8 +149,44 @@ def build_ground_fixed_human_gate_rows(language: Language) -> list[dict[str, obj
                 "page_or_section": "地勘报告第 4.2 节",
                 "quote": "建议地基承载力特征值 fak=180kPa。",
                 "confidence": 0.72,
-                "is_confirmed": False,
-                "include_in_calculation": False,
+                "is_confirmed": True,
+                "include_in_calculation": True,
+            },
+            {
+                "field_id": "side_resistance_standard_kpa",
+                "field_name": "侧阻力标准值",
+                "candidate_value": "35",
+                "unit": "kPa",
+                "source_document_id": "geotechnical-report-g001",
+                "page_or_section": "地勘报告第 4.3 节",
+                "quote": "桩侧阻力标准值 qsk=35kPa。",
+                "confidence": 0.72,
+                "is_confirmed": True,
+                "include_in_calculation": True,
+            },
+            {
+                "field_id": "uplift_force_kn",
+                "field_name": "最不利抗拔力",
+                "candidate_value": "140",
+                "unit": "kN",
+                "source_document_id": "calculation-report-c001",
+                "page_or_section": "基础反力汇总表",
+                "quote": "最不利抗拔反力 Nk=140kN。",
+                "confidence": 0.84,
+                "is_confirmed": True,
+                "include_in_calculation": True,
+            },
+            {
+                "field_id": "compression_force_kn",
+                "field_name": "最不利压力",
+                "candidate_value": "10",
+                "unit": "kN",
+                "source_document_id": "calculation-report-c001",
+                "page_or_section": "基础反力汇总表",
+                "quote": "最不利压力 Nk=10kN。",
+                "confidence": 0.84,
+                "is_confirmed": True,
+                "include_in_calculation": True,
             },
         ]
 
@@ -152,6 +200,18 @@ def build_ground_fixed_human_gate_rows(language: Language) -> list[dict[str, obj
             "page_or_section": "S-101 mounting layout, note 3",
             "quote": "Rack installation tilt angle: 25 deg.",
             "confidence": 0.95,
+            "is_confirmed": True,
+            "include_in_calculation": False,
+        },
+        {
+            "field_id": "pile_diameter_mm",
+            "field_name": "Pile diameter",
+            "candidate_value": "300",
+            "unit": "mm",
+            "source_document_id": "foundation-drawing-f201",
+            "page_or_section": "F-201 foundation schedule",
+            "quote": "PHC pile diameter D=300mm.",
+            "confidence": 0.9,
             "is_confirmed": True,
             "include_in_calculation": True,
         },
@@ -176,8 +236,44 @@ def build_ground_fixed_human_gate_rows(language: Language) -> list[dict[str, obj
             "page_or_section": "Geotechnical report section 4.2",
             "quote": "Recommended characteristic bearing capacity fak=180kPa.",
             "confidence": 0.72,
-            "is_confirmed": False,
-            "include_in_calculation": False,
+            "is_confirmed": True,
+            "include_in_calculation": True,
+        },
+        {
+            "field_id": "side_resistance_standard_kpa",
+            "field_name": "Standard side resistance",
+            "candidate_value": "35",
+            "unit": "kPa",
+            "source_document_id": "geotechnical-report-g001",
+            "page_or_section": "Geotechnical report section 4.3",
+            "quote": "Standard pile side resistance qsk=35kPa.",
+            "confidence": 0.72,
+            "is_confirmed": True,
+            "include_in_calculation": True,
+        },
+        {
+            "field_id": "uplift_force_kn",
+            "field_name": "Worst uplift force",
+            "candidate_value": "140",
+            "unit": "kN",
+            "source_document_id": "calculation-report-c001",
+            "page_or_section": "Foundation reaction summary",
+            "quote": "Worst uplift reaction Nk=140kN.",
+            "confidence": 0.84,
+            "is_confirmed": True,
+            "include_in_calculation": True,
+        },
+        {
+            "field_id": "compression_force_kn",
+            "field_name": "Worst compression force",
+            "candidate_value": "10",
+            "unit": "kN",
+            "source_document_id": "calculation-report-c001",
+            "page_or_section": "Foundation reaction summary",
+            "quote": "Worst compression reaction Nk=10kN.",
+            "confidence": 0.84,
+            "is_confirmed": True,
+            "include_in_calculation": True,
         },
     ]
 
@@ -298,6 +394,20 @@ def build_field_diff_summary_rows(
     ]
 
 
+def build_calculation_result_summary_rows(
+    result_summary: dict[str, object], language: Language
+) -> list[dict[str, object]]:
+    item_label = "项目" if language == "zh" else "Item"
+    result_label = "结果" if language == "zh" else "Result"
+    return [
+        {
+            item_label: _localized_calculation_result_key(key, language),
+            result_label: _localized_calculation_result_value(value, language),
+        }
+        for key, value in result_summary.items()
+    ]
+
+
 def localize_report_gate_reason(reason: str, language: Language) -> str:
     incremental_prefix = "Open RFI items trigger incremental recheck: "
     if language == "zh" and reason.startswith(incremental_prefix):
@@ -322,3 +432,31 @@ def _localized_bool(value: bool, language: Language) -> str:
     if language == "zh":
         return "是" if value else "否"
     return "Yes" if value else "No"
+
+
+def _localized_calculation_result_key(key: str, language: Language) -> str:
+    if language != "zh":
+        return key
+    labels = {
+        "screening_boundary": "筛查边界",
+        "overturning_check_note": "抗倾覆提示",
+        "uplift_capacity_kn": "抗拔承载力",
+        "bearing_capacity_kn": "地基承载力",
+        "uplift_utilization_ratio": "抗拔利用率",
+        "bearing_utilization_ratio": "地基承载力利用率",
+        "controlling_utilization_ratio": "控制利用率",
+        "screening_status": "筛查状态",
+    }
+    return labels.get(key, key)
+
+
+def _localized_calculation_result_value(value: object, language: Language) -> object:
+    if language != "zh":
+        return value
+    labels = {
+        "screening-level review support only": "仅用于筛查级审核支持",
+        "not covered; engineer review required": "未覆盖；需工程师复核",
+        "pass": "通过",
+        "review_required": "需复核",
+    }
+    return labels.get(value, value)

@@ -54,7 +54,10 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'translate(ui_language, "data_lock_button")' in source
     assert 'translate(ui_language, "report_draft_gate_heading")' in source
     assert 'translate(ui_language, "version_diff_heading")' in source
+    assert "build_foundation_calculation_run_from_fields" in source
     assert "diff_extracted_fields" in source
+    assert 'row["field_id"] == "pile_length_m"' in source
+    assert 'previous_human_gate_rows[1]' not in source
     assert "build_incremental_recheck_plan" in source
     assert "build_incremental_recheck_summary_rows" in source
     assert 'translate(ui_language, "bv_review_warning_standards")' in source

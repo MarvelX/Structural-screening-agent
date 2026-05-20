@@ -5,6 +5,7 @@ from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
+    build_calculation_result_summary_rows,
     build_extracted_fields_from_human_gate_rows,
     build_bv_review_intake,
     build_field_diff_summary_rows,
@@ -102,6 +103,9 @@ def test_ground_fixed_human_gate_rows_follow_selected_language_and_traceability(
     assert all(row["source_document_id"] for row in zh_rows)
     assert all(row["page_or_section"] for row in zh_rows)
     assert all(row["quote"] for row in zh_rows)
+    assert {"pile_diameter_mm", "side_resistance_standard_kpa", "uplift_force_kn"} <= {
+        str(row["field_id"]) for row in zh_rows
+    }
 
 
 def test_human_gate_rows_convert_to_traceable_extracted_fields() -> None:
@@ -111,9 +115,19 @@ def test_human_gate_rows_convert_to_traceable_extracted_fields() -> None:
 
     assert fields[0].field_id == "tilt_angle_deg"
     assert fields[0].source_document_id == "structural-drawing-s101"
-    assert fields[0].include_in_calculation is True
+    assert fields[0].include_in_calculation is False
     assert fields[0].is_confirmed is True
-    assert fields[2].include_in_calculation is False
+    foundation_field_ids = {
+        "pile_diameter_mm",
+        "pile_length_m",
+        "side_resistance_standard_kpa",
+        "bearing_capacity_characteristic_kpa",
+        "uplift_force_kn",
+        "compression_force_kn",
+    }
+    assert foundation_field_ids <= {
+        field.field_id for field in fields if field.include_in_calculation
+    }
 
 
 def test_build_incremental_recheck_summary_returns_review_items_without_running_diff() -> None:
@@ -121,7 +135,9 @@ def test_build_incremental_recheck_summary_returns_review_items_without_running_
         build_ground_fixed_human_gate_rows("en")
     )
     new_rows = build_ground_fixed_human_gate_rows("en")
-    new_rows[1]["candidate_value"] = "4.0"
+    next(row for row in new_rows if row["field_id"] == "pile_length_m")[
+        "candidate_value"
+    ] = "4.0"
     new_fields = build_extracted_fields_from_human_gate_rows(new_rows)
     plan = build_incremental_recheck_plan(diff_extracted_fields(old_fields, new_fields))
 
@@ -137,7 +153,9 @@ def test_bv_diff_and_recheck_summary_rows_are_localized_for_chinese_ui() -> None
         build_ground_fixed_human_gate_rows("zh")
     )
     new_rows = build_ground_fixed_human_gate_rows("zh")
-    new_rows[1]["candidate_value"] = "4.0"
+    next(row for row in new_rows if row["field_id"] == "pile_length_m")[
+        "candidate_value"
+    ] = "4.0"
     new_fields = build_extracted_fields_from_human_gate_rows(new_rows)
     diffs = diff_extracted_fields(old_fields, new_fields)
     plan = build_incremental_recheck_plan(diffs)
@@ -159,3 +177,20 @@ def test_report_gate_incremental_rfi_reason_localizes_to_chinese() -> None:
     localized = localize_report_gate_reason(reason, "zh")
 
     assert localized == "未关闭的 RFI 触发增量复核：rfi-pile_length_m"
+
+
+def test_calculation_result_summary_rows_localize_internal_keys_for_chinese_ui() -> None:
+    rows = build_calculation_result_summary_rows(
+        {
+            "screening_boundary": "screening-level review support only",
+            "overturning_check_note": "not covered; engineer review required",
+            "screening_status": "review_required",
+            "uplift_utilization_ratio": 1.21,
+        },
+        "zh",
+    )
+
+    assert rows[0] == {"项目": "筛查边界", "结果": "仅用于筛查级审核支持"}
+    assert rows[1] == {"项目": "抗倾覆提示", "结果": "未覆盖；需工程师复核"}
+    assert rows[2] == {"项目": "筛查状态", "结果": "需复核"}
+    assert rows[3] == {"项目": "抗拔利用率", "结果": 1.21}
