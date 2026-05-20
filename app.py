@@ -54,6 +54,7 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     clear_persisted_workflow_session,
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
+    record_persisted_agent_review_decision,
     store_persisted_workflow_result,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
@@ -988,6 +989,7 @@ with bv_review_tab:
             st.session_state,
             persisted_project_id,
         )
+        persisted_workflow_is_active = persisted_session_state is not None
         workflow_state = (
             persisted_workflow_result.state
             if persisted_workflow_result is not None
@@ -999,9 +1001,13 @@ with bv_review_tab:
         if st.session_state.get("bv_agent_review_signature") != workflow_signature:
             st.session_state["bv_agent_review_signature"] = workflow_signature
             st.session_state["bv_agent_review_decisions"] = {}
-        stored_agent_review_decisions = st.session_state.get(
-            "bv_agent_review_decisions",
-            {},
+        stored_agent_review_decisions = (
+            {}
+            if persisted_workflow_is_active
+            else st.session_state.get(
+                "bv_agent_review_decisions",
+                {},
+            )
         )
         reviewed_workflow_state = workflow_state
         for event_id, decision_record in stored_agent_review_decisions.items():
@@ -1078,14 +1084,30 @@ with bv_review_tab:
                     else "批准所选复核项",
                     use_container_width=True,
                 ):
-                    st.session_state["bv_agent_review_decisions"] = {
-                        **stored_agent_review_decisions,
-                        selected_agent_review_item: {
-                            "decision": "approved",
-                            "comment": agent_review_comment,
-                        },
-                    }
-                    st.rerun()
+                    if persisted_workflow_is_active:
+                        try:
+                            record_persisted_agent_review_decision(
+                                st.session_state,
+                                persisted_repository,
+                                project_id=persisted_project_id,
+                                event_id=selected_agent_review_item,
+                                decision="approved",
+                                reviewer="demo-review-engineer",
+                                comment=agent_review_comment,
+                            )
+                        except ValueError as exc:
+                            st.warning(str(exc))
+                        else:
+                            st.rerun()
+                    else:
+                        st.session_state["bv_agent_review_decisions"] = {
+                            **stored_agent_review_decisions,
+                            selected_agent_review_item: {
+                                "decision": "approved",
+                                "comment": agent_review_comment,
+                            },
+                        }
+                        st.rerun()
             with reject_review_col:
                 if st.button(
                     "Reject Selected Review Item"
@@ -1093,14 +1115,30 @@ with bv_review_tab:
                     else "驳回所选复核项",
                     use_container_width=True,
                 ):
-                    st.session_state["bv_agent_review_decisions"] = {
-                        **stored_agent_review_decisions,
-                        selected_agent_review_item: {
-                            "decision": "rejected",
-                            "comment": agent_review_comment,
-                        },
-                    }
-                    st.rerun()
+                    if persisted_workflow_is_active:
+                        try:
+                            record_persisted_agent_review_decision(
+                                st.session_state,
+                                persisted_repository,
+                                project_id=persisted_project_id,
+                                event_id=selected_agent_review_item,
+                                decision="rejected",
+                                reviewer="demo-review-engineer",
+                                comment=agent_review_comment,
+                            )
+                        except ValueError as exc:
+                            st.warning(str(exc))
+                        else:
+                            st.rerun()
+                    else:
+                        st.session_state["bv_agent_review_decisions"] = {
+                            **stored_agent_review_decisions,
+                            selected_agent_review_item: {
+                                "decision": "rejected",
+                                "comment": agent_review_comment,
+                            },
+                        }
+                        st.rerun()
         else:
             st.caption(
                 "No pending agent outputs require engineer review."

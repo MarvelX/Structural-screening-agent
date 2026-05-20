@@ -3,12 +3,17 @@ from structural_screening_agent.bv_review import (
     PersistedWorkflowRunResult,
     PersistedWorkflowRunSummary,
     ProjectReviewState,
+    run_persisted_local_agent_workflow_with_summary,
 )
 from structural_screening_agent.bv_review.persisted_workflow_session import (
     clear_persisted_workflow_session,
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
+    record_persisted_agent_review_decision,
     store_persisted_workflow_result,
+)
+from structural_screening_agent.bv_review.state_repository import (
+    JsonProjectReviewStateRepository,
 )
 
 
@@ -60,6 +65,41 @@ def test_clear_persisted_workflow_session_removes_resumed_state_and_summary() ->
 
     assert get_active_persisted_workflow_state(session_state, "pv-001") is None
     assert get_active_persisted_workflow_summary(session_state, "pv-001") is None
+
+
+def test_persisted_workflow_agent_review_decision_saves_state_and_session(
+    tmp_path,
+) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    repository.save(ProjectReviewState(project_id="pv-001", intake=_sample_intake()))
+    result = run_persisted_local_agent_workflow_with_summary(repository, "pv-001")
+    session_state: dict[str, object] = {}
+    store_persisted_workflow_result(session_state, result)
+    event_id = result.state.agent_events[0].event_id
+
+    updated_state = record_persisted_agent_review_decision(
+        session_state,
+        repository,
+        project_id="pv-001",
+        event_id=event_id,
+        decision="approved",
+        reviewer="demo-review-engineer",
+        comment="Approved after checking extracted evidence.",
+    )
+
+    persisted_state = repository.load("pv-001")
+    active_state = get_active_persisted_workflow_state(session_state, "pv-001")
+    assert updated_state == persisted_state
+    assert active_state == updated_state
+    approval = next(
+        item
+        for item in persisted_state.approvals
+        if item.target_type == "agent_event" and item.target_id == event_id
+    )
+    assert approval.status == "approved"
+    assert approval.locked is True
+    assert approval.reviewer == "demo-review-engineer"
+    assert approval.comment == "Approved after checking extracted evidence."
 
 
 def _sample_intake() -> BVReviewIntake:

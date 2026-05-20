@@ -1,10 +1,15 @@
 from collections.abc import MutableMapping
+from typing import Literal
 
 from structural_screening_agent.bv_review.agent_runner import (
     PersistedWorkflowRunResult,
     PersistedWorkflowRunSummary,
 )
+from structural_screening_agent.bv_review.human_gate import record_agent_review_decision
 from structural_screening_agent.bv_review.project_state import ProjectReviewState
+from structural_screening_agent.bv_review.state_repository import (
+    JsonProjectReviewStateRepository,
+)
 
 
 _PROJECT_ID_KEY = "bv_persisted_workflow_summary_project_id"
@@ -49,3 +54,29 @@ def get_active_persisted_workflow_summary(
     if isinstance(summary, PersistedWorkflowRunSummary):
         return summary
     return None
+
+
+def record_persisted_agent_review_decision(
+    session_state: MutableMapping[str, object],
+    repository: JsonProjectReviewStateRepository,
+    *,
+    project_id: str,
+    event_id: str,
+    decision: Literal["approved", "rejected"],
+    reviewer: str,
+    comment: str = "",
+) -> ProjectReviewState:
+    state = get_active_persisted_workflow_state(session_state, project_id)
+    if state is None:
+        raise ValueError("No active persisted workflow state is loaded for this project.")
+
+    updated_state = record_agent_review_decision(
+        state,
+        event_id=event_id,
+        decision=decision,
+        reviewer=reviewer,
+        comment=comment,
+    )
+    repository.save(updated_state)
+    session_state[_STATE_KEY] = updated_state
+    return updated_state

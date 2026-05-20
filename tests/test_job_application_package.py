@@ -148,5 +148,7 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "clear_persisted_workflow_session" in app_source
     assert "get_active_persisted_workflow_state" in app_source
     assert "get_active_persisted_workflow_summary" in app_source
+    assert "record_persisted_agent_review_decision" in app_source
+    assert "if persisted_workflow_is_active" in app_source
     assert '"bv_persisted_workflow_summary_rows"' not in app_source
     assert "只有点击按钮时才会保存或恢复本地 JSON 状态" in app_source
