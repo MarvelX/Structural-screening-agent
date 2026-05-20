@@ -150,6 +150,8 @@ def test_risk_register_flags_blocking_missing_documents_and_optimization_items()
         and item.blocks_report_issue is False
         for item in risks
     )
+    calculation_risk = next(item for item in risks if item.risk_id == "missing_calculation_report")
+    assert calculation_risk.linked_field_ids == ["calculation_report"]
     hold_risk = next(item for item in risks if item.risk_id == "review_path_has_holds")
     assert hold_risk.blocks_report_issue is True
 
@@ -172,6 +174,7 @@ def test_risk_register_treats_all_missing_documents_as_blocking_nonconformities(
     assert missing_risk.category == "nonconformity"
     assert missing_risk.severity == "critical"
     assert missing_risk.blocks_report_issue is True
+    assert missing_risk.linked_field_ids == ["manually_missing_input"]
 
 
 def test_bv_review_workflow_composes_basis_checklist_paths_risks_and_plan() -> None:

@@ -64,6 +64,7 @@ class BVRiskItem(BaseModel):
     title: str = Field(min_length=1)
     severity: BVSeverity
     trigger_basis: str = Field(min_length=1)
+    linked_field_ids: List[str] = Field(default_factory=list)
     impact_scope: str = Field(min_length=1)
     recommendation: str = Field(min_length=1)
     blocks_report_issue: bool = False

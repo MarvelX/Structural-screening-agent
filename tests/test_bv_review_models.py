@@ -4,6 +4,7 @@ from pydantic import ValidationError
 from structural_screening_agent.bv_review.models import (
     BVDocumentStatus,
     BVReviewIntake,
+    BVRiskItem,
 )
 
 
@@ -49,3 +50,33 @@ def test_bv_document_status_type_accepts_expected_status_values() -> None:
     status: BVDocumentStatus = "partial"
 
     assert status == "partial"
+
+
+def test_bv_risk_item_carries_structured_linked_field_ids() -> None:
+    risk = BVRiskItem(
+        risk_id="missing_geotechnical_report",
+        title="Missing geotechnical report",
+        severity="critical",
+        trigger_basis="Document checklist",
+        linked_field_ids=["geotechnical_report"],
+        impact_scope="Foundation review",
+        recommendation="Provide geotechnical report.",
+        blocks_report_issue=True,
+        category="nonconformity",
+    )
+
+    assert risk.linked_field_ids == ["geotechnical_report"]
+
+
+def test_bv_risk_item_defaults_to_no_linked_fields_for_legacy_risks() -> None:
+    risk = BVRiskItem(
+        risk_id="legacy_review_risk",
+        title="Legacy review risk",
+        severity="medium",
+        trigger_basis="Legacy deterministic rule",
+        impact_scope="Review planning",
+        recommendation="Track the risk in the register.",
+        category="risk",
+    )
+
+    assert risk.linked_field_ids == []

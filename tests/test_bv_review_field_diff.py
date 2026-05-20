@@ -135,6 +135,7 @@ def test_incremental_recheck_plan_reopens_matching_risk_items_for_required_docum
                 title="Missing geotechnical report",
                 severity="critical",
                 trigger_basis="Missing geotechnical report",
+                linked_field_ids=["geotechnical_report"],
                 impact_scope="Foundation review",
                 recommendation="Provide geotechnical report.",
                 blocks_report_issue=True,
@@ -148,6 +149,28 @@ def test_incremental_recheck_plan_reopens_matching_risk_items_for_required_docum
     assert diffs[0].should_reopen_risk_items is True
     assert diffs[0].affected_risk_ids == ["missing_geotechnical_report"]
     assert any(item.item_type == "risk_reopen" for item in plan.affected_items)
+
+
+def test_field_diff_does_not_reopen_risk_items_from_string_similarity_without_linked_fields() -> None:
+    diffs = diff_extracted_fields(
+        [_field("geotechnical_report", "missing")],
+        [_field("geotechnical_report", "available", source="geo-v2")],
+        risks=[
+            BVRiskItem(
+                risk_id="missing_geotechnical_report",
+                title="Missing geotechnical report",
+                severity="critical",
+                trigger_basis="Missing geotechnical report",
+                impact_scope="Foundation review",
+                recommendation="Provide geotechnical report.",
+                blocks_report_issue=True,
+                category="nonconformity",
+            )
+        ],
+    )
+
+    assert diffs[0].should_reopen_risk_items is False
+    assert diffs[0].affected_risk_ids == []
 
 
 def test_incremental_recheck_plan_creates_rfi_item_without_agent_generated_language() -> None:

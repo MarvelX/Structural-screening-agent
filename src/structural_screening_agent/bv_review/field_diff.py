@@ -67,11 +67,7 @@ def _find_affected_run_ids(field_id: str, calculation_runs: list[CalculationRun]
 
 
 def _matching_risk_ids(field_id: str, risks: list[BVRiskItem]) -> list[str]:
-    return [
-        risk.risk_id
-        for risk in risks
-        if field_id in risk.risk_id or field_id.replace("_", " ") in risk.trigger_basis.lower()
-    ]
+    return [risk.risk_id for risk in risks if field_id in risk.linked_field_ids]
 
 
 def _index_fields_by_id(fields: list[ExtractedField], label: str) -> dict[str, ExtractedField]:
