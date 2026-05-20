@@ -239,6 +239,8 @@ def test_agent_workflow_artifact_rows_show_runner_outputs_without_mixed_language
     en_rows = build_agent_workflow_artifact_rows(state, "en")
 
     assert {"产物": "审核依据", "数量": len(state.basis_references)} in zh_rows
+    assert {"产物": "Agent 事件", "数量": len(state.agent_events)} in zh_rows
     assert {"Artifact": "Review Basis", "Count": len(state.basis_references)} in en_rows
+    assert {"Artifact": "Agent Events", "Count": len(state.agent_events)} in en_rows
     assert "Review Basis" not in str(zh_rows)
     assert "审核依据" not in str(en_rows)

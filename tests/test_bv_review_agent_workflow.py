@@ -51,7 +51,21 @@ def test_document_intake_agent_output_updates_state_and_waits_for_engineer_revie
     assert [field.field_id for field in updated.extracted_fields] == ["pile_length_m"]
     assert updated.current_phase == "document_check"
     assert updated.phase_statuses["document_check"] == "waiting_for_engineer"
+    assert len(updated.agent_events) == 1
+    event = updated.agent_events[0]
+    assert event.event_id == "agent-event-001"
+    assert event.agent_role == "document_intake"
+    assert event.target_phase == "document_check"
+    assert event.status == "applied"
+    assert event.output_schema_version == output.schema_version
+    assert event.requires_engineer_review is True
+    assert event.summary_counts == {
+        "document_versions": 1,
+        "extracted_fields": 1,
+        "missing_document_keys": 0,
+    }
     assert state.document_versions == []
+    assert state.agent_events == []
 
 
 def test_basis_agent_output_updates_traceable_basis_references() -> None:
@@ -131,6 +145,10 @@ def test_review_plan_and_structural_review_outputs_update_state() -> None:
     assert with_path.review_paths[0].path_id == "PATH-FOUNDATION"
     assert with_path.current_phase == "engineer_data_lock"
     assert with_path.phase_statuses["engineer_data_lock"] == "waiting_for_engineer"
+    assert [event.agent_role for event in with_path.agent_events] == [
+        "review_plan",
+        "structural_review",
+    ]
 
 
 def test_calculation_check_agent_output_only_resolves_existing_state_runs() -> None:

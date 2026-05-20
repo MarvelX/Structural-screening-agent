@@ -173,6 +173,16 @@ class RFIItem(BaseModel):
         return self
 
 
+class AgentWorkflowEvent(BaseModel):
+    event_id: str = Field(min_length=1)
+    agent_role: str = Field(min_length=1)
+    target_phase: ReviewPhase
+    status: Literal["applied"]
+    output_schema_version: str = Field(min_length=1)
+    requires_engineer_review: bool = True
+    summary_counts: Dict[str, int] = Field(default_factory=dict)
+
+
 def _default_phase_statuses() -> dict[ReviewPhase, ReviewPhaseStatus]:
     return {phase: "pending" for phase in REVIEW_PHASES}
 
@@ -195,6 +205,7 @@ class ProjectReviewState(BaseModel):
     rfi_items: List[RFIItem] = Field(default_factory=list)
     risks: List[BVRiskItem] = Field(default_factory=list)
     report_sections: List[BVReportSection] = Field(default_factory=list)
+    agent_events: List[AgentWorkflowEvent] = Field(default_factory=list)
 
     def locked_calculation_fields(self) -> list[ExtractedField]:
         return [

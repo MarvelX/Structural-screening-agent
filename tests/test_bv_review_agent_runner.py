@@ -20,6 +20,13 @@ def test_local_agent_workflow_runs_to_engineer_data_lock_without_external_api() 
     assert final_state.review_plan
     assert final_state.review_paths
     assert final_state.calculation_runs == []
+    assert [event.agent_role for event in final_state.agent_events] == [
+        "document_intake",
+        "basis_code",
+        "review_plan",
+        "structural_review",
+    ]
+    assert final_state.agent_events[-1].target_phase == "engineer_data_lock"
 
 
 def test_local_agent_workflow_applies_calculation_risk_and_report_after_locked_gate() -> None:
@@ -58,6 +65,11 @@ def test_local_agent_workflow_applies_calculation_risk_and_report_after_locked_g
     assert final_state.risks
     assert final_state.report_sections
     assert all(item.status == "open" for item in final_state.rfi_items)
+    assert [event.agent_role for event in final_state.agent_events] == [
+        "calculation_check",
+        "risk_ncr",
+        "report_composer",
+    ]
 
 
 def test_local_agent_workflow_step_returns_none_when_waiting_for_human_data_lock() -> None:

@@ -4,6 +4,7 @@ import pytest
 
 from structural_screening_agent.bv_review import BVReviewIntake, ProjectReviewState
 from structural_screening_agent.bv_review.project_state import (
+    AgentWorkflowEvent,
     DocumentVersion,
     EngineerApproval,
     ExtractedField,
@@ -70,6 +71,17 @@ def _sample_state() -> ProjectReviewState:
                 status="open",
             )
         ],
+        agent_events=[
+            AgentWorkflowEvent(
+                event_id="agent-event-001",
+                agent_role="document_intake",
+                target_phase="document_check",
+                status="applied",
+                output_schema_version="phase2-agent-contracts-v1",
+                requires_engineer_review=True,
+                summary_counts={"document_versions": 1, "extracted_fields": 1},
+            )
+        ],
     )
 
 
@@ -86,6 +98,8 @@ def test_json_state_repository_round_trips_project_review_state(tmp_path: Path) 
     assert loaded.extracted_fields[0].source_document_id == "structural-drawing-a101"
     assert loaded.approvals[0].locked is True
     assert loaded.rfi_items[0].status == "open"
+    assert loaded.agent_events[0].agent_role == "document_intake"
+    assert loaded.agent_events[0].summary_counts["document_versions"] == 1
     assert repository.list_project_ids() == ["pv-ground-001"]
 
 

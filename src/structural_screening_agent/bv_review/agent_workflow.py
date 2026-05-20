@@ -13,6 +13,7 @@ from structural_screening_agent.bv_review.agent_contracts import (
     resolve_calculation_check_output_against_state,
 )
 from structural_screening_agent.bv_review.project_state import (
+    AgentWorkflowEvent,
     REVIEW_PHASES,
     ProjectReviewState,
     ReviewPhase,
@@ -41,7 +42,7 @@ def apply_agent_output_to_state(
     if isinstance(output, DocumentIntakeAgentOutput):
         return _copy_with_phase(
             state,
-            output.agent_role,
+            output,
             "document_check",
             document_versions=_upsert_by_id(
                 state.document_versions,
@@ -58,7 +59,7 @@ def apply_agent_output_to_state(
     if isinstance(output, BasisCodeAgentOutput):
         return _copy_with_phase(
             state,
-            output.agent_role,
+            output,
             "basis_build",
             basis_references=_upsert_by_id(
                 state.basis_references,
@@ -70,7 +71,7 @@ def apply_agent_output_to_state(
     if isinstance(output, ReviewPlanAgentOutput):
         return _copy_with_phase(
             state,
-            output.agent_role,
+            output,
             "review_plan",
             review_plan=_upsert_by_id(state.review_plan, output.review_plan, "item_id"),
         )
@@ -78,7 +79,7 @@ def apply_agent_output_to_state(
     if isinstance(output, StructuralReviewAgentOutput):
         return _copy_with_phase(
             state,
-            output.agent_role,
+            output,
             "engineer_data_lock",
             review_paths=_upsert_by_id(
                 state.review_paths,
@@ -91,13 +92,13 @@ def apply_agent_output_to_state(
         if not state.is_gate_locked("calculation"):
             raise ValueError("Calculation gate must be locked before applying calculation check output.")
         resolve_calculation_check_output_against_state(output, state)
-        return _copy_with_phase(state, output.agent_role, "calculation_check")
+        return _copy_with_phase(state, output, "calculation_check")
 
     if isinstance(output, RiskNCRAgentOutput):
         _validate_source_run_ids(output.source_calculation_run_ids, state)
         return _copy_with_phase(
             state,
-            output.agent_role,
+            output,
             "risk_register",
             risks=_upsert_by_id(state.risks, output.risks, "risk_id"),
         )
@@ -106,7 +107,7 @@ def apply_agent_output_to_state(
         _validate_report_draft_rfi_statuses(output)
         return _copy_with_phase(
             state,
-            output.agent_role,
+            output,
             "report_draft",
             report_sections=output.report_sections,
             rfi_items=_upsert_by_id(state.rfi_items, output.rfi_items, "rfi_id"),
@@ -117,18 +118,27 @@ def apply_agent_output_to_state(
 
 def _copy_with_phase(
     state: ProjectReviewState,
-    agent_role: str,
+    output: AgentWorkflowOutput,
     phase: ReviewPhase,
     **updates: object,
 ) -> ProjectReviewState:
-    _ensure_phase_can_accept_output(state, agent_role, phase)
+    _ensure_phase_can_accept_output(state, output.agent_role, phase)
     statuses: dict[ReviewPhase, ReviewPhaseStatus] = dict(state.phase_statuses)
     statuses[phase] = "waiting_for_engineer"
     current_index = REVIEW_PHASES.index(state.current_phase)
     target_index = REVIEW_PHASES.index(phase)
     current_phase = phase if target_index > current_index else state.current_phase
+    agent_events = [
+        *state.agent_events,
+        _build_agent_event(state, output, phase),
+    ]
     return state.model_copy(
-        update={**updates, "current_phase": current_phase, "phase_statuses": statuses}
+        update={
+            **updates,
+            "current_phase": current_phase,
+            "phase_statuses": statuses,
+            "agent_events": agent_events,
+        }
     )
 
 
@@ -175,3 +185,47 @@ def _validate_report_draft_rfi_statuses(output: ReportComposerAgentOutput) -> No
             "Report composer output can only draft open RFI items: "
             + ", ".join(non_open_rfi_ids)
         )
+
+
+def _build_agent_event(
+    state: ProjectReviewState,
+    output: AgentWorkflowOutput,
+    phase: ReviewPhase,
+) -> AgentWorkflowEvent:
+    return AgentWorkflowEvent(
+        event_id=f"agent-event-{len(state.agent_events) + 1:03d}",
+        agent_role=output.agent_role,
+        target_phase=phase,
+        status="applied",
+        output_schema_version=output.schema_version,
+        requires_engineer_review=output.requires_engineer_review,
+        summary_counts=_summary_counts_for_output(output),
+    )
+
+
+def _summary_counts_for_output(output: AgentWorkflowOutput) -> dict[str, int]:
+    if isinstance(output, DocumentIntakeAgentOutput):
+        return {
+            "document_versions": len(output.document_versions),
+            "extracted_fields": len(output.extracted_fields),
+            "missing_document_keys": len(output.missing_document_keys),
+        }
+    if isinstance(output, BasisCodeAgentOutput):
+        return {"basis_references": len(output.basis_references)}
+    if isinstance(output, ReviewPlanAgentOutput):
+        return {"review_plan": len(output.review_plan)}
+    if isinstance(output, StructuralReviewAgentOutput):
+        return {"review_paths": len(output.review_paths)}
+    if isinstance(output, CalculationCheckAgentOutput):
+        return {"calculation_run_ids": len(output.calculation_run_ids)}
+    if isinstance(output, RiskNCRAgentOutput):
+        return {
+            "risks": len(output.risks),
+            "source_calculation_run_ids": len(output.source_calculation_run_ids),
+        }
+    if isinstance(output, ReportComposerAgentOutput):
+        return {
+            "report_sections": len(output.report_sections),
+            "rfi_items": len(output.rfi_items),
+        }
+    raise TypeError(f"Unsupported agent output type: {type(output).__name__}")

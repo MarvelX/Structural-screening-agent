@@ -526,6 +526,7 @@ def build_agent_workflow_artifact_rows(
             ("风险 / NCR", len(state.risks)),
             ("RFI", len(state.rfi_items)),
             ("报告章节", len(state.report_sections)),
+            ("Agent 事件", len(state.agent_events)),
         ]
         if language == "zh"
         else [
@@ -538,6 +539,7 @@ def build_agent_workflow_artifact_rows(
             ("Risks / NCR", len(state.risks)),
             ("RFI", len(state.rfi_items)),
             ("Report Sections", len(state.report_sections)),
+            ("Agent Events", len(state.agent_events)),
         ]
     )
     return [
