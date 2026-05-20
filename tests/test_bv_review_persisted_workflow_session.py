@@ -5,17 +5,23 @@ from structural_screening_agent.bv_review import (
     ProjectReviewState,
     run_persisted_local_agent_workflow_with_summary,
 )
+from structural_screening_agent.bv_review.human_gate import build_report_draft_gate_result
 from structural_screening_agent.bv_review.persisted_workflow_session import (
     clear_persisted_workflow_session,
     get_active_persisted_project_id,
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
     record_persisted_agent_review_decision,
+    record_persisted_report_revision,
+    store_persisted_workflow_state,
     store_persisted_workflow_result,
 )
+from structural_screening_agent.bv_review.project_state import CalculationRun, EngineerApproval
+from structural_screening_agent.bv_review.report import build_bv_report_preview
 from structural_screening_agent.bv_review.state_repository import (
     JsonProjectReviewStateRepository,
 )
+from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
 
 def test_persisted_workflow_session_keeps_resumed_state_for_matching_project() -> None:
@@ -48,6 +54,24 @@ def test_persisted_workflow_session_keeps_resumed_state_for_matching_project() -
     assert active_summary.final_phase == "engineer_data_lock"
     assert get_active_persisted_workflow_state(session_state, "pv-002") is None
     assert get_active_persisted_workflow_summary(session_state, "pv-002") is None
+
+
+def test_store_persisted_workflow_state_replaces_active_state_without_losing_project_anchor() -> None:
+    session_state: dict[str, object] = {}
+    store_persisted_workflow_state(
+        session_state,
+        ProjectReviewState(project_id="pv-001", intake=_sample_intake()),
+    )
+
+    updated_state = ProjectReviewState(
+        project_id="pv-001",
+        intake=_sample_intake(),
+        current_phase="report_draft",
+    )
+    store_persisted_workflow_state(session_state, updated_state)
+
+    assert get_active_persisted_project_id(session_state) == "pv-001"
+    assert get_active_persisted_workflow_state(session_state, "pv-001") == updated_state
 
 
 def test_clear_persisted_workflow_session_removes_resumed_state_and_summary() -> None:
@@ -105,6 +129,70 @@ def test_persisted_workflow_agent_review_decision_saves_state_and_session(
     assert approval.comment == "Approved after checking extracted evidence."
 
 
+def test_persisted_workflow_report_revision_saves_state_and_session(tmp_path) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    intake = _report_ready_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-ready",
+        intake=intake,
+        current_phase="report_draft",
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            ),
+            EngineerApproval(
+                approval_id="approval-report",
+                target_type="gate",
+                target_id="report",
+                status="approved",
+                reviewer="demo-review-engineer",
+                locked=True,
+            ),
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-human-gate",
+                input_field_ids=["pile_length_m"],
+                input_locked=True,
+                status="ready",
+            )
+        ],
+    )
+    repository.save(state)
+    session_state: dict[str, object] = {}
+    store_persisted_workflow_state(session_state, state)
+    preview = build_bv_report_preview(intake, result)
+    gate = build_report_draft_gate_result(state, result)
+
+    updated_state = record_persisted_report_revision(
+        session_state,
+        repository,
+        project_id="pv-report-ready",
+        revision_id="report-rev-001",
+        report_preview=preview,
+        gate_result=gate,
+        reviewer="demo-review-engineer",
+        note="Recorded from Streamlit report gate.",
+        created_at="2026-05-21T11:00:00+08:00",
+    )
+
+    persisted_state = repository.load("pv-report-ready")
+    active_state = get_active_persisted_workflow_state(session_state, "pv-report-ready")
+    revision = updated_state.report_revisions[-1]
+    assert updated_state == persisted_state
+    assert active_state == updated_state
+    assert revision.revision_id == "report-rev-001"
+    assert revision.created_by == "demo-review-engineer"
+    assert revision.note == "Recorded from Streamlit report gate."
+
+
 def _sample_intake() -> BVReviewIntake:
     return BVReviewIntake(
         project_name="Ground PV design review",
@@ -117,5 +205,24 @@ def _sample_intake() -> BVReviewIntake:
             "structural_drawings": "available",
             "calculation_report": "partial",
             "geotechnical_report": "missing",
+        },
+    )
+
+
+def _report_ready_intake() -> BVReviewIntake:
+    return BVReviewIntake(
+        project_name="Ground PV design review",
+        country_or_region="China",
+        project_type="utility_pv",
+        design_stage="detailed_design",
+        standards_systems=["gb", "iec"],
+        review_objects=["mounting_structure", "foundation", "load_calculation"],
+        documents={
+            "structural_drawings": "available",
+            "calculation_report": "available",
+            "technical_specification": "available",
+            "geotechnical_report": "available",
+            "vendor_datasheets": "available",
+            "contract_requirements": "available",
         },
     )

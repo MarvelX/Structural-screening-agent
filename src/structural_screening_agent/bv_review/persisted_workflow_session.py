@@ -5,7 +5,12 @@ from structural_screening_agent.bv_review.agent_runner import (
     PersistedWorkflowRunResult,
     PersistedWorkflowRunSummary,
 )
-from structural_screening_agent.bv_review.human_gate import record_agent_review_decision
+from structural_screening_agent.bv_review.human_gate import (
+    ReportDraftGateResult,
+    record_agent_review_decision,
+    record_report_revision,
+)
+from structural_screening_agent.bv_review.models import BVReportPreview
 from structural_screening_agent.bv_review.project_state import ProjectReviewState
 from structural_screening_agent.bv_review.state_repository import (
     JsonProjectReviewStateRepository,
@@ -24,6 +29,14 @@ def store_persisted_workflow_result(
     session_state[_PROJECT_ID_KEY] = result.summary.project_id
     session_state[_SUMMARY_KEY] = result.summary
     session_state[_STATE_KEY] = result.state
+
+
+def store_persisted_workflow_state(
+    session_state: MutableMapping[str, object],
+    state: ProjectReviewState,
+) -> None:
+    session_state[_PROJECT_ID_KEY] = state.project_id
+    session_state[_STATE_KEY] = state
 
 
 def clear_persisted_workflow_session(session_state: MutableMapping[str, object]) -> None:
@@ -87,5 +100,35 @@ def record_persisted_agent_review_decision(
         comment=comment,
     )
     repository.save(updated_state)
-    session_state[_STATE_KEY] = updated_state
+    store_persisted_workflow_state(session_state, updated_state)
+    return updated_state
+
+
+def record_persisted_report_revision(
+    session_state: MutableMapping[str, object],
+    repository: JsonProjectReviewStateRepository,
+    *,
+    project_id: str,
+    revision_id: str,
+    report_preview: BVReportPreview,
+    gate_result: ReportDraftGateResult,
+    reviewer: str,
+    note: str = "",
+    created_at: str | None = None,
+) -> ProjectReviewState:
+    state = get_active_persisted_workflow_state(session_state, project_id)
+    if state is None:
+        raise ValueError("No active persisted workflow state is loaded for this project.")
+
+    updated_state = record_report_revision(
+        state,
+        revision_id=revision_id,
+        report_preview=report_preview,
+        gate_result=gate_result,
+        reviewer=reviewer,
+        note=note,
+        created_at=created_at,
+    )
+    repository.save(updated_state)
+    store_persisted_workflow_state(session_state, updated_state)
     return updated_state

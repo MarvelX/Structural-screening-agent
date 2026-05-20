@@ -1,4 +1,5 @@
 from copy import deepcopy
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -50,6 +51,7 @@ from structural_screening_agent.bv_review.human_gate import (
     build_engineer_approval,
     build_report_draft_gate_result,
     record_agent_review_decision,
+    record_report_revision,
 )
 from structural_screening_agent.bv_review.persisted_workflow_session import (
     clear_persisted_workflow_session,
@@ -57,6 +59,8 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
     record_persisted_agent_review_decision,
+    record_persisted_report_revision,
+    store_persisted_workflow_state,
     store_persisted_workflow_result,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
@@ -1071,6 +1075,8 @@ with bv_review_tab:
         if st.session_state.get("bv_agent_review_signature") != workflow_signature:
             st.session_state["bv_agent_review_signature"] = workflow_signature
             st.session_state["bv_agent_review_decisions"] = {}
+            st.session_state["bv_report_gate_approved"] = False
+            st.session_state["bv_report_revisions"] = []
         stored_agent_review_decisions = (
             {}
             if persisted_workflow_is_active
@@ -1096,6 +1102,29 @@ with bv_review_tab:
                 )
             except ValueError:
                 continue
+        if not persisted_workflow_is_active:
+            if (
+                st.session_state.get("bv_report_gate_approved") is True
+                and not reviewed_workflow_state.is_gate_locked("report")
+            ):
+                reviewed_workflow_state = reviewed_workflow_state.model_copy(
+                    update={
+                        "approvals": [
+                            *reviewed_workflow_state.approvals,
+                            build_engineer_approval(
+                                approval_id="phase1-report-gate-approval",
+                                target_id="report",
+                                reviewer="demo-review-engineer",
+                                comment="Report gate approved in demo workbench.",
+                            ),
+                        ]
+                    }
+                )
+            session_report_revisions = st.session_state.get("bv_report_revisions", [])
+            if isinstance(session_report_revisions, list) and session_report_revisions:
+                reviewed_workflow_state = reviewed_workflow_state.model_copy(
+                    update={"report_revisions": session_report_revisions}
+                )
         effective_bv_intake = (
             reviewed_workflow_state.intake
             if persisted_workflow_is_active
@@ -1364,6 +1393,173 @@ with bv_review_tab:
             )
             bv_docx_payload = build_docx_report_bytes(bv_report_preview)
             bv_pdf_payload = build_pdf_report_bytes(bv_report_preview)
+
+            st.markdown(
+                "##### Report Revision History"
+                if ui_language == "en"
+                else "报告修订历史"
+            )
+            if reviewed_workflow_state.report_revisions:
+                st.dataframe(
+                    [
+                        (
+                            {
+                                "修订 ID": revision.revision_id,
+                                "来源阶段": BV_REVIEW_PHASE_LABELS[
+                                    revision.source_phase
+                                ][ui_language],
+                                "报告标题": revision.report_title,
+                                "章节数": revision.section_count,
+                                "RFI 数量": revision.rfi_count,
+                                "计算运行": ", ".join(revision.calculation_run_ids),
+                                "记录人": revision.created_by,
+                                "记录时间": revision.created_at or "",
+                                "备注": revision.note or "",
+                            }
+                            if ui_language == "zh"
+                            else {
+                                "Revision ID": revision.revision_id,
+                                "Source Phase": BV_REVIEW_PHASE_LABELS[
+                                    revision.source_phase
+                                ][ui_language],
+                                "Report Title": revision.report_title,
+                                "Sections": revision.section_count,
+                                "RFIs": revision.rfi_count,
+                                "Calculation Runs": ", ".join(
+                                    revision.calculation_run_ids
+                                ),
+                                "Created By": revision.created_by,
+                                "Created At": revision.created_at or "",
+                                "Note": revision.note or "",
+                            }
+                        )
+                        for revision in reviewed_workflow_state.report_revisions
+                    ],
+                    hide_index=True,
+                    use_container_width=True,
+                )
+            else:
+                st.caption(
+                    "No report revision snapshots have been recorded."
+                    if ui_language == "en"
+                    else "当前尚未记录报告修订快照。"
+                )
+
+            report_gate_approved = reviewed_workflow_state.is_gate_locked("report")
+            report_gate_col, report_revision_col = st.columns(2)
+            with report_gate_col:
+                if report_gate_approved:
+                    st.success(
+                        "Report gate approved by engineer."
+                        if ui_language == "en"
+                        else "报告门禁已由工程师批准。"
+                    )
+                elif st.button(
+                    "Approve Report Gate"
+                    if ui_language == "en"
+                    else "批准报告门禁",
+                    key="bv_approve_report_gate",
+                    use_container_width=True,
+                ):
+                    report_reviewer = (
+                        "demo-review-engineer"
+                        if ui_language == "en"
+                        else "演示审核工程师"
+                    )
+                    report_gate_approval = build_engineer_approval(
+                        approval_id=(
+                            "report-gate-approval-"
+                            f"{len(reviewed_workflow_state.report_revisions) + 1:03d}"
+                        ),
+                        target_id="report",
+                        reviewer=report_reviewer,
+                        comment=(
+                            "Report gate approved in Streamlit workbench."
+                            if ui_language == "en"
+                            else "已在 Streamlit 工作台批准报告门禁。"
+                        ),
+                    )
+                    updated_workflow_state = reviewed_workflow_state.model_copy(
+                        update={
+                            "approvals": [
+                                *reviewed_workflow_state.approvals,
+                                report_gate_approval,
+                            ]
+                        }
+                    )
+                    if persisted_workflow_is_active:
+                        persisted_repository.save(updated_workflow_state)
+                        store_persisted_workflow_state(
+                            st.session_state,
+                            updated_workflow_state,
+                        )
+                    else:
+                        st.session_state["bv_report_gate_approved"] = True
+                    st.rerun()
+            with report_revision_col:
+                report_revision_note = st.text_input(
+                    "Report Revision Note"
+                    if ui_language == "en"
+                    else "报告修订备注",
+                    value=(
+                        "Recorded after report gate evidence review."
+                        if ui_language == "en"
+                        else "已复核报告门禁证据后记录。"
+                    ),
+                    key="bv_report_revision_note",
+                )
+                if st.button(
+                    "Record Report Revision Snapshot"
+                    if ui_language == "en"
+                    else "记录报告修订快照",
+                    key="bv_record_report_revision_snapshot",
+                    use_container_width=True,
+                    disabled=not report_gate_approved,
+                ):
+                    revision_id = (
+                        "report-rev-"
+                        f"{len(reviewed_workflow_state.report_revisions) + 1:03d}"
+                    )
+                    report_reviewer = (
+                        "demo-review-engineer"
+                        if ui_language == "en"
+                        else "演示审核工程师"
+                    )
+                    try:
+                        if persisted_workflow_is_active:
+                            updated_workflow_state = record_persisted_report_revision(
+                                st.session_state,
+                                persisted_repository,
+                                project_id=active_persisted_project_id,
+                                revision_id=revision_id,
+                                report_preview=bv_report_preview,
+                                gate_result=report_draft_gate,
+                                reviewer=report_reviewer,
+                                note=report_revision_note,
+                                created_at=datetime.now(timezone.utc).isoformat(),
+                            )
+                        else:
+                            updated_workflow_state = record_report_revision(
+                                reviewed_workflow_state,
+                                revision_id=revision_id,
+                                report_preview=bv_report_preview,
+                                gate_result=report_draft_gate,
+                                reviewer=report_reviewer,
+                                note=report_revision_note,
+                                created_at=datetime.now(timezone.utc).isoformat(),
+                            )
+                            st.session_state["bv_report_revisions"] = (
+                                updated_workflow_state.report_revisions
+                            )
+                        st.success(
+                            f"Recorded {revision_id}."
+                            if ui_language == "en"
+                            else f"已记录 {revision_id}。"
+                        )
+                        st.rerun()
+                    except ValueError as exc:
+                        st.warning(str(exc))
+
             bv_export_col_1, bv_export_col_2, bv_export_col_3 = st.columns(3)
             with bv_export_col_1:
                 bv_markdown_download = st.download_button(
