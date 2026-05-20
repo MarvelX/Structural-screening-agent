@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 from re import fullmatch
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from structural_screening_agent.bv_review.field_diff import (
     IncrementalRecheckPlan,
@@ -20,6 +20,15 @@ class ProjectReviewStateSummary(BaseModel):
     agent_event_count: int
     pending_agent_review_count: int
     active_rfi_count: int
+
+
+class ProjectReviewStateInventory(BaseModel):
+    summaries: list[ProjectReviewStateSummary]
+    invalid_project_ids: list[str]
+
+    @property
+    def invalid_project_count(self) -> int:
+        return len(self.invalid_project_ids)
 
 
 class JsonProjectReviewStateRepository:
@@ -59,10 +68,20 @@ class JsonProjectReviewStateRepository:
         return sorted(path.stem for path in self.root.glob("*.json") if path.is_file())
 
     def list_project_summaries(self) -> list[ProjectReviewStateSummary]:
-        return [
-            _summarize_project_state(self.load(project_id))
-            for project_id in self.list_project_ids()
-        ]
+        return self.list_project_inventory().summaries
+
+    def list_project_inventory(self) -> ProjectReviewStateInventory:
+        summaries: list[ProjectReviewStateSummary] = []
+        invalid_project_ids: list[str] = []
+        for project_id in self.list_project_ids():
+            try:
+                summaries.append(_summarize_project_state(self.load(project_id)))
+            except (FileNotFoundError, OSError, ValueError, ValidationError):
+                invalid_project_ids.append(project_id)
+        return ProjectReviewStateInventory(
+            summaries=summaries,
+            invalid_project_ids=invalid_project_ids,
+        )
 
 
 def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSummary:

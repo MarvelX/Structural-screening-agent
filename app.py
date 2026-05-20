@@ -897,8 +897,17 @@ with bv_review_tab:
             key="bv_persisted_project_id",
         ).strip()
         persisted_project_id = persisted_project_id or phase1_state.project_id
-        project_summaries = persisted_repository.list_project_summaries()
-        if project_summaries:
+        project_inventory = persisted_repository.list_project_inventory()
+        if project_inventory.invalid_project_ids:
+            st.warning(
+                (
+                    "Some saved project files could not be loaded: "
+                    if ui_language == "en"
+                    else "部分已保存项目文件无法加载："
+                )
+                + ", ".join(project_inventory.invalid_project_ids)
+            )
+        if project_inventory.summaries:
             st.markdown(
                 "##### Saved Project Inventory"
                 if ui_language == "en"
@@ -906,7 +915,7 @@ with bv_review_tab:
             )
             st.dataframe(
                 build_project_review_state_summary_rows(
-                    project_summaries,
+                    project_inventory.summaries,
                     ui_language,
                 ),
                 hide_index=True,

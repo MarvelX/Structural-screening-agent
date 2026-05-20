@@ -151,10 +151,13 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "record_persisted_agent_review_decision" in app_source
     assert "build_bv_review_result_from_project_state" in app_source
     assert "effective_bv_result" in app_source
-    assert "list_project_summaries" in app_source
+    assert "list_project_inventory" in app_source
+    assert "invalid_project_ids" in app_source
     assert "build_project_review_state_summary_rows" in app_source
     assert "Saved Project Inventory" in app_source
     assert '"已保存项目清单"' in app_source
+    assert "Some saved project files could not be loaded" in app_source
+    assert "部分已保存项目文件无法加载" in app_source
     assert "if persisted_workflow_is_active" in app_source
     assert '"bv_persisted_workflow_summary_rows"' not in app_source
     assert "只有点击按钮时才会保存或恢复本地 JSON 状态" in app_source

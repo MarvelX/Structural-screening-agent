@@ -140,6 +140,20 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[1].active_rfi_count == 0
 
 
+def test_json_state_repository_inventory_reports_invalid_project_files(
+    tmp_path: Path,
+) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    repository.save(_sample_state())
+    (tmp_path / "broken-project.json").write_text("{not-json", encoding="utf-8")
+
+    inventory = repository.list_project_inventory()
+
+    assert [item.project_id for item in inventory.summaries] == ["pv-ground-001"]
+    assert inventory.invalid_project_ids == ["broken-project"]
+    assert inventory.invalid_project_count == 1
+
+
 def test_json_state_repository_round_trips_incremental_recheck_rfi_state(tmp_path: Path) -> None:
     repository = JsonProjectReviewStateRepository(tmp_path)
     state = _sample_state().model_copy(
