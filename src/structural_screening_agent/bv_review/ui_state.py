@@ -1,3 +1,4 @@
+from structural_screening_agent.bv_review.agent_runner import PersistedWorkflowRunSummary
 from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.field_diff import (
     FieldDiff,
@@ -100,11 +101,13 @@ BV_AGENT_EVENT_SUMMARY_LABELS = {
     "basis_references": {"zh": "审核依据", "en": "Review Basis"},
     "review_plan": {"zh": "审核计划", "en": "Review Plan"},
     "review_paths": {"zh": "审核路径", "en": "Review Paths"},
+    "calculation_runs": {"zh": "计算运行", "en": "Calculation Runs"},
     "calculation_run_ids": {"zh": "计算运行引用", "en": "Calculation Run References"},
     "risks": {"zh": "风险 / NCR", "en": "Risks / NCR"},
     "source_calculation_run_ids": {"zh": "来源计算运行", "en": "Source Calculation Runs"},
     "report_sections": {"zh": "报告章节", "en": "Report Sections"},
     "rfi_items": {"zh": "RFI", "en": "RFI"},
+    "agent_events": {"zh": "Agent 事件", "en": "Agent Events"},
 }
 
 
@@ -602,6 +605,77 @@ def build_agent_workflow_artifact_rows(
         {labels["artifact"]: artifact, labels["count"]: count}
         for artifact, count in artifact_labels
     ]
+
+
+def build_persisted_workflow_run_summary_rows(
+    summary: PersistedWorkflowRunSummary, language: Language
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "key": "项目",
+            "value": "内容",
+            "project_id": "项目 ID",
+            "start_phase": "起始阶段",
+            "final_phase": "结束阶段",
+            "agent_event_ids": "新增 Agent 事件",
+            "agent_roles": "执行 Agent",
+            "artifact_summary": "产物摘要",
+            "save_status": "保存状态",
+            "saved": "已保存",
+            "not_saved": "未保存",
+            "none": "无",
+        }
+        if language == "zh"
+        else {
+            "key": "Item",
+            "value": "Value",
+            "project_id": "Project ID",
+            "start_phase": "Start Phase",
+            "final_phase": "Final Phase",
+            "agent_event_ids": "New Agent Events",
+            "agent_roles": "Executed Agents",
+            "artifact_summary": "Artifact Summary",
+            "save_status": "Save Status",
+            "saved": "Saved",
+            "not_saved": "Not Saved",
+            "none": "None",
+        }
+    )
+    nonzero_artifact_counts = {
+        key: count for key, count in summary.artifact_counts.items() if count
+    }
+    agent_roles = [
+        BV_AGENT_ROLE_LABELS.get(role, {}).get(language, role)
+        for role in summary.applied_agent_roles
+    ]
+    rows = [
+        (labels["project_id"], summary.project_id),
+        (
+            labels["start_phase"],
+            BV_REVIEW_PHASE_LABELS.get(summary.start_phase, {}).get(
+                language,
+                summary.start_phase,
+            ),
+        ),
+        (
+            labels["final_phase"],
+            BV_REVIEW_PHASE_LABELS.get(summary.final_phase, {}).get(
+                language,
+                summary.final_phase,
+            ),
+        ),
+        (
+            labels["agent_event_ids"],
+            ", ".join(summary.applied_agent_event_ids) or labels["none"],
+        ),
+        (labels["agent_roles"], ", ".join(agent_roles) or labels["none"]),
+        (
+            labels["artifact_summary"],
+            _format_agent_event_summary_counts(nonzero_artifact_counts, language),
+        ),
+        (labels["save_status"], labels["saved"] if summary.saved else labels["not_saved"]),
+    ]
+    return [{labels["key"]: key, labels["value"]: value} for key, value in rows]
 
 
 def build_agent_workflow_event_rows(

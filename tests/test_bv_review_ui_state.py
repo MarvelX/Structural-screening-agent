@@ -17,6 +17,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_field_diff_summary_rows,
     build_ground_fixed_human_gate_rows,
     build_incremental_recheck_summary_rows,
+    build_persisted_workflow_run_summary_rows,
     build_report_gate_evidence_rows,
     default_bv_review_intake,
     localize_report_gate_reason,
@@ -34,7 +35,10 @@ from structural_screening_agent.bv_review.human_gate import (
     ReportDraftGateResult,
     record_agent_review_decision,
 )
-from structural_screening_agent.bv_review import run_local_agent_workflow_until_blocked
+from structural_screening_agent.bv_review import (
+    PersistedWorkflowRunSummary,
+    run_local_agent_workflow_until_blocked,
+)
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
 
@@ -182,6 +186,55 @@ def test_build_incremental_recheck_summary_returns_review_items_without_running_
     assert rows
     assert rows[0]["Type"] == "Calculation Recheck"
     assert "Pile length" in str(rows[0]["Reason"])
+
+
+def test_persisted_workflow_run_summary_rows_localize_resume_audit_trail() -> None:
+    summary = PersistedWorkflowRunSummary(
+        project_id="pv-001",
+        start_phase="intake",
+        final_phase="engineer_data_lock",
+        applied_agent_event_ids=["agent-event-001", "agent-event-002"],
+        applied_agent_roles=["document_intake", "basis_code"],
+        artifact_counts={
+            "basis_references": 4,
+            "review_plan": 3,
+            "review_paths": 2,
+            "rfi_items": 1,
+            "agent_events": 2,
+            "risks": 0,
+        },
+        saved=True,
+    )
+
+    zh_rows = build_persisted_workflow_run_summary_rows(summary, "zh")
+    en_rows = build_persisted_workflow_run_summary_rows(summary, "en")
+
+    assert zh_rows == [
+        {"项目": "项目 ID", "内容": "pv-001"},
+        {"项目": "起始阶段", "内容": "项目录入"},
+        {"项目": "结束阶段", "内容": "工程师数据锁定"},
+        {"项目": "新增 Agent 事件", "内容": "agent-event-001, agent-event-002"},
+        {"项目": "执行 Agent", "内容": "资料接收 Agent, 依据与标准 Agent"},
+        {
+            "项目": "产物摘要",
+            "内容": "审核依据: 4; 审核计划: 3; 审核路径: 2; RFI: 1; Agent 事件: 2",
+        },
+        {"项目": "保存状态", "内容": "已保存"},
+    ]
+    assert en_rows == [
+        {"Item": "Project ID", "Value": "pv-001"},
+        {"Item": "Start Phase", "Value": "Intake"},
+        {"Item": "Final Phase", "Value": "Engineer Data Lock"},
+        {"Item": "New Agent Events", "Value": "agent-event-001, agent-event-002"},
+        {"Item": "Executed Agents", "Value": "Document Intake Agent, Basis & Code Agent"},
+        {
+            "Item": "Artifact Summary",
+            "Value": "Review Basis: 4; Review Plan: 3; Review Paths: 2; RFI: 1; Agent Events: 2",
+        },
+        {"Item": "Save Status", "Value": "Saved"},
+    ]
+    assert "Document Intake Agent" not in str(zh_rows)
+    assert "资料接收 Agent" not in str(en_rows)
 
 
 def test_closed_rfi_incremental_recheck_rows_show_completed_evidence_without_mixed_language() -> None:
