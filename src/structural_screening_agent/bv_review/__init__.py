@@ -18,6 +18,7 @@ from structural_screening_agent.bv_review.agent_workflow import (
 from structural_screening_agent.bv_review.agent_runner import (
     run_local_agent_workflow_step,
     run_local_agent_workflow_until_blocked,
+    run_persisted_local_agent_workflow_until_blocked,
 )
 from structural_screening_agent.bv_review.basis import build_review_basis
 from structural_screening_agent.bv_review.calculation_engines import (
@@ -86,6 +87,7 @@ __all__ = [
     "RiskNCRAgentOutput",
     "run_local_agent_workflow_step",
     "run_local_agent_workflow_until_blocked",
+    "run_persisted_local_agent_workflow_until_blocked",
     "StructuralReviewAgentOutput",
     "SuperstructureEngineInput",
     "JsonProjectReviewStateRepository",

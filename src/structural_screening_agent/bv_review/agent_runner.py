@@ -23,6 +23,9 @@ from structural_screening_agent.bv_review.report import (
 from structural_screening_agent.bv_review.review_path import build_structural_review_path
 from structural_screening_agent.bv_review.review_plan import build_review_plan
 from structural_screening_agent.bv_review.risk_register import build_risk_register
+from structural_screening_agent.bv_review.state_repository import (
+    JsonProjectReviewStateRepository,
+)
 
 
 def run_local_agent_workflow_step(state: ProjectReviewState) -> ProjectReviewState | None:
@@ -44,6 +47,18 @@ def run_local_agent_workflow_until_blocked(
             return current
         current = next_state
     return current
+
+
+def run_persisted_local_agent_workflow_until_blocked(
+    repository: JsonProjectReviewStateRepository,
+    project_id: str,
+    *,
+    max_steps: int = 8,
+) -> ProjectReviewState:
+    state = repository.load(project_id)
+    final_state = run_local_agent_workflow_until_blocked(state, max_steps=max_steps)
+    repository.save(final_state)
+    return final_state
 
 
 def _build_local_agent_output_for_current_phase(
