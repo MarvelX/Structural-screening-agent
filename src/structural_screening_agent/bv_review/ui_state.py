@@ -878,6 +878,7 @@ def build_report_gate_evidence_rows(report_gate, language: Language) -> list[dic
     evidence_types = (
         {
             "blocking_risk": "阻塞风险",
+            "incremental_rfi": "增量复核 RFI",
             "pending_agent_review": "待复核 Agent 产物",
             "rejected_agent_review": "已驳回 Agent 产物",
             "calculation_run": "可用计算运行",
@@ -885,6 +886,7 @@ def build_report_gate_evidence_rows(report_gate, language: Language) -> list[dic
         if language == "zh"
         else {
             "blocking_risk": "Blocking Risk",
+            "incremental_rfi": "Incremental Recheck RFI",
             "pending_agent_review": "Pending Agent Review",
             "rejected_agent_review": "Rejected Agent Review",
             "calculation_run": "Available Calculation Run",
@@ -901,6 +903,14 @@ def build_report_gate_evidence_rows(report_gate, language: Language) -> list[dic
             {
                 labels["type"]: evidence_types["blocking_risk"],
                 labels["id"]: risk_id,
+                labels["role"]: roles["block"],
+            }
+        )
+    for rfi_id in report_gate.incremental_recheck_rfi_ids:
+        rows.append(
+            {
+                labels["type"]: evidence_types["incremental_rfi"],
+                labels["id"]: rfi_id,
                 labels["role"]: roles["block"],
             }
         )

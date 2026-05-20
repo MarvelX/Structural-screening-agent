@@ -269,6 +269,7 @@ def test_report_draft_gate_blocks_when_open_incremental_recheck_rfi_exists() -> 
     gate = build_report_draft_gate_result(state, result)
 
     assert gate.status == "blocked"
+    assert gate.incremental_recheck_rfi_ids == ["rfi-pile_length_m"]
     assert any("incremental recheck" in reason.lower() for reason in gate.reasons)
 
 
@@ -296,6 +297,7 @@ def test_report_draft_gate_allows_closed_incremental_recheck_rfi() -> None:
     gate = build_report_draft_gate_result(state, result)
 
     assert gate.status == "ready"
+    assert gate.incremental_recheck_rfi_ids == []
 
 
 def test_report_draft_gate_blocks_responded_incremental_recheck_rfi_before_closeout() -> None:
@@ -322,4 +324,5 @@ def test_report_draft_gate_blocks_responded_incremental_recheck_rfi_before_close
     gate = build_report_draft_gate_result(state, result)
 
     assert gate.status == "blocked"
+    assert gate.incremental_recheck_rfi_ids == ["rfi-pile_length_m"]
     assert any("incremental recheck" in reason.lower() for reason in gate.reasons)

@@ -225,6 +225,7 @@ def test_report_gate_evidence_rows_localize_structured_gate_ids() -> None:
     gate = ReportDraftGateResult(
         status="blocked",
         blocking_risk_ids=["risk-001"],
+        incremental_recheck_rfi_ids=["rfi-001"],
         pending_agent_review_event_ids=["agent-event-001"],
         rejected_agent_review_event_ids=["agent-event-002"],
         calculation_run_ids=["run-001"],
@@ -235,12 +236,18 @@ def test_report_gate_evidence_rows_localize_structured_gate_ids() -> None:
 
     assert zh_rows == [
         {"证据类型": "阻塞风险", "ID": "risk-001", "门禁作用": "阻塞报告草稿"},
+        {"证据类型": "增量复核 RFI", "ID": "rfi-001", "门禁作用": "阻塞报告草稿"},
         {"证据类型": "待复核 Agent 产物", "ID": "agent-event-001", "门禁作用": "阻塞报告草稿"},
         {"证据类型": "已驳回 Agent 产物", "ID": "agent-event-002", "门禁作用": "阻塞报告草稿"},
         {"证据类型": "可用计算运行", "ID": "run-001", "门禁作用": "支持报告草稿"},
     ]
     assert en_rows == [
         {"Evidence Type": "Blocking Risk", "ID": "risk-001", "Gate Role": "Blocks Report Draft"},
+        {
+            "Evidence Type": "Incremental Recheck RFI",
+            "ID": "rfi-001",
+            "Gate Role": "Blocks Report Draft",
+        },
         {
             "Evidence Type": "Pending Agent Review",
             "ID": "agent-event-001",

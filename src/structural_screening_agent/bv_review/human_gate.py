@@ -114,6 +114,7 @@ class ReportDraftGateResult(BaseModel):
     status: Literal["ready", "blocked"]
     reasons: list[str] = Field(default_factory=list)
     blocking_risk_ids: list[str] = Field(default_factory=list)
+    incremental_recheck_rfi_ids: list[str] = Field(default_factory=list)
     pending_agent_review_event_ids: list[str] = Field(default_factory=list)
     rejected_agent_review_event_ids: list[str] = Field(default_factory=list)
     calculation_run_ids: list[str] = Field(default_factory=list)
@@ -202,6 +203,7 @@ def build_report_draft_gate_result(
         status="blocked" if reasons else "ready",
         reasons=reasons,
         blocking_risk_ids=blocking_risk_ids,
+        incremental_recheck_rfi_ids=incremental_rfi_ids,
         pending_agent_review_event_ids=pending_agent_review_event_ids,
         rejected_agent_review_event_ids=rejected_agent_review_event_ids,
         calculation_run_ids=calculation_run_ids,
