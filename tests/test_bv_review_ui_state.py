@@ -16,6 +16,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_field_diff_summary_rows,
     build_ground_fixed_human_gate_rows,
     build_incremental_recheck_summary_rows,
+    build_report_gate_evidence_rows,
     default_bv_review_intake,
     localize_report_gate_reason,
 )
@@ -24,7 +25,10 @@ from structural_screening_agent.bv_review.field_diff import (
     diff_extracted_fields,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState
-from structural_screening_agent.bv_review.human_gate import record_agent_review_decision
+from structural_screening_agent.bv_review.human_gate import (
+    ReportDraftGateResult,
+    record_agent_review_decision,
+)
 from structural_screening_agent.bv_review import run_local_agent_workflow_until_blocked
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
@@ -215,6 +219,46 @@ def test_report_gate_rejected_agent_review_reason_localizes_to_chinese() -> None
     localized = localize_report_gate_reason(reason, "zh")
 
     assert localized == "已驳回的 Agent 产物阻塞报告草稿输入：agent-event-001"
+
+
+def test_report_gate_evidence_rows_localize_structured_gate_ids() -> None:
+    gate = ReportDraftGateResult(
+        status="blocked",
+        blocking_risk_ids=["risk-001"],
+        pending_agent_review_event_ids=["agent-event-001"],
+        rejected_agent_review_event_ids=["agent-event-002"],
+        calculation_run_ids=["run-001"],
+    )
+
+    zh_rows = build_report_gate_evidence_rows(gate, "zh")
+    en_rows = build_report_gate_evidence_rows(gate, "en")
+
+    assert zh_rows == [
+        {"证据类型": "阻塞风险", "ID": "risk-001", "门禁作用": "阻塞报告草稿"},
+        {"证据类型": "待复核 Agent 产物", "ID": "agent-event-001", "门禁作用": "阻塞报告草稿"},
+        {"证据类型": "已驳回 Agent 产物", "ID": "agent-event-002", "门禁作用": "阻塞报告草稿"},
+        {"证据类型": "可用计算运行", "ID": "run-001", "门禁作用": "支持报告草稿"},
+    ]
+    assert en_rows == [
+        {"Evidence Type": "Blocking Risk", "ID": "risk-001", "Gate Role": "Blocks Report Draft"},
+        {
+            "Evidence Type": "Pending Agent Review",
+            "ID": "agent-event-001",
+            "Gate Role": "Blocks Report Draft",
+        },
+        {
+            "Evidence Type": "Rejected Agent Review",
+            "ID": "agent-event-002",
+            "Gate Role": "Blocks Report Draft",
+        },
+        {
+            "Evidence Type": "Available Calculation Run",
+            "ID": "run-001",
+            "Gate Role": "Supports Report Draft",
+        },
+    ]
+    assert "Pending Agent Review" not in str(zh_rows)
+    assert "待复核" not in str(en_rows)
 
 
 def test_calculation_result_summary_rows_localize_internal_keys_for_chinese_ui() -> None:

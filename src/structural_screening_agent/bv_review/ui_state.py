@@ -869,6 +869,68 @@ def build_calculation_result_summary_rows(
     ]
 
 
+def build_report_gate_evidence_rows(report_gate, language: Language) -> list[dict[str, str]]:
+    labels = (
+        {"type": "证据类型", "id": "ID", "role": "门禁作用"}
+        if language == "zh"
+        else {"type": "Evidence Type", "id": "ID", "role": "Gate Role"}
+    )
+    evidence_types = (
+        {
+            "blocking_risk": "阻塞风险",
+            "pending_agent_review": "待复核 Agent 产物",
+            "rejected_agent_review": "已驳回 Agent 产物",
+            "calculation_run": "可用计算运行",
+        }
+        if language == "zh"
+        else {
+            "blocking_risk": "Blocking Risk",
+            "pending_agent_review": "Pending Agent Review",
+            "rejected_agent_review": "Rejected Agent Review",
+            "calculation_run": "Available Calculation Run",
+        }
+    )
+    roles = (
+        {"block": "阻塞报告草稿", "support": "支持报告草稿"}
+        if language == "zh"
+        else {"block": "Blocks Report Draft", "support": "Supports Report Draft"}
+    )
+    rows: list[dict[str, str]] = []
+    for risk_id in report_gate.blocking_risk_ids:
+        rows.append(
+            {
+                labels["type"]: evidence_types["blocking_risk"],
+                labels["id"]: risk_id,
+                labels["role"]: roles["block"],
+            }
+        )
+    for event_id in report_gate.pending_agent_review_event_ids:
+        rows.append(
+            {
+                labels["type"]: evidence_types["pending_agent_review"],
+                labels["id"]: event_id,
+                labels["role"]: roles["block"],
+            }
+        )
+    for event_id in report_gate.rejected_agent_review_event_ids:
+        rows.append(
+            {
+                labels["type"]: evidence_types["rejected_agent_review"],
+                labels["id"]: event_id,
+                labels["role"]: roles["block"],
+            }
+        )
+    for run_id in report_gate.calculation_run_ids:
+        rows.append(
+            {
+                labels["type"]: evidence_types["calculation_run"],
+                labels["id"]: run_id,
+                labels["role"]: roles["support"],
+            }
+        )
+    return rows
+
+
 def localize_report_gate_reason(reason: str, language: Language) -> str:
     incremental_prefix = "Open RFI items trigger incremental recheck: "
     if language == "zh" and reason.startswith(incremental_prefix):

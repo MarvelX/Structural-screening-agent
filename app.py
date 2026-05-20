@@ -31,6 +31,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_field_diff_summary_rows,
     build_ground_fixed_human_gate_rows,
     build_incremental_recheck_summary_rows,
+    build_report_gate_evidence_rows,
     localize_report_gate_reason,
     default_bv_review_intake,
 )
@@ -1098,6 +1099,25 @@ with bv_review_tab:
                 st.write(f"- {localize_report_gate_reason(reason, ui_language)}")
         for note in report_draft_gate.notes:
             st.caption(note)
+        report_gate_evidence_rows = build_report_gate_evidence_rows(
+            report_draft_gate,
+            ui_language,
+        )
+        st.markdown(
+            "##### Report Gate Evidence" if ui_language == "en" else "报告门禁证据"
+        )
+        if report_gate_evidence_rows:
+            st.dataframe(
+                report_gate_evidence_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No structured report gate evidence is available."
+                if ui_language == "en"
+                else "当前没有结构化报告门禁证据。"
+            )
 
         bv_markdown_filename = build_bv_report_filename(bv_intake.project_type)
         bv_word_filename = bv_markdown_filename.replace(".md", ".docx")
