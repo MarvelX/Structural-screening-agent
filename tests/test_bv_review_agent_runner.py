@@ -2,6 +2,7 @@ from structural_screening_agent.bv_review import (
     BVReviewIntake,
     ProjectReviewState,
     run_persisted_local_agent_workflow_until_blocked,
+    run_persisted_local_agent_workflow_with_summary,
     run_local_agent_workflow_step,
     run_local_agent_workflow_until_blocked,
 )
@@ -174,6 +175,36 @@ def test_persisted_local_agent_workflow_resumes_locked_calculation_gate_state(tm
         "risk_ncr",
         "report_composer",
     ]
+
+
+def test_persisted_local_agent_workflow_summary_records_resume_audit_trail(tmp_path) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    repository.save(ProjectReviewState(project_id="pv-001", intake=_sample_intake()))
+
+    result = run_persisted_local_agent_workflow_with_summary(repository, "pv-001")
+
+    assert result.state.current_phase == "engineer_data_lock"
+    assert result.summary.project_id == "pv-001"
+    assert result.summary.start_phase == "intake"
+    assert result.summary.final_phase == "engineer_data_lock"
+    assert result.summary.saved is True
+    assert result.summary.applied_agent_roles == [
+        "document_intake",
+        "basis_code",
+        "review_plan",
+        "structural_review",
+    ]
+    assert result.summary.applied_agent_event_ids == [
+        "agent-event-001",
+        "agent-event-002",
+        "agent-event-003",
+        "agent-event-004",
+    ]
+    assert result.summary.artifact_counts["basis_references"] == len(
+        result.state.basis_references
+    )
+    assert result.summary.artifact_counts["review_plan"] == len(result.state.review_plan)
+    assert result.summary.artifact_counts["review_paths"] == len(result.state.review_paths)
 
 
 def _sample_intake() -> BVReviewIntake:

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pydantic import BaseModel, Field
+
 from structural_screening_agent.bv_review.agent_contracts import (
     BasisCodeAgentOutput,
     CalculationCheckAgentOutput,
@@ -26,6 +28,21 @@ from structural_screening_agent.bv_review.risk_register import build_risk_regist
 from structural_screening_agent.bv_review.state_repository import (
     JsonProjectReviewStateRepository,
 )
+
+
+class PersistedWorkflowRunSummary(BaseModel):
+    project_id: str
+    start_phase: str
+    final_phase: str
+    applied_agent_event_ids: list[str] = Field(default_factory=list)
+    applied_agent_roles: list[str] = Field(default_factory=list)
+    artifact_counts: dict[str, int] = Field(default_factory=dict)
+    saved: bool = False
+
+
+class PersistedWorkflowRunResult(BaseModel):
+    state: ProjectReviewState
+    summary: PersistedWorkflowRunSummary
 
 
 def run_local_agent_workflow_step(state: ProjectReviewState) -> ProjectReviewState | None:
@@ -55,10 +72,51 @@ def run_persisted_local_agent_workflow_until_blocked(
     *,
     max_steps: int = 8,
 ) -> ProjectReviewState:
+    return run_persisted_local_agent_workflow_with_summary(
+        repository,
+        project_id,
+        max_steps=max_steps,
+    ).state
+
+
+def run_persisted_local_agent_workflow_with_summary(
+    repository: JsonProjectReviewStateRepository,
+    project_id: str,
+    *,
+    max_steps: int = 8,
+) -> PersistedWorkflowRunResult:
     state = repository.load(project_id)
+    start_event_count = len(state.agent_events)
     final_state = run_local_agent_workflow_until_blocked(state, max_steps=max_steps)
-    repository.save(final_state)
-    return final_state
+    path = repository.save(final_state)
+    new_events = final_state.agent_events[start_event_count:]
+    return PersistedWorkflowRunResult(
+        state=final_state,
+        summary=PersistedWorkflowRunSummary(
+            project_id=project_id,
+            start_phase=state.current_phase,
+            final_phase=final_state.current_phase,
+            applied_agent_event_ids=[event.event_id for event in new_events],
+            applied_agent_roles=[event.agent_role for event in new_events],
+            artifact_counts=_artifact_counts(final_state),
+            saved=path.exists(),
+        ),
+    )
+
+
+def _artifact_counts(state: ProjectReviewState) -> dict[str, int]:
+    return {
+        "document_versions": len(state.document_versions),
+        "extracted_fields": len(state.extracted_fields),
+        "basis_references": len(state.basis_references),
+        "review_plan": len(state.review_plan),
+        "review_paths": len(state.review_paths),
+        "calculation_runs": len(state.calculation_runs),
+        "risks": len(state.risks),
+        "rfi_items": len(state.rfi_items),
+        "report_sections": len(state.report_sections),
+        "agent_events": len(state.agent_events),
+    }
 
 
 def _build_local_agent_output_for_current_phase(

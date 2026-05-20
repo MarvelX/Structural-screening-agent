@@ -6,6 +6,8 @@ from structural_screening_agent.bv_review import (
     ExtractedField,
     FieldDiff,
     FoundationEngineInput,
+    PersistedWorkflowRunResult,
+    PersistedWorkflowRunSummary,
     ProjectReviewState,
     SuperstructureEngineInput,
     advance_project_phase,
@@ -18,6 +20,7 @@ from structural_screening_agent.bv_review import (
     build_superstructure_calculation_run_from_fields,
     build_incremental_recheck_plan_from_closed_rfis,
     record_rfi_client_response,
+    run_persisted_local_agent_workflow_with_summary,
 )
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
@@ -265,3 +268,6 @@ def test_bv_review_package_exports_existing_and_phase1_state_objects() -> None:
     assert build_incremental_recheck_plan_from_closed_rfis is not None
     assert record_rfi_client_response is not None
     assert close_rfi_after_engineer_review is not None
+    assert PersistedWorkflowRunResult is not None
+    assert PersistedWorkflowRunSummary is not None
+    assert run_persisted_local_agent_workflow_with_summary is not None

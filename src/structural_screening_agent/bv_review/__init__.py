@@ -16,9 +16,12 @@ from structural_screening_agent.bv_review.agent_workflow import (
     apply_agent_output_to_state,
 )
 from structural_screening_agent.bv_review.agent_runner import (
+    PersistedWorkflowRunResult,
+    PersistedWorkflowRunSummary,
     run_local_agent_workflow_step,
     run_local_agent_workflow_until_blocked,
     run_persisted_local_agent_workflow_until_blocked,
+    run_persisted_local_agent_workflow_with_summary,
 )
 from structural_screening_agent.bv_review.basis import build_review_basis
 from structural_screening_agent.bv_review.calculation_engines import (
@@ -80,6 +83,8 @@ __all__ = [
     "IncrementalRecheckPlan",
     "ProjectReviewState",
     "PVStructuralSpec",
+    "PersistedWorkflowRunResult",
+    "PersistedWorkflowRunSummary",
     "REVIEW_PHASES",
     "RFIItem",
     "ReportComposerAgentOutput",
@@ -88,6 +93,7 @@ __all__ = [
     "run_local_agent_workflow_step",
     "run_local_agent_workflow_until_blocked",
     "run_persisted_local_agent_workflow_until_blocked",
+    "run_persisted_local_agent_workflow_with_summary",
     "StructuralReviewAgentOutput",
     "SuperstructureEngineInput",
     "JsonProjectReviewStateRepository",
