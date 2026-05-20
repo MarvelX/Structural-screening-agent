@@ -1,6 +1,6 @@
 from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.field_diff import FieldDiff, IncrementalRecheckPlan
-from structural_screening_agent.bv_review.project_state import ExtractedField
+from structural_screening_agent.bv_review.project_state import ExtractedField, ProjectReviewState
 from structural_screening_agent.localization import Language
 
 
@@ -50,6 +50,29 @@ BV_DOCUMENT_STATUS_LABELS = {
     "partial": {"zh": "部分提供", "en": "Partial"},
     "missing": {"zh": "缺失", "en": "Missing"},
     "not_applicable": {"zh": "不适用", "en": "Not Applicable"},
+}
+
+BV_REVIEW_PHASE_LABELS = {
+    "intake": {"zh": "项目录入", "en": "Intake"},
+    "document_check": {"zh": "资料检查", "en": "Document Check"},
+    "basis_build": {"zh": "审核依据", "en": "Review Basis"},
+    "review_plan": {"zh": "审核计划", "en": "Review Plan"},
+    "engineer_data_lock": {"zh": "工程师数据锁定", "en": "Engineer Data Lock"},
+    "calculation_check": {"zh": "计算校核", "en": "Calculation Check"},
+    "risk_register": {"zh": "风险登记", "en": "Risk Register"},
+    "report_draft": {"zh": "报告草稿", "en": "Report Draft"},
+    "engineer_approval": {"zh": "工程师批准", "en": "Engineer Approval"},
+    "issue_rfi_closeout": {"zh": "签发 / RFI 关闭", "en": "Issue / RFI Closeout"},
+}
+
+BV_REVIEW_PHASE_STATUS_LABELS = {
+    "pending": {"zh": "待处理", "en": "Pending"},
+    "running": {"zh": "运行中", "en": "Running"},
+    "blocked": {"zh": "阻塞", "en": "Blocked"},
+    "waiting_for_client": {"zh": "等待客户", "en": "Waiting for Client"},
+    "waiting_for_engineer": {"zh": "等待工程师", "en": "Waiting for Engineer"},
+    "approved": {"zh": "已批准", "en": "Approved"},
+    "rejected": {"zh": "已驳回", "en": "Rejected"},
 }
 
 
@@ -463,6 +486,63 @@ def build_extracted_fields_from_human_gate_rows(rows: list[dict[str, object]]) -
             include_in_calculation=bool(row["include_in_calculation"]),
         )
         for row in rows
+    ]
+
+
+def build_agent_workflow_phase_rows(
+    state: ProjectReviewState, language: Language
+) -> list[dict[str, object]]:
+    labels = (
+        {"phase": "阶段", "status": "状态", "current": "当前", "yes": "是", "no": ""}
+        if language == "zh"
+        else {"phase": "Phase", "status": "Status", "current": "Current", "yes": "Yes", "no": ""}
+    )
+    return [
+        {
+            labels["phase"]: BV_REVIEW_PHASE_LABELS[phase][language],
+            labels["status"]: BV_REVIEW_PHASE_STATUS_LABELS[status][language],
+            labels["current"]: labels["yes"] if phase == state.current_phase else labels["no"],
+        }
+        for phase, status in state.phase_statuses.items()
+    ]
+
+
+def build_agent_workflow_artifact_rows(
+    state: ProjectReviewState, language: Language
+) -> list[dict[str, object]]:
+    labels = (
+        {"artifact": "产物", "count": "数量"}
+        if language == "zh"
+        else {"artifact": "Artifact", "count": "Count"}
+    )
+    artifact_labels = (
+        [
+            ("资料版本", len(state.document_versions)),
+            ("抽取字段", len(state.extracted_fields)),
+            ("审核依据", len(state.basis_references)),
+            ("审核计划", len(state.review_plan)),
+            ("审核路径", len(state.review_paths)),
+            ("计算运行", len(state.calculation_runs)),
+            ("风险 / NCR", len(state.risks)),
+            ("RFI", len(state.rfi_items)),
+            ("报告章节", len(state.report_sections)),
+        ]
+        if language == "zh"
+        else [
+            ("Document Versions", len(state.document_versions)),
+            ("Extracted Fields", len(state.extracted_fields)),
+            ("Review Basis", len(state.basis_references)),
+            ("Review Plan", len(state.review_plan)),
+            ("Review Paths", len(state.review_paths)),
+            ("Calculation Runs", len(state.calculation_runs)),
+            ("Risks / NCR", len(state.risks)),
+            ("RFI", len(state.rfi_items)),
+            ("Report Sections", len(state.report_sections)),
+        ]
+    )
+    return [
+        {labels["artifact"]: artifact, labels["count"]: count}
+        for artifact, count in artifact_labels
     ]
 
 

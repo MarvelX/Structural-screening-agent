@@ -5,6 +5,8 @@ from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
+    build_agent_workflow_artifact_rows,
+    build_agent_workflow_phase_rows,
     build_calculation_result_summary_rows,
     build_extracted_fields_from_human_gate_rows,
     build_bv_review_intake,
@@ -18,6 +20,8 @@ from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan,
     diff_extracted_fields,
 )
+from structural_screening_agent.bv_review.project_state import ProjectReviewState
+from structural_screening_agent.bv_review import run_local_agent_workflow_until_blocked
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
 
@@ -212,3 +216,29 @@ def test_calculation_result_summary_rows_localize_internal_keys_for_chinese_ui()
     assert rows[3] == {"项目": "抗拔利用率", "结果": 1.21}
     assert rows[4] == {"项目": "构件类型", "结果": "立柱"}
     assert rows[5] == {"项目": "强度利用率", "结果": 0.53}
+
+
+def test_agent_workflow_phase_rows_localize_state_for_chinese_ui() -> None:
+    state = run_local_agent_workflow_until_blocked(
+        ProjectReviewState(project_id="pv-ui-agent", intake=default_bv_review_intake())
+    )
+
+    rows = build_agent_workflow_phase_rows(state, "zh")
+
+    assert rows[0] == {"阶段": "项目录入", "状态": "待处理", "当前": ""}
+    assert any(row == {"阶段": "工程师数据锁定", "状态": "等待工程师", "当前": "是"} for row in rows)
+    assert "waiting_for_engineer" not in str(rows)
+
+
+def test_agent_workflow_artifact_rows_show_runner_outputs_without_mixed_language() -> None:
+    state = run_local_agent_workflow_until_blocked(
+        ProjectReviewState(project_id="pv-ui-agent", intake=default_bv_review_intake())
+    )
+
+    zh_rows = build_agent_workflow_artifact_rows(state, "zh")
+    en_rows = build_agent_workflow_artifact_rows(state, "en")
+
+    assert {"产物": "审核依据", "数量": len(state.basis_references)} in zh_rows
+    assert {"Artifact": "Review Basis", "Count": len(state.basis_references)} in en_rows
+    assert "Review Basis" not in str(zh_rows)
+    assert "审核依据" not in str(en_rows)

@@ -20,6 +20,8 @@ from structural_screening_agent.bv_review.ui_state import (
     BV_PROJECT_TYPE_LABELS,
     BV_REVIEW_OBJECT_LABELS,
     BV_STANDARD_LABELS,
+    build_agent_workflow_artifact_rows,
+    build_agent_workflow_phase_rows,
     build_calculation_result_summary_rows,
     build_extracted_fields_from_human_gate_rows,
     build_bv_review_intake,
@@ -44,6 +46,7 @@ from structural_screening_agent.bv_review.human_gate import (
 from structural_screening_agent.bv_review.models import BVReportSection
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.report import build_bv_markdown_report, build_bv_report_filename
+from structural_screening_agent.bv_review import run_local_agent_workflow_until_blocked
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.core.persistence import ScreeningRepository
 from structural_screening_agent.localization import (
@@ -914,12 +917,33 @@ with bv_review_tab:
             rfi_items=registered_incremental_rfis,
             risks=bv_result.risks,
         )
-        report_draft_gate = build_report_draft_gate_result(phase1_state, bv_result)
+        workflow_state = run_local_agent_workflow_until_blocked(phase1_state)
+        report_draft_gate = build_report_draft_gate_result(workflow_state, bv_result)
 
         metric_1, metric_2, metric_3 = st.columns(3)
         metric_1.metric("Decision" if ui_language == "en" else "审核结论", bv_result.decision)
         metric_2.metric("Blocking Items" if ui_language == "en" else "阻塞项", len(blockers))
         metric_3.metric("Review Paths" if ui_language == "en" else "审核路径", len(bv_result.review_paths))
+
+        st.markdown("#### Local Agent Workflow State" if ui_language == "en" else "本地 Agent 工作流状态")
+        workflow_phase_col, workflow_artifact_col = st.columns([1.2, 1.0])
+        with workflow_phase_col:
+            st.dataframe(
+                build_agent_workflow_phase_rows(workflow_state, ui_language),
+                hide_index=True,
+                use_container_width=True,
+            )
+        with workflow_artifact_col:
+            st.dataframe(
+                build_agent_workflow_artifact_rows(workflow_state, ui_language),
+                hide_index=True,
+                use_container_width=True,
+            )
+        st.caption(
+            "Local deterministic runner stops at engineer data lock until the calculation gate is approved."
+            if ui_language == "en"
+            else "本地确定性 runner 会在工程师数据锁定阶段等待计算门禁批准。"
+        )
 
         overview_col, risk_col = st.columns([1.0, 1.0])
         with overview_col:

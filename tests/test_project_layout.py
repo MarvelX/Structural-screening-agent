@@ -61,6 +61,11 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'previous_human_gate_rows[1]' not in source
     assert "build_incremental_recheck_plan" in source
     assert "build_incremental_recheck_summary_rows" in source
+    assert "run_local_agent_workflow_until_blocked" in source
+    assert "build_agent_workflow_phase_rows" in source
+    assert "build_agent_workflow_artifact_rows" in source
+    assert "workflow_state" in source
+    assert "本地 Agent 工作流状态" in source
     assert 'translate(ui_language, "bv_review_warning_standards")' in source
     assert 'translate(ui_language, "bv_review_warning_objects")' in source
     assert "view.traceability_cards" in source
