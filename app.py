@@ -35,6 +35,7 @@ from structural_screening_agent.bv_review.field_diff import (
 )
 from structural_screening_agent.bv_review.calculation_engines import (
     build_foundation_calculation_run_from_fields,
+    build_superstructure_calculation_run_from_fields,
 )
 from structural_screening_agent.bv_review.human_gate import (
     build_engineer_approval,
@@ -701,22 +702,35 @@ with bv_review_tab:
     )
     try:
         human_gate_fields = build_extracted_fields_from_human_gate_rows(human_gate_records)
-        calculation_gate_run = build_foundation_calculation_run_from_fields(
+        foundation_calculation_run = build_foundation_calculation_run_from_fields(
             run_id="phase1-ground-fixed-gate",
             fields=human_gate_fields,
         )
+        superstructure_calculation_run = build_superstructure_calculation_run_from_fields(
+            run_id="phase1-ground-fixed-superstructure-gate",
+            fields=human_gate_fields,
+            member_id="post-P1",
+            member_type="post",
+        )
+        calculation_gate_runs = [
+            foundation_calculation_run,
+            superstructure_calculation_run,
+        ]
     except (KeyError, TypeError, ValueError, ValidationError) as exc:
         human_gate_fields = []
-        calculation_gate_run = None
+        calculation_gate_runs = []
         st.warning(str(exc))
 
     gate_is_still_locked = (
         st.session_state.get("bv_calculation_gate_locked") is True
         and st.session_state.get("bv_calculation_gate_signature") == human_gate_signature
     )
+    calculation_gate_ready = bool(calculation_gate_runs) and all(
+        run.status in {"ready", "completed"} for run in calculation_gate_runs
+    )
     calculation_gate_checked = st.button(translate(ui_language, "data_lock_button"), use_container_width=True)
     if calculation_gate_checked:
-        if calculation_gate_run is not None and calculation_gate_run.status in {"ready", "completed"}:
+        if calculation_gate_ready:
             st.session_state["bv_calculation_gate_locked"] = True
             st.session_state["bv_calculation_gate_signature"] = human_gate_signature
             st.success(translate(ui_language, "calculation_gate_ready"))
@@ -727,23 +741,30 @@ with bv_review_tab:
             st.caption(
                 ", ".join(
                     field_name_by_id.get(field_id, field_id)
-                    for field_id in calculation_gate_run.input_field_ids
+                    for run in calculation_gate_runs
+                    for field_id in run.input_field_ids
                 )
             )
-            if calculation_gate_run.result_summary:
-                st.dataframe(
-                    build_calculation_result_summary_rows(
-                        calculation_gate_run.result_summary, ui_language
-                    ),
-                    hide_index=True,
-                    use_container_width=True,
-                )
+            for run in calculation_gate_runs:
+                if run.result_summary:
+                    st.markdown(
+                        f"**{run.engine_name.title()}**"
+                        if ui_language == "en"
+                        else f"**{_label({'foundation': {'zh': '基础验算', 'en': 'Foundation'}, 'superstructure': {'zh': '上部构件验算', 'en': 'Superstructure'}}, run.engine_name, ui_language)}**"
+                    )
+                    st.dataframe(
+                        build_calculation_result_summary_rows(
+                            run.result_summary, ui_language
+                        ),
+                        hide_index=True,
+                        use_container_width=True,
+                    )
         else:
             st.session_state["bv_calculation_gate_locked"] = False
             st.session_state["bv_calculation_gate_signature"] = None
             st.warning(translate(ui_language, "calculation_gate_blocked"))
-            if calculation_gate_run is not None:
-                for error in calculation_gate_run.structured_errors:
+            for run in calculation_gate_runs:
+                for error in run.structured_errors:
                     st.write(f"- {error}")
 
     st.markdown(f'#### {translate(ui_language, "version_diff_heading")}')
@@ -756,7 +777,7 @@ with bv_review_tab:
     field_diffs = diff_extracted_fields(
         build_extracted_fields_from_human_gate_rows(previous_human_gate_rows),
         build_extracted_fields_from_human_gate_rows(current_human_gate_rows),
-        calculation_runs=[calculation_gate_run] if calculation_gate_run is not None else [],
+        calculation_runs=calculation_gate_runs,
     )
     incremental_recheck_plan = build_incremental_recheck_plan(field_diffs)
     if field_diffs:
@@ -874,8 +895,7 @@ with bv_review_tab:
         phase1_approvals = []
         if (
             (calculation_gate_checked or gate_is_still_locked)
-            and calculation_gate_run is not None
-            and calculation_gate_run.status in {"ready", "completed"}
+            and calculation_gate_ready
         ):
             phase1_approvals.append(
                 build_engineer_approval(
@@ -885,13 +905,12 @@ with bv_review_tab:
                     comment="Phase 1 demo data lock for report draft gate.",
                 )
             )
-        phase1_calculation_runs = [calculation_gate_run] if calculation_gate_run is not None else []
         phase1_state = ProjectReviewState(
             project_id="phase1-ground-fixed-demo",
             intake=bv_intake,
             extracted_fields=human_gate_fields,
             approvals=phase1_approvals,
-            calculation_runs=phase1_calculation_runs,
+            calculation_runs=calculation_gate_runs,
             rfi_items=registered_incremental_rfis,
             risks=bv_result.risks,
         )

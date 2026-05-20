@@ -106,6 +106,9 @@ def test_ground_fixed_human_gate_rows_follow_selected_language_and_traceability(
     assert {"pile_diameter_mm", "side_resistance_standard_kpa", "uplift_force_kn"} <= {
         str(row["field_id"]) for row in zh_rows
     }
+    assert {"section_area_mm2", "steel_yield_strength_mpa", "bending_moment_knm"} <= {
+        str(row["field_id"]) for row in zh_rows
+    }
 
 
 def test_human_gate_rows_convert_to_traceable_extracted_fields() -> None:
@@ -125,9 +128,20 @@ def test_human_gate_rows_convert_to_traceable_extracted_fields() -> None:
         "uplift_force_kn",
         "compression_force_kn",
     }
-    assert foundation_field_ids <= {
+    superstructure_field_ids = {
+        "section_area_mm2",
+        "section_modulus_mm3",
+        "radius_of_gyration_mm",
+        "effective_length_m",
+        "steel_yield_strength_mpa",
+        "axial_force_kn",
+        "bending_moment_knm",
+    }
+    calculation_field_ids = {
         field.field_id for field in fields if field.include_in_calculation
     }
+    assert foundation_field_ids <= calculation_field_ids
+    assert superstructure_field_ids <= calculation_field_ids
 
 
 def test_build_incremental_recheck_summary_returns_review_items_without_running_diff() -> None:
@@ -186,6 +200,8 @@ def test_calculation_result_summary_rows_localize_internal_keys_for_chinese_ui()
             "overturning_check_note": "not covered; engineer review required",
             "screening_status": "review_required",
             "uplift_utilization_ratio": 1.21,
+            "member_type": "post",
+            "strength_utilization_ratio": 0.53,
         },
         "zh",
     )
@@ -194,3 +210,5 @@ def test_calculation_result_summary_rows_localize_internal_keys_for_chinese_ui()
     assert rows[1] == {"项目": "抗倾覆提示", "结果": "未覆盖；需工程师复核"}
     assert rows[2] == {"项目": "筛查状态", "结果": "需复核"}
     assert rows[3] == {"项目": "抗拔利用率", "结果": 1.21}
+    assert rows[4] == {"项目": "构件类型", "结果": "立柱"}
+    assert rows[5] == {"项目": "强度利用率", "结果": 0.53}
