@@ -1,5 +1,9 @@
 from structural_screening_agent.bv_review.models import BVReviewIntake
-from structural_screening_agent.bv_review.field_diff import FieldDiff, IncrementalRecheckPlan
+from structural_screening_agent.bv_review.field_diff import (
+    FieldDiff,
+    IncrementalRecheckPlan,
+    build_incremental_recheck_plan_from_closed_rfis,
+)
 from structural_screening_agent.bv_review.project_state import ExtractedField, ProjectReviewState
 from structural_screening_agent.localization import Language
 
@@ -828,6 +832,42 @@ def build_incremental_recheck_summary_rows(
         }
         for item in plan.affected_items
     ]
+
+
+def build_closed_rfi_incremental_recheck_rows(
+    state: ProjectReviewState,
+    language: Language,
+) -> list[dict[str, object]]:
+    plan = build_incremental_recheck_plan_from_closed_rfis(
+        state.rfi_items,
+        calculation_runs=state.calculation_runs,
+    )
+    item_to_rfi_id = {
+        review_item_id: rfi.rfi_id
+        for rfi in plan.rfi_items
+        for review_item_id in rfi.reopen_review_items
+    }
+    rows: list[dict[str, object]] = []
+    for row in build_incremental_recheck_summary_rows(plan, language):
+        item_id_key = "复核项 ID" if language == "zh" else "Item ID"
+        type_key = "类型" if language == "zh" else "Type"
+        field_ids_key = "字段 ID" if language == "zh" else "Field IDs"
+        calculation_run_ids_key = "计算运行 ID" if language == "zh" else "Calculation Run IDs"
+        rows.append(
+            {
+                "RFI ID": item_to_rfi_id.get(str(row[item_id_key]), ""),
+                ("复核项 ID" if language == "zh" else "Recheck Item ID"): row[item_id_key],
+                type_key: row[type_key],
+                field_ids_key: row[field_ids_key],
+                calculation_run_ids_key: row[calculation_run_ids_key],
+                ("关闭证据" if language == "zh" else "Closeout Evidence"): (
+                    "已完成增量复核"
+                    if language == "zh"
+                    else "Incremental recheck completed"
+                ),
+            }
+        )
+    return rows
 
 
 def build_field_diff_summary_rows(

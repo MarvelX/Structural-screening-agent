@@ -26,6 +26,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_agent_workflow_event_rows,
     build_agent_workflow_phase_rows,
     build_calculation_result_summary_rows,
+    build_closed_rfi_incremental_recheck_rows,
     build_extracted_fields_from_human_gate_rows,
     build_bv_review_intake,
     build_field_diff_summary_rows,
@@ -803,6 +804,11 @@ with bv_review_tab:
                         status=rfi_status_values[str(row["status"])],
                         client_response=str(row.get("client_response") or "") or None,
                         reopen_review_items=source_rfi.reopen_review_items,
+                        completed_recheck_items=(
+                            source_rfi.reopen_review_items
+                            if rfi_status_values[str(row["status"])] == "closed"
+                            else []
+                        ),
                         triggers_incremental_recheck=source_rfi.triggers_incremental_recheck,
                     )
                 )
@@ -1048,6 +1054,27 @@ with bv_review_tab:
                 "No structured report gate evidence is available."
                 if ui_language == "en"
                 else "当前没有结构化报告门禁证据。"
+            )
+        closed_rfi_recheck_rows = build_closed_rfi_incremental_recheck_rows(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown(
+            "##### Closed RFI Recheck Evidence"
+            if ui_language == "en"
+            else "已关闭 RFI 增量复核证据"
+        )
+        if closed_rfi_recheck_rows:
+            st.dataframe(
+                closed_rfi_recheck_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No closed RFI incremental recheck evidence is available."
+                if ui_language == "en"
+                else "当前没有已关闭 RFI 的增量复核证据。"
             )
 
         bv_markdown_filename = build_bv_report_filename(bv_intake.project_type)

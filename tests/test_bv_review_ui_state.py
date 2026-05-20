@@ -11,6 +11,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_agent_workflow_event_rows,
     build_agent_workflow_phase_rows,
     build_calculation_result_summary_rows,
+    build_closed_rfi_incremental_recheck_rows,
     build_extracted_fields_from_human_gate_rows,
     build_bv_review_intake,
     build_field_diff_summary_rows,
@@ -24,7 +25,11 @@ from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan,
     diff_extracted_fields,
 )
-from structural_screening_agent.bv_review.project_state import ProjectReviewState
+from structural_screening_agent.bv_review.project_state import (
+    CalculationRun,
+    ProjectReviewState,
+    RFIItem,
+)
 from structural_screening_agent.bv_review.human_gate import (
     ReportDraftGateResult,
     record_agent_review_decision,
@@ -177,6 +182,63 @@ def test_build_incremental_recheck_summary_returns_review_items_without_running_
     assert rows
     assert rows[0]["Type"] == "Calculation Recheck"
     assert "Pile length" in str(rows[0]["Reason"])
+
+
+def test_closed_rfi_incremental_recheck_rows_show_completed_evidence_without_mixed_language() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-rfi-closeout",
+        intake=default_bv_review_intake(),
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-human-gate",
+                input_field_ids=["pile_length_m"],
+                input_locked=True,
+                status="completed",
+            )
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-pile_length_m",
+                question="Please confirm updated input for Pile Length M.",
+                responsible_party="client",
+                trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                required_document_or_field="pile_length_m",
+                status="closed",
+                client_response="Confirmed Rev B pile length is 4.0 m.",
+                reopen_review_items=["calculation-recheck-pile_length_m"],
+                completed_recheck_items=["calculation-recheck-pile_length_m"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    zh_rows = build_closed_rfi_incremental_recheck_rows(state, "zh")
+    en_rows = build_closed_rfi_incremental_recheck_rows(state, "en")
+
+    assert zh_rows == [
+        {
+            "RFI ID": "rfi-pile_length_m",
+            "复核项 ID": "calculation-recheck-pile_length_m",
+            "类型": "计算复核",
+            "字段 ID": "pile_length_m",
+            "计算运行 ID": "foundation-run-001",
+            "关闭证据": "已完成增量复核",
+        }
+    ]
+    assert en_rows == [
+        {
+            "RFI ID": "rfi-pile_length_m",
+            "Recheck Item ID": "calculation-recheck-pile_length_m",
+            "Type": "Calculation Recheck",
+            "Field IDs": "pile_length_m",
+            "Calculation Run IDs": "foundation-run-001",
+            "Closeout Evidence": "Incremental recheck completed",
+        }
+    ]
+    assert "Calculation Recheck" not in str(zh_rows)
+    assert "计算复核" not in str(en_rows)
 
 
 def test_bv_diff_and_recheck_summary_rows_are_localized_for_chinese_ui() -> None:
