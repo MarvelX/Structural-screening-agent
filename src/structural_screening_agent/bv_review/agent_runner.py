@@ -16,7 +16,10 @@ from structural_screening_agent.bv_review.project_state import (
     DocumentVersion,
     ProjectReviewState,
 )
-from structural_screening_agent.bv_review.report import build_bv_report_preview
+from structural_screening_agent.bv_review.report import (
+    build_bv_open_rfi_items,
+    build_bv_report_preview,
+)
 from structural_screening_agent.bv_review.review_path import build_structural_review_path
 from structural_screening_agent.bv_review.review_plan import build_review_plan
 from structural_screening_agent.bv_review.risk_register import build_risk_register
@@ -123,7 +126,7 @@ def _build_local_agent_output_for_current_phase(
         return ReportComposerAgentOutput(
             project_id=state.project_id,
             report_sections=preview.sections,
-            rfi_items=[],
+            rfi_items=build_bv_open_rfi_items(state.risks),
             boundary_statement="This draft is for screening-level review-support only.",
         )
 

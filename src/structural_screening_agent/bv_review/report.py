@@ -6,7 +6,9 @@ from structural_screening_agent.bv_review.models import (
     BVReportSection,
     BVReviewIntake,
     BVReviewResult,
+    BVRiskItem,
 )
+from structural_screening_agent.bv_review.project_state import RFIItem
 
 
 def build_bv_report_preview(intake: BVReviewIntake, result: BVReviewResult) -> BVReportPreview:
@@ -74,6 +76,30 @@ def build_bv_report_preview(intake: BVReviewIntake, result: BVReviewResult) -> B
         ),
     ]
     return BVReportPreview(title="BV 光伏结构设计审查报告", sections=sections)
+
+
+def build_bv_open_rfi_items(risks: list[BVRiskItem]) -> list[RFIItem]:
+    rfi_items: list[RFIItem] = []
+    for risk in risks:
+        if not risk.blocks_report_issue:
+            continue
+        reopen_items = list(risk.linked_field_ids) or [risk.risk_id]
+        rfi_items.append(
+            RFIItem(
+                rfi_id=f"rfi-{risk.risk_id}",
+                question=(
+                    f"请针对筛查级发现“{risk.title}”提供澄清、补充资料或设计方处置意见；"
+                    "该问题需工程师复核后再进入报告结论。"
+                ),
+                responsible_party="client / designer",
+                trigger_basis=risk.trigger_basis,
+                required_document_or_field=", ".join(reopen_items),
+                status="open",
+                reopen_review_items=reopen_items,
+                triggers_incremental_recheck=True,
+            )
+        )
+    return rfi_items
 
 
 def build_bv_markdown_report(intake: BVReviewIntake, result: BVReviewResult) -> str:

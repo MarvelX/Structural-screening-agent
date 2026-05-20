@@ -77,7 +77,13 @@ def test_local_agent_workflow_applies_calculation_risk_and_report_after_locked_g
         for item in final_state.risks
     )
     assert final_state.report_sections
+    assert final_state.rfi_items
     assert all(item.status == "open" for item in final_state.rfi_items)
+    assert any(
+        item.rfi_id == "rfi-calculation_review_required_foundation_run_001"
+        and item.triggers_incremental_recheck
+        for item in final_state.rfi_items
+    )
     assert [event.agent_role for event in final_state.agent_events] == [
         "calculation_check",
         "risk_ncr",

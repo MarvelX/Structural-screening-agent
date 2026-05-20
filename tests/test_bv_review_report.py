@@ -2,6 +2,7 @@ from datetime import date
 
 from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.report import (
+    build_bv_open_rfi_items,
     build_bv_markdown_report,
     build_bv_report_filename,
     build_bv_report_preview,
@@ -80,3 +81,36 @@ def test_bv_report_filename_uses_date_and_scope_key() -> None:
     filename = build_bv_report_filename("rooftop_pv_review", report_date=date(2026, 5, 9))
 
     assert filename == "2026-05-09-rooftop_pv_review-bv-review-report.md"
+
+
+def test_bv_open_rfi_items_are_created_from_blocking_risks_only() -> None:
+    result = evaluate_bv_review(_sample_intake())
+
+    rfi_items = build_bv_open_rfi_items(result.risks)
+
+    assert rfi_items
+    assert all(item.status == "open" for item in rfi_items)
+    assert all(item.triggers_incremental_recheck for item in rfi_items)
+    assert all(item.reopen_review_items for item in rfi_items)
+    assert not any("正式签发" in item.question for item in rfi_items)
+    assert {
+        item.rfi_id.replace("rfi-", "", 1)
+        for item in rfi_items
+    } <= {risk.risk_id for risk in result.risks if risk.blocks_report_issue}
+
+
+def test_bv_open_rfi_item_preserves_risk_traceability_and_screening_boundary() -> None:
+    result = evaluate_bv_review(_sample_intake())
+    blocking_risk = next(risk for risk in result.risks if risk.blocks_report_issue)
+
+    rfi_item = next(
+        item
+        for item in build_bv_open_rfi_items(result.risks)
+        if item.rfi_id == f"rfi-{blocking_risk.risk_id}"
+    )
+
+    assert blocking_risk.title in rfi_item.question
+    assert "筛查级" in rfi_item.question
+    assert rfi_item.trigger_basis == blocking_risk.trigger_basis
+    assert rfi_item.required_document_or_field == ", ".join(blocking_risk.linked_field_ids)
+    assert rfi_item.reopen_review_items == blocking_risk.linked_field_ids
