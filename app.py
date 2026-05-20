@@ -44,6 +44,7 @@ from structural_screening_agent.bv_review.calculation_engines import (
 from structural_screening_agent.bv_review.human_gate import (
     build_engineer_approval,
     build_report_draft_gate_result,
+    record_agent_review_decision,
 )
 from structural_screening_agent.bv_review.models import BVReportSection
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
@@ -920,7 +921,32 @@ with bv_review_tab:
             risks=bv_result.risks,
         )
         workflow_state = run_local_agent_workflow_until_blocked(phase1_state)
-        report_draft_gate = build_report_draft_gate_result(workflow_state, bv_result)
+        workflow_signature = f"{bv_intake.model_dump_json()}|{human_gate_signature}"
+        if st.session_state.get("bv_agent_review_signature") != workflow_signature:
+            st.session_state["bv_agent_review_signature"] = workflow_signature
+            st.session_state["bv_agent_review_decisions"] = {}
+        stored_agent_review_decisions = st.session_state.get(
+            "bv_agent_review_decisions",
+            {},
+        )
+        reviewed_workflow_state = workflow_state
+        for event_id, decision_record in stored_agent_review_decisions.items():
+            if not isinstance(decision_record, dict):
+                continue
+            decision = str(decision_record.get("decision", ""))
+            if decision not in {"approved", "rejected"}:
+                continue
+            try:
+                reviewed_workflow_state = record_agent_review_decision(
+                    reviewed_workflow_state,
+                    event_id=str(event_id),
+                    decision=decision,
+                    reviewer="demo-review-engineer",
+                    comment=str(decision_record.get("comment") or ""),
+                )
+            except ValueError:
+                continue
+        report_draft_gate = build_report_draft_gate_result(reviewed_workflow_state, bv_result)
 
         metric_1, metric_2, metric_3 = st.columns(3)
         metric_1.metric("Decision" if ui_language == "en" else "审核结论", bv_result.decision)
@@ -931,13 +957,13 @@ with bv_review_tab:
         workflow_phase_col, workflow_artifact_col = st.columns([1.2, 1.0])
         with workflow_phase_col:
             st.dataframe(
-                build_agent_workflow_phase_rows(workflow_state, ui_language),
+                build_agent_workflow_phase_rows(reviewed_workflow_state, ui_language),
                 hide_index=True,
                 use_container_width=True,
             )
         with workflow_artifact_col:
             st.dataframe(
-                build_agent_workflow_artifact_rows(workflow_state, ui_language),
+                build_agent_workflow_artifact_rows(reviewed_workflow_state, ui_language),
                 hide_index=True,
                 use_container_width=True,
             )
@@ -947,17 +973,72 @@ with bv_review_tab:
             else "本地确定性 runner 会在工程师数据锁定阶段等待计算门禁批准。"
         )
         st.markdown("##### Engineer Review Queue" if ui_language == "en" else "工程师复核队列")
+        engineer_review_queue_rows = build_agent_engineer_review_queue_rows(
+            reviewed_workflow_state,
+            ui_language,
+        )
         st.dataframe(
-            build_agent_engineer_review_queue_rows(workflow_state, ui_language),
+            engineer_review_queue_rows,
             hide_index=True,
             use_container_width=True,
         )
+        if engineer_review_queue_rows:
+            review_item_column = "Review Item" if ui_language == "en" else "复核项"
+            selected_agent_review_item = st.selectbox(
+                "Review Item" if ui_language == "en" else "复核项",
+                [str(row[review_item_column]) for row in engineer_review_queue_rows],
+            )
+            agent_review_comment = st.text_input(
+                "Engineer Review Comment" if ui_language == "en" else "工程师复核意见",
+                value=(
+                    "Reviewed in demo workbench."
+                    if ui_language == "en"
+                    else "已在演示工作台复核。"
+                ),
+            )
+            approve_review_col, reject_review_col = st.columns(2)
+            with approve_review_col:
+                if st.button(
+                    "Approve Selected Review Item"
+                    if ui_language == "en"
+                    else "批准所选复核项",
+                    use_container_width=True,
+                ):
+                    st.session_state["bv_agent_review_decisions"] = {
+                        **stored_agent_review_decisions,
+                        selected_agent_review_item: {
+                            "decision": "approved",
+                            "comment": agent_review_comment,
+                        },
+                    }
+                    st.rerun()
+            with reject_review_col:
+                if st.button(
+                    "Reject Selected Review Item"
+                    if ui_language == "en"
+                    else "驳回所选复核项",
+                    use_container_width=True,
+                ):
+                    st.session_state["bv_agent_review_decisions"] = {
+                        **stored_agent_review_decisions,
+                        selected_agent_review_item: {
+                            "decision": "rejected",
+                            "comment": agent_review_comment,
+                        },
+                    }
+                    st.rerun()
+        else:
+            st.caption(
+                "No pending agent outputs require engineer review."
+                if ui_language == "en"
+                else "当前没有待工程师复核的 Agent 产物。"
+            )
         with st.expander(
             "Local Agent Event Trace" if ui_language == "en" else "本地 Agent 事件追踪",
             expanded=False,
         ):
             st.dataframe(
-                build_agent_workflow_event_rows(workflow_state, ui_language),
+                build_agent_workflow_event_rows(reviewed_workflow_state, ui_language),
                 hide_index=True,
                 use_container_width=True,
             )

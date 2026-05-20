@@ -61,6 +61,7 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'previous_human_gate_rows[1]' not in source
     assert "build_incremental_recheck_plan" in source
     assert "build_incremental_recheck_summary_rows" in source
+    assert "record_agent_review_decision" in source
     assert "run_local_agent_workflow_until_blocked" in source
     assert "build_agent_workflow_phase_rows" in source
     assert "build_agent_workflow_artifact_rows" in source
@@ -70,7 +71,14 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "本地 Agent 工作流状态" in source
     assert "工程师复核队列" in source
     assert "Engineer Review Queue" in source
-    assert "build_agent_engineer_review_queue_rows(workflow_state, ui_language)" in source
+    assert "bv_agent_review_decisions" in source
+    assert "bv_agent_review_signature" in source
+    assert "批准所选复核项" in source
+    assert "Approve Selected Review Item" in source
+    assert "驳回所选复核项" in source
+    assert "Reject Selected Review Item" in source
+    assert "reviewed_workflow_state" in source
+    assert "st.rerun()" in source
     assert "本地 Agent 事件追踪" in source
     assert 'translate(ui_language, "bv_review_warning_standards")' in source
     assert 'translate(ui_language, "bv_review_warning_objects")' in source
