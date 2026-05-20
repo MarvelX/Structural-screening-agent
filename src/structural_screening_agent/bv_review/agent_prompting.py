@@ -131,6 +131,21 @@ class AgentResponseEngineerHandoff(BaseModel):
     )
 
 
+class AgentResponseApplicationPlan(BaseModel):
+    plan_id: str = Field(min_length=1)
+    agent_role: AgentRole
+    plan_status: Literal["ready_for_controlled_application", "blocked"]
+    target_phase: ReviewPhase | None = None
+    requires_engineer_authorization: bool = True
+    would_create_agent_event: bool = False
+    would_set_phase_status: Literal["waiting_for_engineer"] | None = None
+    blockers: list[str] = Field(default_factory=list)
+    project_state_changed: bool = False
+    boundary_statement: str = (
+        "Application plan only; no agent output is applied until an engineer authorizes the controlled workflow step."
+    )
+
+
 def build_agent_prompt_package(
     agent_role: AgentRole,
     state: ProjectReviewState,
@@ -432,6 +447,96 @@ def build_agent_response_engineer_handoff_rows(
     ]
 
 
+def build_agent_response_application_plan(
+    handoff: AgentResponseEngineerHandoff,
+) -> AgentResponseApplicationPlan:
+    blockers = _agent_response_application_plan_blockers(handoff)
+    plan_is_ready = not blockers
+    return AgentResponseApplicationPlan(
+        plan_id=f"application-plan-{handoff.review_packet_id}",
+        agent_role=handoff.agent_role,
+        plan_status=(
+            "ready_for_controlled_application" if plan_is_ready else "blocked"
+        ),
+        target_phase=handoff.target_phase if plan_is_ready else None,
+        would_create_agent_event=plan_is_ready,
+        would_set_phase_status="waiting_for_engineer" if plan_is_ready else None,
+        blockers=blockers,
+        project_state_changed=False,
+    )
+
+
+def build_agent_response_application_plan_rows(
+    plan: AgentResponseApplicationPlan,
+    language: AgentPromptLanguage,
+) -> list[dict[str, object]]:
+    target_phase = plan.target_phase or "-"
+    blockers = _format_apply_blockers(plan.blockers, language)
+    if language == "zh":
+        return [
+            {"项目": "应用计划", "内容": plan.plan_id},
+            {"项目": "Agent", "内容": _agent_label(plan.agent_role, "zh")},
+            {
+                "项目": "计划状态",
+                "内容": (
+                    "可进入受控应用"
+                    if plan.plan_status == "ready_for_controlled_application"
+                    else "阻塞"
+                ),
+            },
+            {"项目": "目标阶段", "内容": target_phase},
+            {
+                "项目": "需要工程师授权",
+                "内容": "是" if plan.requires_engineer_authorization else "否",
+            },
+            {
+                "项目": "会创建 Agent 事件",
+                "内容": "是" if plan.would_create_agent_event else "否",
+            },
+            {
+                "项目": "阶段状态",
+                "内容": plan.would_set_phase_status or "-",
+            },
+            {"项目": "阻断项", "内容": blockers},
+            {
+                "项目": "项目状态",
+                "内容": "已修改" if plan.project_state_changed else "未修改",
+            },
+            {
+                "项目": "边界",
+                "内容": "仅应用计划；工程师授权前不应用 Agent 输出。",
+            },
+        ]
+    return [
+        {"Item": "Application Plan", "Value": plan.plan_id},
+        {"Item": "Agent", "Value": _agent_label(plan.agent_role, "en")},
+        {
+            "Item": "Plan Status",
+            "Value": (
+                "Ready For Controlled Application"
+                if plan.plan_status == "ready_for_controlled_application"
+                else "Blocked"
+            ),
+        },
+        {"Item": "Target Phase", "Value": target_phase},
+        {
+            "Item": "Requires Engineer Authorization",
+            "Value": "Yes" if plan.requires_engineer_authorization else "No",
+        },
+        {
+            "Item": "Would Create Agent Event",
+            "Value": "Yes" if plan.would_create_agent_event else "No",
+        },
+        {"Item": "Phase Status", "Value": plan.would_set_phase_status or "-"},
+        {"Item": "Blockers", "Value": blockers},
+        {
+            "Item": "Project State",
+            "Value": "Changed" if plan.project_state_changed else "Unchanged",
+        },
+        {"Item": "Boundary", "Value": plan.boundary_statement},
+    ]
+
+
 def parse_agent_json_response(
     agent_role: AgentRole,
     response_text: str,
@@ -671,6 +776,23 @@ def _agent_response_handoff_blockers(
     if not sandbox.impact_preview.requires_engineer_review:
         blockers.append("Agent response does not require engineer review.")
     blockers.extend(sandbox.impact_preview.apply_blockers)
+    return blockers
+
+
+def _agent_response_application_plan_blockers(
+    handoff: AgentResponseEngineerHandoff,
+) -> list[str]:
+    blockers = list(handoff.blockers)
+    if handoff.handoff_status != "ready_for_engineer_review":
+        return blockers or ["Engineer handoff is not ready for controlled application."]
+    if not handoff.validation_ok:
+        blockers.append("Agent response validation has not passed.")
+    if not handoff.apply_prechecks_ok:
+        blockers.append("Agent response apply pre-checks have not passed.")
+    if not handoff.requires_engineer_review:
+        blockers.append("Agent response does not require engineer review.")
+    if handoff.target_phase is None:
+        blockers.append("Ready handoff requires a target phase.")
     return blockers
 
 

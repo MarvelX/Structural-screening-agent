@@ -73,6 +73,8 @@ from structural_screening_agent.bv_review.project_management import (
 from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_provider_invocation_request,
     build_agent_provider_invocation_rows,
+    build_agent_response_application_plan,
+    build_agent_response_application_plan_rows,
     build_agent_response_engineer_handoff,
     build_agent_response_engineer_handoff_rows,
     build_agent_prompt_package_rows,
@@ -1337,6 +1339,26 @@ with bv_review_tab:
                 ),
                 hide_index=True,
                 use_container_width=True,
+            )
+            application_plan = build_agent_response_application_plan(engineer_handoff)
+            application_plan_heading = (
+                "Agent Controlled Application Plan"
+                if ui_language == "en"
+                else "Agent 受控应用计划"
+            )
+            st.markdown(f"##### {application_plan_heading}")
+            st.dataframe(
+                build_agent_response_application_plan_rows(
+                    application_plan,
+                    ui_language,
+                ),
+                hide_index=True,
+                use_container_width=True,
+            )
+            st.caption(
+                "Application plan only; no agent output is applied until an engineer authorizes the controlled workflow step."
+                if ui_language == "en"
+                else "仅应用计划；工程师授权前不应用 Agent 输出。"
             )
             if validation_result.ok:
                 st.success(

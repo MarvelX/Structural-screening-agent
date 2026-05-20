@@ -7,8 +7,11 @@ from structural_screening_agent.bv_review import (
     ProjectReviewState,
 )
 from structural_screening_agent.bv_review.agent_prompting import (
+    AgentResponseEngineerHandoff,
     build_agent_provider_invocation_request,
     build_agent_provider_invocation_rows,
+    build_agent_response_application_plan,
+    build_agent_response_application_plan_rows,
     build_agent_response_engineer_handoff,
     build_agent_response_engineer_handoff_rows,
     build_agent_prompt_package,
@@ -287,6 +290,94 @@ def test_agent_response_engineer_handoff_rows_are_localized_for_workbench() -> N
     assert {"项目": "移交状态", "内容": "可进入工程师复核"} in zh_rows
     assert {"项目": "项目状态", "内容": "未修改"} in zh_rows
     assert {"Item": "Handoff Status", "Value": "Ready For Engineer Review"} in en_rows
+    assert {"Item": "Project State", "Value": "Unchanged"} in en_rows
+
+
+def test_agent_response_application_plan_describes_controlled_next_step_without_mutating_state() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    original_state = state.model_dump()
+    sandbox = build_agent_response_sandbox_result(
+        build_agent_prompt_package("document_intake", state),
+        build_sample_agent_response_json("document_intake", state),
+        state=state,
+    )
+    handoff = build_agent_response_engineer_handoff(sandbox)
+
+    plan = build_agent_response_application_plan(handoff)
+
+    assert plan.plan_id == "application-plan-sandbox-review-document_intake"
+    assert plan.plan_status == "ready_for_controlled_application"
+    assert plan.agent_role == "document_intake"
+    assert plan.target_phase == "document_check"
+    assert plan.requires_engineer_authorization is True
+    assert plan.would_create_agent_event is True
+    assert plan.would_set_phase_status == "waiting_for_engineer"
+    assert plan.project_state_changed is False
+    assert plan.blockers == []
+    assert plan.boundary_statement == (
+        "Application plan only; no agent output is applied until an engineer authorizes the controlled workflow step."
+    )
+    assert state.model_dump() == original_state
+
+
+def test_agent_response_application_plan_carries_handoff_blockers() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    sandbox = build_agent_response_sandbox_result(
+        build_agent_prompt_package("document_intake", state),
+        "not json",
+        state=state,
+    )
+    handoff = build_agent_response_engineer_handoff(sandbox)
+
+    plan = build_agent_response_application_plan(handoff)
+
+    assert plan.plan_status == "blocked"
+    assert plan.target_phase is None
+    assert plan.would_create_agent_event is False
+    assert plan.would_set_phase_status is None
+    assert plan.blockers == handoff.blockers
+
+
+def test_agent_response_application_plan_defensively_blocks_inconsistent_ready_handoff() -> None:
+    handoff = AgentResponseEngineerHandoff(
+        review_packet_id="sandbox-review-document_intake",
+        agent_role="document_intake",
+        handoff_status="ready_for_engineer_review",
+        target_phase=None,
+        validation_ok=True,
+        apply_prechecks_ok=True,
+        requires_engineer_review=True,
+        blockers=[],
+        suggested_action="Review validated agent output.",
+    )
+
+    plan = build_agent_response_application_plan(handoff)
+
+    assert plan.plan_status == "blocked"
+    assert plan.would_create_agent_event is False
+    assert plan.would_set_phase_status is None
+    assert plan.blockers == ["Ready handoff requires a target phase."]
+
+
+def test_agent_response_application_plan_rows_are_localized_for_workbench() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    handoff = build_agent_response_engineer_handoff(
+        build_agent_response_sandbox_result(
+            build_agent_prompt_package("document_intake", state),
+            build_sample_agent_response_json("document_intake", state),
+            state=state,
+        )
+    )
+    plan = build_agent_response_application_plan(handoff)
+
+    zh_rows = build_agent_response_application_plan_rows(plan, "zh")
+    en_rows = build_agent_response_application_plan_rows(plan, "en")
+
+    assert {"项目": "计划状态", "内容": "可进入受控应用"} in zh_rows
+    assert {"项目": "会创建 Agent 事件", "内容": "是"} in zh_rows
+    assert {"项目": "项目状态", "内容": "未修改"} in zh_rows
+    assert {"Item": "Plan Status", "Value": "Ready For Controlled Application"} in en_rows
+    assert {"Item": "Would Create Agent Event", "Value": "Yes"} in en_rows
     assert {"Item": "Project State", "Value": "Unchanged"} in en_rows
 
 
