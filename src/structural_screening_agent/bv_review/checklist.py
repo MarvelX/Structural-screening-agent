@@ -23,7 +23,7 @@ DOCUMENT_RULES = {
             "load_calculation",
             "existing_rooftop_added_load",
         ],
-        "补充结构计算书、荷载取值和设计校核过程。",
+        "补充结构计算书、荷载取值、设计校核过程、基础计算输出、最不利抗拔力、压力和水平力、抗拔承载力验算和地基承载力验算。",
     ),
     "technical_specification": (
         "项目技术规格书",

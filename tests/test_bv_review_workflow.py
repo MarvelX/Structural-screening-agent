@@ -106,6 +106,20 @@ def test_foundation_geotechnical_checklist_names_required_evidence_parameters() 
     assert "地下水条件" in geotechnical_item.required_action
 
 
+def test_foundation_calculation_checklist_names_required_calculation_evidence() -> None:
+    checklist = build_document_checklist(_sample_intake())
+
+    calculation_item = next(
+        item for item in checklist if item.document_key == "calculation_report"
+    )
+
+    assert calculation_item.review_blocked is True
+    assert "基础计算输出" in calculation_item.required_action
+    assert "最不利抗拔力、压力和水平力" in calculation_item.required_action
+    assert "抗拔承载力验算" in calculation_item.required_action
+    assert "地基承载力验算" in calculation_item.required_action
+
+
 def test_structural_review_path_creates_object_specific_review_methods_and_holds() -> None:
     checklist = build_document_checklist(_sample_intake())
     paths = build_structural_review_path(_sample_intake(), checklist)
