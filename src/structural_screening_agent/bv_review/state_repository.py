@@ -4,11 +4,22 @@ import json
 from pathlib import Path
 from re import fullmatch
 
+from pydantic import BaseModel
+
 from structural_screening_agent.bv_review.field_diff import (
     IncrementalRecheckPlan,
     build_incremental_recheck_plan_from_closed_rfis,
 )
-from structural_screening_agent.bv_review.project_state import ProjectReviewState
+from structural_screening_agent.bv_review.project_state import ProjectReviewState, ReviewPhase
+
+
+class ProjectReviewStateSummary(BaseModel):
+    project_id: str
+    project_name: str
+    current_phase: ReviewPhase
+    agent_event_count: int
+    pending_agent_review_count: int
+    active_rfi_count: int
 
 
 class JsonProjectReviewStateRepository:
@@ -46,3 +57,29 @@ class JsonProjectReviewStateRepository:
         if not self.root.exists():
             return []
         return sorted(path.stem for path in self.root.glob("*.json") if path.is_file())
+
+    def list_project_summaries(self) -> list[ProjectReviewStateSummary]:
+        return [
+            _summarize_project_state(self.load(project_id))
+            for project_id in self.list_project_ids()
+        ]
+
+
+def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSummary:
+    pending_agent_review_count = sum(
+        1
+        for event in state.agent_events
+        if event.requires_engineer_review
+        and state.phase_statuses.get(event.target_phase) == "waiting_for_engineer"
+    )
+    active_rfi_count = sum(
+        1 for item in state.rfi_items if item.status in {"open", "reopened", "responded"}
+    )
+    return ProjectReviewStateSummary(
+        project_id=state.project_id,
+        project_name=state.intake.project_name,
+        current_phase=state.current_phase,
+        agent_event_count=len(state.agent_events),
+        pending_agent_review_count=pending_agent_review_count,
+        active_rfi_count=active_rfi_count,
+    )

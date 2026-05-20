@@ -18,6 +18,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_ground_fixed_human_gate_rows,
     build_incremental_recheck_summary_rows,
     build_persisted_workflow_run_summary_rows,
+    build_project_review_state_summary_rows,
     build_report_gate_evidence_rows,
     default_bv_review_intake,
     localize_report_gate_reason,
@@ -35,6 +36,7 @@ from structural_screening_agent.bv_review.human_gate import (
     ReportDraftGateResult,
     record_agent_review_decision,
 )
+from structural_screening_agent.bv_review.state_repository import ProjectReviewStateSummary
 from structural_screening_agent.bv_review import (
     PersistedWorkflowRunSummary,
     run_local_agent_workflow_until_blocked,
@@ -235,6 +237,45 @@ def test_persisted_workflow_run_summary_rows_localize_resume_audit_trail() -> No
     ]
     assert "Document Intake Agent" not in str(zh_rows)
     assert "资料接收 Agent" not in str(en_rows)
+
+
+def test_project_review_state_summary_rows_localize_project_inventory() -> None:
+    summaries = [
+        ProjectReviewStateSummary(
+            project_id="pv-001",
+            project_name="Ground PV review",
+            current_phase="document_check",
+            agent_event_count=4,
+            pending_agent_review_count=2,
+            active_rfi_count=1,
+        )
+    ]
+
+    zh_rows = build_project_review_state_summary_rows(summaries, "zh")
+    en_rows = build_project_review_state_summary_rows(summaries, "en")
+
+    assert zh_rows == [
+        {
+            "项目 ID": "pv-001",
+            "项目名称": "Ground PV review",
+            "当前阶段": "资料检查",
+            "Agent 事件": 4,
+            "待工程师复核": 2,
+            "未关闭 RFI": 1,
+        }
+    ]
+    assert en_rows == [
+        {
+            "Project ID": "pv-001",
+            "Project Name": "Ground PV review",
+            "Current Phase": "Document Check",
+            "Agent Events": 4,
+            "Pending Engineer Reviews": 2,
+            "Active RFIs": 1,
+        }
+    ]
+    assert "Document Check" not in str(zh_rows)
+    assert "资料检查" not in str(en_rows)
 
 
 def test_closed_rfi_incremental_recheck_rows_show_completed_evidence_without_mixed_language() -> None:

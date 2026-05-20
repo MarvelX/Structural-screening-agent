@@ -104,6 +104,42 @@ def test_json_state_repository_round_trips_project_review_state(tmp_path: Path) 
     assert repository.list_project_ids() == ["pv-ground-001"]
 
 
+def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    first_state = _sample_state().model_copy(
+        update={
+            "current_phase": "document_check",
+            "phase_statuses": {
+                **_sample_state().phase_statuses,
+                "document_check": "waiting_for_engineer",
+            },
+        }
+    )
+    second_state = _sample_state().model_copy(
+        update={
+            "project_id": "pv-ground-002",
+            "current_phase": "report_draft",
+            "agent_events": [],
+            "rfi_items": [],
+        }
+    )
+    repository.save(first_state)
+    repository.save(second_state)
+
+    summaries = repository.list_project_summaries()
+
+    assert [item.project_id for item in summaries] == ["pv-ground-001", "pv-ground-002"]
+    assert summaries[0].project_name == "Ground PV design review"
+    assert summaries[0].current_phase == "document_check"
+    assert summaries[0].agent_event_count == 1
+    assert summaries[0].pending_agent_review_count == 1
+    assert summaries[0].active_rfi_count == 1
+    assert summaries[1].current_phase == "report_draft"
+    assert summaries[1].agent_event_count == 0
+    assert summaries[1].pending_agent_review_count == 0
+    assert summaries[1].active_rfi_count == 0
+
+
 def test_json_state_repository_round_trips_incremental_recheck_rfi_state(tmp_path: Path) -> None:
     repository = JsonProjectReviewStateRepository(tmp_path)
     state = _sample_state().model_copy(

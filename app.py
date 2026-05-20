@@ -33,6 +33,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_ground_fixed_human_gate_rows,
     build_incremental_recheck_summary_rows,
     build_persisted_workflow_run_summary_rows,
+    build_project_review_state_summary_rows,
     build_report_gate_evidence_rows,
     localize_report_gate_reason,
     default_bv_review_intake,
@@ -896,15 +897,20 @@ with bv_review_tab:
             key="bv_persisted_project_id",
         ).strip()
         persisted_project_id = persisted_project_id or phase1_state.project_id
-        existing_project_ids = persisted_repository.list_project_ids()
-        if existing_project_ids:
-            st.caption(
-                (
-                    "Saved projects: "
-                    if ui_language == "en"
-                    else "已保存项目："
-                )
-                + ", ".join(existing_project_ids)
+        project_summaries = persisted_repository.list_project_summaries()
+        if project_summaries:
+            st.markdown(
+                "##### Saved Project Inventory"
+                if ui_language == "en"
+                else "已保存项目清单"
+            )
+            st.dataframe(
+                build_project_review_state_summary_rows(
+                    project_summaries,
+                    ui_language,
+                ),
+                hide_index=True,
+                use_container_width=True,
             )
         persisted_workflow_result = None
         save_state_col, resume_state_col, current_state_col = st.columns(3)

@@ -6,6 +6,7 @@ from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan_from_closed_rfis,
 )
 from structural_screening_agent.bv_review.project_state import ExtractedField, ProjectReviewState
+from structural_screening_agent.bv_review.state_repository import ProjectReviewStateSummary
 from structural_screening_agent.localization import Language
 
 
@@ -676,6 +677,44 @@ def build_persisted_workflow_run_summary_rows(
         (labels["save_status"], labels["saved"] if summary.saved else labels["not_saved"]),
     ]
     return [{labels["key"]: key, labels["value"]: value} for key, value in rows]
+
+
+def build_project_review_state_summary_rows(
+    summaries: list[ProjectReviewStateSummary],
+    language: Language,
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "project_id": "项目 ID",
+            "project_name": "项目名称",
+            "current_phase": "当前阶段",
+            "agent_event_count": "Agent 事件",
+            "pending_agent_review_count": "待工程师复核",
+            "active_rfi_count": "未关闭 RFI",
+        }
+        if language == "zh"
+        else {
+            "project_id": "Project ID",
+            "project_name": "Project Name",
+            "current_phase": "Current Phase",
+            "agent_event_count": "Agent Events",
+            "pending_agent_review_count": "Pending Engineer Reviews",
+            "active_rfi_count": "Active RFIs",
+        }
+    )
+    return [
+        {
+            labels["project_id"]: summary.project_id,
+            labels["project_name"]: summary.project_name,
+            labels["current_phase"]: BV_REVIEW_PHASE_LABELS[summary.current_phase][
+                language
+            ],
+            labels["agent_event_count"]: summary.agent_event_count,
+            labels["pending_agent_review_count"]: summary.pending_agent_review_count,
+            labels["active_rfi_count"]: summary.active_rfi_count,
+        }
+        for summary in summaries
+    ]
 
 
 def build_agent_workflow_event_rows(
