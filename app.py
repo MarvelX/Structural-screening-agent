@@ -75,7 +75,10 @@ from structural_screening_agent.bv_review import (
     run_local_agent_workflow_until_blocked,
     run_persisted_local_agent_workflow_with_summary,
 )
-from structural_screening_agent.bv_review.workflow import evaluate_bv_review
+from structural_screening_agent.bv_review.workflow import (
+    build_bv_review_result_from_project_state,
+    evaluate_bv_review,
+)
 from structural_screening_agent.core.persistence import ScreeningRepository
 from structural_screening_agent.localization import (
     Language,
@@ -852,7 +855,6 @@ with bv_review_tab:
             documents=document_statuses,
         )
         bv_result = evaluate_bv_review(bv_intake)
-        blockers = [item for item in bv_result.risks if item.blocks_report_issue]
         phase1_approvals = []
         if (
             (calculation_gate_checked or gate_is_still_locked)
@@ -1026,12 +1028,37 @@ with bv_review_tab:
                 )
             except ValueError:
                 continue
-        report_draft_gate = build_report_draft_gate_result(reviewed_workflow_state, bv_result)
+        effective_bv_intake = (
+            reviewed_workflow_state.intake
+            if persisted_workflow_is_active
+            else bv_intake
+        )
+        effective_bv_result = (
+            build_bv_review_result_from_project_state(reviewed_workflow_state)
+            if persisted_workflow_is_active
+            else bv_result
+        )
+        effective_blockers = [
+            item for item in effective_bv_result.risks if item.blocks_report_issue
+        ]
+        report_draft_gate = build_report_draft_gate_result(
+            reviewed_workflow_state,
+            effective_bv_result,
+        )
 
         metric_1, metric_2, metric_3 = st.columns(3)
-        metric_1.metric("Decision" if ui_language == "en" else "审核结论", bv_result.decision)
-        metric_2.metric("Blocking Items" if ui_language == "en" else "阻塞项", len(blockers))
-        metric_3.metric("Review Paths" if ui_language == "en" else "审核路径", len(bv_result.review_paths))
+        metric_1.metric(
+            "Decision" if ui_language == "en" else "审核结论",
+            effective_bv_result.decision,
+        )
+        metric_2.metric(
+            "Blocking Items" if ui_language == "en" else "阻塞项",
+            len(effective_blockers),
+        )
+        metric_3.metric(
+            "Review Paths" if ui_language == "en" else "审核路径",
+            len(effective_bv_result.review_paths),
+        )
 
         st.markdown("#### Local Agent Workflow State" if ui_language == "en" else "本地 Agent 工作流状态")
         workflow_phase_col, workflow_artifact_col = st.columns([1.2, 1.0])
@@ -1180,23 +1207,23 @@ with bv_review_tab:
         with overview_col:
             _render_bv_section(
                 translate(ui_language, "bv_review_basis_heading"),
-                build_bv_basis_items(bv_result, ui_language),
+                build_bv_basis_items(effective_bv_result, ui_language),
                 limit=4,
             )
             _render_bv_section(
                 translate(ui_language, "bv_review_path_heading"),
-                build_bv_path_items(bv_result, ui_language),
+                build_bv_path_items(effective_bv_result, ui_language),
                 limit=5,
             )
         with risk_col:
             _render_bv_section(
                 translate(ui_language, "bv_review_risk_heading"),
-                build_bv_risk_items(bv_result, ui_language),
+                build_bv_risk_items(effective_bv_result, ui_language),
                 limit=6,
             )
             _render_bv_section(
                 translate(ui_language, "bv_review_plan_heading"),
-                build_bv_plan_items(bv_result, ui_language),
+                build_bv_plan_items(effective_bv_result, ui_language),
                 limit=5,
             )
 
@@ -1250,7 +1277,7 @@ with bv_review_tab:
                 else "当前没有已关闭 RFI 的增量复核证据。"
             )
 
-        bv_markdown_filename = build_bv_report_filename(bv_intake.project_type)
+        bv_markdown_filename = build_bv_report_filename(effective_bv_intake.project_type)
         bv_word_filename = bv_markdown_filename.replace(".md", ".docx")
         bv_pdf_filename = bv_markdown_filename.replace(".md", ".pdf")
 
@@ -1258,13 +1285,13 @@ with bv_review_tab:
         report_draft_ready = report_draft_gate.status == "ready"
         if report_draft_ready:
             bv_report_preview = build_bv_report_preview(
-                bv_intake,
-                bv_result,
+                effective_bv_intake,
+                effective_bv_result,
                 project_state=reviewed_workflow_state,
             )
             bv_markdown_payload = build_bv_markdown_report(
-                bv_intake,
-                bv_result,
+                effective_bv_intake,
+                effective_bv_result,
                 project_state=reviewed_workflow_state,
             )
             bv_docx_payload = build_docx_report_bytes(bv_report_preview)
@@ -1295,7 +1322,9 @@ with bv_review_tab:
                     use_container_width=True,
                 )
             for section in build_bv_report_preview_sections(
-                bv_intake, bv_result, ui_language
+                effective_bv_intake,
+                effective_bv_result,
+                ui_language,
             ):
                 with st.container(border=True):
                     st.markdown(f"**{section.heading}**")

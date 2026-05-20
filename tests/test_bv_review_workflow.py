@@ -1,15 +1,21 @@
 from structural_screening_agent.bv_review.basis import build_review_basis
 from structural_screening_agent.bv_review.checklist import build_document_checklist
 from structural_screening_agent.bv_review.models import (
+    BVBasisReference,
     BVChecklistItem,
     BVReviewIntake,
+    BVReviewPlanItem,
     BVReviewPathItem,
+    BVRiskItem,
 )
 from structural_screening_agent.bv_review.risk_register import build_risk_register
 from structural_screening_agent.bv_review.review_plan import build_review_plan
 from structural_screening_agent.bv_review.review_path import build_structural_review_path
-from structural_screening_agent.bv_review.workflow import evaluate_bv_review
-from structural_screening_agent.bv_review.project_state import CalculationRun
+from structural_screening_agent.bv_review.workflow import (
+    build_bv_review_result_from_project_state,
+    evaluate_bv_review,
+)
+from structural_screening_agent.bv_review.project_state import CalculationRun, ProjectReviewState
 
 
 def _sample_intake() -> BVReviewIntake:
@@ -397,3 +403,72 @@ def test_bv_review_workflow_marks_ready_when_all_documents_are_available() -> No
     result = evaluate_bv_review(intake)
 
     assert result.decision == "ready_for_review"
+
+
+def test_bv_review_result_from_project_state_uses_persisted_artifacts() -> None:
+    intake = _sample_intake().model_copy(
+        update={
+            "project_name": "Persisted ground PV review",
+            "documents": {
+                "structural_drawings": "available",
+                "calculation_report": "available",
+                "technical_specification": "available",
+                "geotechnical_report": "available",
+            },
+        }
+    )
+    state = ProjectReviewState(
+        project_id="pv-persisted",
+        intake=intake,
+        basis_references=[
+            BVBasisReference(
+                basis_id="persisted_basis",
+                title="Persisted review basis",
+                source_type="project_specification",
+                review_actions=["Use persisted basis."],
+            )
+        ],
+        review_paths=[
+            BVReviewPathItem(
+                path_id="persisted_path",
+                review_object="foundation",
+                title="Persisted foundation path",
+                method="Use persisted review path.",
+                status="ready",
+            )
+        ],
+        risks=[
+            BVRiskItem(
+                risk_id="persisted_blocker",
+                title="Persisted blocking risk",
+                severity="high",
+                trigger_basis="Persisted calculation finding.",
+                impact_scope="Foundation design review",
+                recommendation="Close persisted issue before report issue.",
+                blocks_report_issue=True,
+                category="risk",
+            )
+        ],
+        review_plan=[
+            BVReviewPlanItem(
+                item_id="persisted_plan",
+                phase="technical_check",
+                review_object="foundation",
+                input_documents=["geotechnical_report"],
+                method="Use persisted review plan.",
+                responsible_role="BV structural review engineer",
+                deliverable="Persisted review record.",
+            )
+        ],
+    )
+
+    result = build_bv_review_result_from_project_state(state)
+
+    assert result.decision == "not_ready"
+    assert [item.basis_id for item in result.basis_references] == ["persisted_basis"]
+    assert [item.path_id for item in result.review_paths] == ["persisted_path"]
+    assert [item.risk_id for item in result.risks] == ["persisted_blocker"]
+    assert [item.item_id for item in result.review_plan] == ["persisted_plan"]
+    assert result.checklist_items
+    assert result.report_preview is not None
+    assert "Persisted ground PV review" in result.report_preview.sections[0].items[0]
