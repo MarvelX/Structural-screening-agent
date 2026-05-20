@@ -12,6 +12,9 @@ from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan_from_closed_rfis,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
+from structural_screening_agent.bv_review.service_scope import (
+    build_service_scope_recommendations,
+)
 
 
 def build_bv_report_preview(
@@ -86,6 +89,13 @@ def build_bv_report_preview(
     rfi_closeout_section = build_bv_rfi_closeout_evidence_section(project_state)
     if rfi_closeout_section is not None:
         sections.insert(-1, rfi_closeout_section)
+    service_scope_section = build_bv_service_scope_section(
+        intake,
+        result,
+        project_state=project_state,
+    )
+    if service_scope_section is not None:
+        sections.insert(-1, service_scope_section)
     return BVReportPreview(title="BV 光伏结构设计审查报告", sections=sections)
 
 
@@ -142,6 +152,34 @@ def build_bv_rfi_closeout_evidence_section(
                 "关闭证据: 已完成增量复核"
             )
             for item in plan.affected_items
+        ],
+    )
+
+
+def build_bv_service_scope_section(
+    intake: BVReviewIntake,
+    result: BVReviewResult,
+    *,
+    project_state: ProjectReviewState | None = None,
+) -> BVReportSection | None:
+    recommendations = build_service_scope_recommendations(
+        intake,
+        result,
+        project_state=project_state,
+    )
+    if not recommendations:
+        return None
+
+    return BVReportSection(
+        heading="BV 服务范围建议",
+        items=[
+            (
+                f"{item.title} | 优先级: {item.priority} | "
+                f"触发证据: {', '.join(item.trigger_evidence_ids)} | "
+                f"客户价值: {item.client_value} | "
+                f"边界: {item.boundary_statement}"
+            )
+            for item in recommendations
         ],
     )
 

@@ -71,6 +71,10 @@ from structural_screening_agent.bv_review.report import (
     build_bv_report_filename,
     build_bv_report_preview,
 )
+from structural_screening_agent.bv_review.service_scope import (
+    build_service_scope_display_rows,
+    build_service_scope_recommendations,
+)
 from structural_screening_agent.bv_review.ui import (
     build_bv_basis_items,
     build_bv_path_items,
@@ -1530,6 +1534,27 @@ with bv_review_tab:
                     if ui_language == "en"
                     else "当前没有等待回复或关闭的持久化 RFI。"
                 )
+
+        service_scope_recommendations = build_service_scope_recommendations(
+            effective_bv_intake,
+            effective_bv_result,
+            project_state=reviewed_workflow_state,
+        )
+        if service_scope_recommendations:
+            service_scope_heading = (
+                "BV Service Scope Recommendations"
+                if ui_language == "en"
+                else "BV 服务范围建议"
+            )
+            st.markdown(f"##### {service_scope_heading}")
+            st.dataframe(
+                build_service_scope_display_rows(
+                    service_scope_recommendations,
+                    ui_language,
+                ),
+                hide_index=True,
+                use_container_width=True,
+            )
 
         bv_markdown_filename = build_bv_report_filename(effective_bv_intake.project_type)
         bv_word_filename = bv_markdown_filename.replace(".md", ".docx")

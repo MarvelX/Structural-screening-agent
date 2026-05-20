@@ -56,6 +56,11 @@ from structural_screening_agent.bv_review.project_state import (
     ReportRevision,
 )
 from structural_screening_agent.bv_review.report import build_bv_open_rfi_items
+from structural_screening_agent.bv_review.service_scope import (
+    ServiceScopeRecommendation,
+    build_service_scope_display_rows,
+    build_service_scope_recommendations,
+)
 from structural_screening_agent.bv_review.state_repository import JsonProjectReviewStateRepository
 from structural_screening_agent.bv_review.state_machine import advance_project_phase
 from structural_screening_agent.bv_review.human_gate import (
@@ -93,6 +98,7 @@ __all__ = [
     "ReportComposerAgentOutput",
     "ReviewPlanAgentOutput",
     "RiskNCRAgentOutput",
+    "ServiceScopeRecommendation",
     "run_local_agent_workflow_step",
     "run_local_agent_workflow_until_blocked",
     "run_persisted_local_agent_workflow_until_blocked",
@@ -108,6 +114,8 @@ __all__ = [
     "build_incremental_recheck_plan",
     "build_incremental_recheck_plan_from_closed_rfis",
     "build_review_basis",
+    "build_service_scope_display_rows",
+    "build_service_scope_recommendations",
     "build_superstructure_calculation_run",
     "build_superstructure_calculation_run_from_fields",
     "close_rfi_after_engineer_review",

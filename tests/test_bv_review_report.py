@@ -82,6 +82,31 @@ def test_bv_markdown_report_contains_required_sections_and_boundary_statement() 
     assert "不代表 BV 官方签发流程" in report
 
 
+def test_bv_markdown_report_includes_traceable_service_scope_recommendations() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+
+    report = build_bv_markdown_report(intake, result)
+
+    assert "## BV 服务范围建议" in report
+    assert "资料完整性与 RFI 关闭支持" in report
+    assert "触发证据:" in report
+    assert "不替代正式设计" in report
+
+
+def test_bv_report_preview_includes_traceable_service_scope_recommendations() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+
+    preview = build_bv_report_preview(intake, result)
+    section = next(section for section in preview.sections if section.heading == "BV 服务范围建议")
+    text = "\n".join(section.items)
+
+    assert "资料完整性与 RFI 关闭支持" in text
+    assert "触发证据:" in text
+    assert "不替代正式设计" in text
+
+
 def test_bv_report_preview_includes_closed_rfi_recheck_evidence_when_state_is_provided() -> None:
     intake = _sample_intake()
     result = evaluate_bv_review(intake)

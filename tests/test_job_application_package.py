@@ -175,6 +175,9 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"工程师复核后关闭 RFI"' in app_source
     assert 'f"bv_persisted_rfi_client_response_{selected_persisted_rfi_id}"' in app_source
     assert 'f"bv_persisted_rfi_closeout_note_{selected_persisted_rfi_id}"' in app_source
+    assert "build_service_scope_recommendations" in app_source
+    assert '"BV Service Scope Recommendations"' in app_source
+    assert '"BV 服务范围建议"' in app_source
     assert "effective_bv_result" in app_source
     assert "list_project_inventory" in app_source
     assert "invalid_project_ids" in app_source
