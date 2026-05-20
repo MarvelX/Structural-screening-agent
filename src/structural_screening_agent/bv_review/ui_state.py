@@ -75,6 +75,34 @@ BV_REVIEW_PHASE_STATUS_LABELS = {
     "rejected": {"zh": "已驳回", "en": "Rejected"},
 }
 
+BV_AGENT_ROLE_LABELS = {
+    "document_intake": {"zh": "资料接收 Agent", "en": "Document Intake Agent"},
+    "basis_code": {"zh": "依据与标准 Agent", "en": "Basis & Code Agent"},
+    "review_plan": {"zh": "审核计划 Agent", "en": "Review Plan Agent"},
+    "structural_review": {"zh": "结构审核路径 Agent", "en": "Structural Review Agent"},
+    "calculation_check": {"zh": "计算校核 Agent", "en": "Calculation Check Agent"},
+    "risk_ncr": {"zh": "风险 / NCR Agent", "en": "Risk & NCR Agent"},
+    "report_composer": {"zh": "报告编制 Agent", "en": "Report Composer Agent"},
+}
+
+BV_AGENT_EVENT_STATUS_LABELS = {
+    "applied": {"zh": "已应用", "en": "Applied"},
+}
+
+BV_AGENT_EVENT_SUMMARY_LABELS = {
+    "document_versions": {"zh": "资料版本", "en": "Document Versions"},
+    "extracted_fields": {"zh": "抽取字段", "en": "Extracted Fields"},
+    "missing_document_keys": {"zh": "缺失资料键", "en": "Missing Document Keys"},
+    "basis_references": {"zh": "审核依据", "en": "Review Basis"},
+    "review_plan": {"zh": "审核计划", "en": "Review Plan"},
+    "review_paths": {"zh": "审核路径", "en": "Review Paths"},
+    "calculation_run_ids": {"zh": "计算运行引用", "en": "Calculation Run References"},
+    "risks": {"zh": "风险 / NCR", "en": "Risks / NCR"},
+    "source_calculation_run_ids": {"zh": "来源计算运行", "en": "Source Calculation Runs"},
+    "report_sections": {"zh": "报告章节", "en": "Report Sections"},
+    "rfi_items": {"zh": "RFI", "en": "RFI"},
+}
+
 
 def _split_client_requirements(text: str) -> list[str]:
     return [line.strip() for line in text.splitlines() if line.strip()]
@@ -546,6 +574,64 @@ def build_agent_workflow_artifact_rows(
         {labels["artifact"]: artifact, labels["count"]: count}
         for artifact, count in artifact_labels
     ]
+
+
+def build_agent_workflow_event_rows(
+    state: ProjectReviewState, language: Language
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "event_id": "事件 ID",
+            "agent": "Agent",
+            "target_phase": "目标阶段",
+            "status": "状态",
+            "schema_version": "输出契约版本",
+            "engineer_review": "需工程师复核",
+            "output_summary": "产物摘要",
+        }
+        if language == "zh"
+        else {
+            "event_id": "Event ID",
+            "agent": "Agent",
+            "target_phase": "Target Phase",
+            "status": "Status",
+            "schema_version": "Output Contract Version",
+            "engineer_review": "Engineer Review",
+            "output_summary": "Output Summary",
+        }
+    )
+    return [
+        {
+            labels["event_id"]: event.event_id,
+            labels["agent"]: BV_AGENT_ROLE_LABELS.get(event.agent_role, {}).get(
+                language,
+                event.agent_role,
+            ),
+            labels["target_phase"]: BV_REVIEW_PHASE_LABELS[event.target_phase][language],
+            labels["status"]: BV_AGENT_EVENT_STATUS_LABELS[event.status][language],
+            labels["schema_version"]: event.output_schema_version,
+            labels["engineer_review"]: _localized_bool(
+                event.requires_engineer_review,
+                language,
+            ),
+            labels["output_summary"]: _format_agent_event_summary_counts(
+                event.summary_counts,
+                language,
+            ),
+        }
+        for event in state.agent_events
+    ]
+
+
+def _format_agent_event_summary_counts(
+    summary_counts: dict[str, int], language: Language
+) -> str:
+    if not summary_counts:
+        return "无" if language == "zh" else "None"
+    return "; ".join(
+        f"{BV_AGENT_EVENT_SUMMARY_LABELS.get(key, {}).get(language, key)}: {count}"
+        for key, count in summary_counts.items()
+    )
 
 
 def build_incremental_recheck_summary_rows(

@@ -6,6 +6,7 @@ from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
     build_agent_workflow_artifact_rows,
+    build_agent_workflow_event_rows,
     build_agent_workflow_phase_rows,
     build_calculation_result_summary_rows,
     build_extracted_fields_from_human_gate_rows,
@@ -244,3 +245,31 @@ def test_agent_workflow_artifact_rows_show_runner_outputs_without_mixed_language
     assert {"Artifact": "Agent Events", "Count": len(state.agent_events)} in en_rows
     assert "Review Basis" not in str(zh_rows)
     assert "审核依据" not in str(en_rows)
+
+
+def test_agent_workflow_event_rows_localize_trace_details_without_raw_state() -> None:
+    state = run_local_agent_workflow_until_blocked(
+        ProjectReviewState(project_id="pv-ui-agent", intake=default_bv_review_intake())
+    )
+
+    zh_rows = build_agent_workflow_event_rows(state, "zh")
+    en_rows = build_agent_workflow_event_rows(state, "en")
+
+    assert zh_rows[0]["事件 ID"] == "agent-event-001"
+    assert zh_rows[0]["Agent"] == "资料接收 Agent"
+    assert zh_rows[0]["目标阶段"] == "资料检查"
+    assert zh_rows[0]["状态"] == "已应用"
+    assert zh_rows[0]["需工程师复核"] == "是"
+    assert "资料版本: 6" in str(zh_rows[0]["产物摘要"])
+    assert "缺失资料键: 2" in str(zh_rows[0]["产物摘要"])
+    assert "document_check" not in str(zh_rows)
+    assert "applied" not in str(zh_rows)
+
+    assert en_rows[0]["Event ID"] == "agent-event-001"
+    assert en_rows[0]["Agent"] == "Document Intake Agent"
+    assert en_rows[0]["Target Phase"] == "Document Check"
+    assert en_rows[0]["Status"] == "Applied"
+    assert en_rows[0]["Engineer Review"] == "Yes"
+    assert "Document Versions: 6" in str(en_rows[0]["Output Summary"])
+    assert "Missing Document Keys: 2" in str(en_rows[0]["Output Summary"])
+    assert "资料检查" not in str(en_rows)

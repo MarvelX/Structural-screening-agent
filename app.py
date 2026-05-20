@@ -21,6 +21,7 @@ from structural_screening_agent.bv_review.ui_state import (
     BV_REVIEW_OBJECT_LABELS,
     BV_STANDARD_LABELS,
     build_agent_workflow_artifact_rows,
+    build_agent_workflow_event_rows,
     build_agent_workflow_phase_rows,
     build_calculation_result_summary_rows,
     build_extracted_fields_from_human_gate_rows,
@@ -944,6 +945,15 @@ with bv_review_tab:
             if ui_language == "en"
             else "本地确定性 runner 会在工程师数据锁定阶段等待计算门禁批准。"
         )
+        with st.expander(
+            "Local Agent Event Trace" if ui_language == "en" else "本地 Agent 事件追踪",
+            expanded=False,
+        ):
+            st.dataframe(
+                build_agent_workflow_event_rows(workflow_state, ui_language),
+                hide_index=True,
+                use_container_width=True,
+            )
 
         overview_col, risk_col = st.columns([1.0, 1.0])
         with overview_col:
