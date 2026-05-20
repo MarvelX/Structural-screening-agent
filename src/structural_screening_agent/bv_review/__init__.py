@@ -15,6 +15,9 @@ from structural_screening_agent.bv_review.agent_workflow import (
     AgentWorkflowOutput,
     apply_agent_output_to_state,
 )
+from structural_screening_agent.bv_review.agent_application import (
+    apply_authorized_agent_response_to_state,
+)
 from structural_screening_agent.bv_review.agent_runner import (
     PersistedWorkflowRunResult,
     PersistedWorkflowRunSummary,
@@ -24,6 +27,7 @@ from structural_screening_agent.bv_review.agent_runner import (
     run_persisted_local_agent_workflow_with_summary,
 )
 from structural_screening_agent.bv_review.agent_prompting import (
+    AgentResponseApplicationAuthorization,
     AgentProviderInvocationRequest,
     AgentResponseApplicationPlan,
     AgentResponseEngineerHandoff,
@@ -44,6 +48,7 @@ from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_response_sandbox_result,
     build_agent_response_sandbox_rows,
     build_sample_agent_response_json,
+    compute_agent_response_digest,
     default_agent_provider_model,
     parse_agent_json_response,
     preview_agent_response_impact,
@@ -107,6 +112,7 @@ __all__ = [
     "BVReviewResult",
     "AGENT_CONTRACT_SCHEMA_VERSION",
     "AGENT_ROLE_SEQUENCE",
+    "AgentResponseApplicationAuthorization",
     "AgentProviderInvocationRequest",
     "AgentResponseApplicationPlan",
     "AgentResponseEngineerHandoff",
@@ -147,6 +153,7 @@ __all__ = [
     "JsonProjectReviewStateRepository",
     "advance_project_phase",
     "apply_agent_output_to_state",
+    "apply_authorized_agent_response_to_state",
     "build_foundation_calculation_run",
     "build_agent_provider_invocation_request",
     "build_agent_provider_invocation_rows",
@@ -161,6 +168,7 @@ __all__ = [
     "build_agent_response_sandbox_result",
     "build_agent_response_sandbox_rows",
     "build_sample_agent_response_json",
+    "compute_agent_response_digest",
     "default_agent_provider_model",
     "build_foundation_calculation_run_from_fields",
     "build_bv_open_rfi_items",

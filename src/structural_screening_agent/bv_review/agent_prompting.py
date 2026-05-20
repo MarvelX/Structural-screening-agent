@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 from typing import Literal, TypeAlias
 
@@ -104,6 +105,7 @@ class AgentResponseSandboxResult(BaseModel):
     mode: Literal["sandbox_preview"] = "sandbox_preview"
     invocation_request: AgentProviderInvocationRequest
     response_text: str
+    response_digest: str = Field(min_length=1)
     validation_result: AgentResponseValidationResult
     impact_preview: AgentResponseImpactPreview | None = None
     ready_for_engineer_review: bool = False
@@ -117,6 +119,7 @@ class AgentResponseSandboxResult(BaseModel):
 class AgentResponseEngineerHandoff(BaseModel):
     review_packet_id: str = Field(min_length=1)
     agent_role: AgentRole
+    response_digest: str = Field(min_length=1)
     handoff_status: Literal["ready_for_engineer_review", "blocked"]
     target_phase: ReviewPhase | None = None
     validation_ok: bool
@@ -134,6 +137,7 @@ class AgentResponseEngineerHandoff(BaseModel):
 class AgentResponseApplicationPlan(BaseModel):
     plan_id: str = Field(min_length=1)
     agent_role: AgentRole
+    response_digest: str = Field(min_length=1)
     plan_status: Literal["ready_for_controlled_application", "blocked"]
     target_phase: ReviewPhase | None = None
     requires_engineer_authorization: bool = True
@@ -144,6 +148,14 @@ class AgentResponseApplicationPlan(BaseModel):
     boundary_statement: str = (
         "Application plan only; no agent output is applied until an engineer authorizes the controlled workflow step."
     )
+
+
+class AgentResponseApplicationAuthorization(BaseModel):
+    plan_id: str = Field(min_length=1)
+    response_digest: str = Field(min_length=1)
+    reviewer: str = Field(min_length=1)
+    decision: Literal["authorized", "rejected"]
+    comment: str = ""
 
 
 def build_agent_prompt_package(
@@ -287,6 +299,7 @@ def build_agent_response_sandbox_result(
         agent_role=package.agent_role,
         invocation_request=invocation_request,
         response_text=response_text,
+        response_digest=compute_agent_response_digest(response_text),
         validation_result=validation_result,
         impact_preview=impact_preview,
         ready_for_engineer_review=bool(
@@ -363,6 +376,7 @@ def build_agent_response_engineer_handoff(
     return AgentResponseEngineerHandoff(
         review_packet_id=f"sandbox-review-{sandbox.agent_role}",
         agent_role=sandbox.agent_role,
+        response_digest=sandbox.response_digest,
         handoff_status=(
             "ready_for_engineer_review" if handoff_is_ready else "blocked"
         ),
@@ -455,6 +469,7 @@ def build_agent_response_application_plan(
     return AgentResponseApplicationPlan(
         plan_id=f"application-plan-{handoff.review_packet_id}",
         agent_role=handoff.agent_role,
+        response_digest=handoff.response_digest,
         plan_status=(
             "ready_for_controlled_application" if plan_is_ready else "blocked"
         ),
@@ -794,6 +809,10 @@ def _agent_response_application_plan_blockers(
     if handoff.target_phase is None:
         blockers.append("Ready handoff requires a target phase.")
     return blockers
+
+
+def compute_agent_response_digest(response_text: str) -> str:
+    return hashlib.sha256(response_text.encode("utf-8")).hexdigest()
 
 
 def _localized_handoff_action(

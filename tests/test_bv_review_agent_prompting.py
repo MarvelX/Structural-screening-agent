@@ -154,6 +154,7 @@ def test_agent_response_sandbox_result_links_invocation_validation_and_impact_wi
     assert sandbox.invocation_request.mode == "preview"
     assert sandbox.invocation_request.network_request_sent is False
     assert sandbox.response_text == response_text
+    assert sandbox.response_digest
     assert sandbox.validation_result.ok is True
     assert sandbox.impact_preview is not None
     assert sandbox.impact_preview.target_phase == "document_check"
@@ -219,6 +220,7 @@ def test_agent_response_engineer_handoff_marks_valid_response_ready_for_review()
 
     assert handoff.review_packet_id == "sandbox-review-document_intake"
     assert handoff.handoff_status == "ready_for_engineer_review"
+    assert handoff.response_digest == sandbox.response_digest
     assert handoff.target_phase == "document_check"
     assert handoff.validation_ok is True
     assert handoff.apply_prechecks_ok is True
@@ -308,6 +310,7 @@ def test_agent_response_application_plan_describes_controlled_next_step_without_
     assert plan.plan_id == "application-plan-sandbox-review-document_intake"
     assert plan.plan_status == "ready_for_controlled_application"
     assert plan.agent_role == "document_intake"
+    assert plan.response_digest == sandbox.response_digest
     assert plan.target_phase == "document_check"
     assert plan.requires_engineer_authorization is True
     assert plan.would_create_agent_event is True
@@ -342,6 +345,7 @@ def test_agent_response_application_plan_defensively_blocks_inconsistent_ready_h
     handoff = AgentResponseEngineerHandoff(
         review_packet_id="sandbox-review-document_intake",
         agent_role="document_intake",
+        response_digest="test-response-digest",
         handoff_status="ready_for_engineer_review",
         target_phase=None,
         validation_ok=True,
