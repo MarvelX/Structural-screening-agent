@@ -623,6 +623,61 @@ def build_agent_workflow_event_rows(
     ]
 
 
+def build_agent_engineer_review_queue_rows(
+    state: ProjectReviewState, language: Language
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "review_item": "复核项",
+            "agent": "Agent",
+            "phase": "阶段",
+            "todo_status": "待办状态",
+            "suggested_action": "建议动作",
+            "output_summary": "产物摘要",
+        }
+        if language == "zh"
+        else {
+            "review_item": "Review Item",
+            "agent": "Agent",
+            "phase": "Phase",
+            "todo_status": "Todo Status",
+            "suggested_action": "Suggested Action",
+            "output_summary": "Output Summary",
+        }
+    )
+    return [
+        {
+            labels["review_item"]: event.event_id,
+            labels["agent"]: BV_AGENT_ROLE_LABELS.get(event.agent_role, {}).get(
+                language,
+                event.agent_role,
+            ),
+            labels["phase"]: BV_REVIEW_PHASE_LABELS[event.target_phase][language],
+            labels["todo_status"]: _agent_review_todo_status(language),
+            labels["suggested_action"]: _agent_review_suggested_action(language),
+            labels["output_summary"]: _format_agent_event_summary_counts(
+                event.summary_counts,
+                language,
+            ),
+        }
+        for event in state.agent_events
+        if event.requires_engineer_review
+        and state.phase_statuses.get(event.target_phase) == "waiting_for_engineer"
+    ]
+
+
+def _agent_review_todo_status(language: Language) -> str:
+    if language == "zh":
+        return "待工程师复核"
+    return "Pending Engineer Review"
+
+
+def _agent_review_suggested_action(language: Language) -> str:
+    if language == "zh":
+        return "复核 Agent 产物并记录工程师判断"
+    return "Review agent output and record engineer decision"
+
+
 def _format_agent_event_summary_counts(
     summary_counts: dict[str, int], language: Language
 ) -> str:

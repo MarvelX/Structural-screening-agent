@@ -21,6 +21,7 @@ from structural_screening_agent.bv_review.ui_state import (
     BV_REVIEW_OBJECT_LABELS,
     BV_STANDARD_LABELS,
     build_agent_workflow_artifact_rows,
+    build_agent_engineer_review_queue_rows,
     build_agent_workflow_event_rows,
     build_agent_workflow_phase_rows,
     build_calculation_result_summary_rows,
@@ -944,6 +945,12 @@ with bv_review_tab:
             "Local deterministic runner stops at engineer data lock until the calculation gate is approved."
             if ui_language == "en"
             else "本地确定性 runner 会在工程师数据锁定阶段等待计算门禁批准。"
+        )
+        st.markdown("##### Engineer Review Queue" if ui_language == "en" else "工程师复核队列")
+        st.dataframe(
+            build_agent_engineer_review_queue_rows(workflow_state, ui_language),
+            hide_index=True,
+            use_container_width=True,
         )
         with st.expander(
             "Local Agent Event Trace" if ui_language == "en" else "本地 Agent 事件追踪",

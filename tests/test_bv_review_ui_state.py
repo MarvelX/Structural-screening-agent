@@ -6,6 +6,7 @@ from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
     build_agent_workflow_artifact_rows,
+    build_agent_engineer_review_queue_rows,
     build_agent_workflow_event_rows,
     build_agent_workflow_phase_rows,
     build_calculation_result_summary_rows,
@@ -273,3 +274,40 @@ def test_agent_workflow_event_rows_localize_trace_details_without_raw_state() ->
     assert "Document Versions: 6" in str(en_rows[0]["Output Summary"])
     assert "Missing Document Keys: 2" in str(en_rows[0]["Output Summary"])
     assert "资料检查" not in str(en_rows)
+
+
+def test_agent_engineer_review_queue_rows_show_only_pending_human_reviews() -> None:
+    state = run_local_agent_workflow_until_blocked(
+        ProjectReviewState(project_id="pv-ui-agent", intake=default_bv_review_intake())
+    )
+    approved_state = state.model_copy(
+        update={
+            "phase_statuses": {
+                **state.phase_statuses,
+                "document_check": "approved",
+            }
+        }
+    )
+
+    zh_rows = build_agent_engineer_review_queue_rows(approved_state, "zh")
+    en_rows = build_agent_engineer_review_queue_rows(approved_state, "en")
+
+    assert zh_rows
+    assert all(row["阶段"] != "资料检查" for row in zh_rows)
+    assert zh_rows[0]["复核项"] == "agent-event-002"
+    assert zh_rows[0]["Agent"] == "依据与标准 Agent"
+    assert zh_rows[0]["待办状态"] == "待工程师复核"
+    assert zh_rows[0]["建议动作"] == "复核 Agent 产物并记录工程师判断"
+    assert f"审核依据: {len(approved_state.basis_references)}" in str(zh_rows[0]["产物摘要"])
+    assert "basis_build" not in str(zh_rows)
+    assert "waiting_for_engineer" not in str(zh_rows)
+    assert "Review agent output" not in str(zh_rows)
+
+    assert en_rows[0]["Review Item"] == "agent-event-002"
+    assert en_rows[0]["Agent"] == "Basis & Code Agent"
+    assert en_rows[0]["Todo Status"] == "Pending Engineer Review"
+    assert en_rows[0]["Suggested Action"] == "Review agent output and record engineer decision"
+    assert f"Review Basis: {len(approved_state.basis_references)}" in str(
+        en_rows[0]["Output Summary"]
+    )
+    assert "等待工程师" not in str(en_rows)

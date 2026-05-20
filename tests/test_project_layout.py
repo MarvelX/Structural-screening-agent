@@ -64,9 +64,13 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "run_local_agent_workflow_until_blocked" in source
     assert "build_agent_workflow_phase_rows" in source
     assert "build_agent_workflow_artifact_rows" in source
+    assert "build_agent_engineer_review_queue_rows" in source
     assert "build_agent_workflow_event_rows" in source
     assert "workflow_state" in source
     assert "本地 Agent 工作流状态" in source
+    assert "工程师复核队列" in source
+    assert "Engineer Review Queue" in source
+    assert "build_agent_engineer_review_queue_rows(workflow_state, ui_language)" in source
     assert "本地 Agent 事件追踪" in source
     assert 'translate(ui_language, "bv_review_warning_standards")' in source
     assert 'translate(ui_language, "bv_review_warning_objects")' in source
