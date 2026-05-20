@@ -666,6 +666,76 @@ def build_agent_engineer_review_queue_rows(
     ]
 
 
+def build_agent_engineer_review_decision_rows(
+    state: ProjectReviewState, language: Language
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "approval_id": "复核记录",
+            "event_id": "复核项",
+            "agent": "Agent",
+            "phase": "阶段",
+            "decision": "结论",
+            "locked": "锁定",
+            "reviewer": "复核人",
+            "comment": "意见",
+        }
+        if language == "zh"
+        else {
+            "approval_id": "Decision Record",
+            "event_id": "Review Item",
+            "agent": "Agent",
+            "phase": "Phase",
+            "decision": "Decision",
+            "locked": "Locked",
+            "reviewer": "Reviewer",
+            "comment": "Comment",
+        }
+    )
+    event_by_id = {event.event_id: event for event in state.agent_events}
+    rows: list[dict[str, object]] = []
+    for approval in state.approvals:
+        if approval.target_type != "agent_event":
+            continue
+        event = event_by_id.get(approval.target_id)
+        rows.append(
+            {
+                labels["approval_id"]: approval.approval_id,
+                labels["event_id"]: approval.target_id,
+                labels["agent"]: (
+                    BV_AGENT_ROLE_LABELS.get(event.agent_role, {}).get(
+                        language,
+                        event.agent_role,
+                    )
+                    if event
+                    else ""
+                ),
+                labels["phase"]: (
+                    BV_REVIEW_PHASE_LABELS[event.target_phase][language]
+                    if event
+                    else ""
+                ),
+                labels["decision"]: _agent_review_decision_label(
+                    approval.status,
+                    language,
+                ),
+                labels["locked"]: _localized_bool(approval.locked, language),
+                labels["reviewer"]: approval.reviewer or "",
+                labels["comment"]: approval.comment or "",
+            }
+        )
+    return rows
+
+
+def _agent_review_decision_label(status: str, language: Language) -> str:
+    labels = {
+        "approved": {"zh": "已批准", "en": "Approved"},
+        "rejected": {"zh": "已驳回", "en": "Rejected"},
+        "pending": {"zh": "待处理", "en": "Pending"},
+    }
+    return labels.get(status, {}).get(language, status)
+
+
 def _agent_review_todo_status(language: Language) -> str:
     if language == "zh":
         return "待工程师复核"

@@ -20,6 +20,7 @@ from structural_screening_agent.bv_review.ui_state import (
     BV_PROJECT_TYPE_LABELS,
     BV_REVIEW_OBJECT_LABELS,
     BV_STANDARD_LABELS,
+    build_agent_engineer_review_decision_rows,
     build_agent_workflow_artifact_rows,
     build_agent_engineer_review_queue_rows,
     build_agent_workflow_event_rows,
@@ -1032,6 +1033,27 @@ with bv_review_tab:
                 "No pending agent outputs require engineer review."
                 if ui_language == "en"
                 else "当前没有待工程师复核的 Agent 产物。"
+            )
+        st.markdown(
+            "##### Engineer Review Decision Ledger"
+            if ui_language == "en"
+            else "工程师复核决策记录"
+        )
+        engineer_review_decision_rows = build_agent_engineer_review_decision_rows(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        if engineer_review_decision_rows:
+            st.dataframe(
+                engineer_review_decision_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No engineer review decisions have been recorded in this session."
+                if ui_language == "en"
+                else "当前会话尚未记录工程师复核决策。"
             )
         with st.expander(
             "Local Agent Event Trace" if ui_language == "en" else "本地 Agent 事件追踪",

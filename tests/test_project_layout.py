@@ -65,6 +65,7 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "run_local_agent_workflow_until_blocked" in source
     assert "build_agent_workflow_phase_rows" in source
     assert "build_agent_workflow_artifact_rows" in source
+    assert "build_agent_engineer_review_decision_rows" in source
     assert "build_agent_engineer_review_queue_rows" in source
     assert "build_agent_workflow_event_rows" in source
     assert "workflow_state" in source
@@ -77,6 +78,10 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "Approve Selected Review Item" in source
     assert "驳回所选复核项" in source
     assert "Reject Selected Review Item" in source
+    assert "工程师复核决策记录" in source
+    assert "Engineer Review Decision Ledger" in source
+    assert "当前会话尚未记录工程师复核决策。" in source
+    assert "No engineer review decisions have been recorded in this session." in source
     assert "reviewed_workflow_state" in source
     assert "st.rerun()" in source
     assert "本地 Agent 事件追踪" in source

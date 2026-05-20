@@ -5,6 +5,7 @@ from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
+    build_agent_engineer_review_decision_rows,
     build_agent_workflow_artifact_rows,
     build_agent_engineer_review_queue_rows,
     build_agent_workflow_event_rows,
@@ -23,6 +24,7 @@ from structural_screening_agent.bv_review.field_diff import (
     diff_extracted_fields,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState
+from structural_screening_agent.bv_review.human_gate import record_agent_review_decision
 from structural_screening_agent.bv_review import run_local_agent_workflow_until_blocked
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
@@ -327,3 +329,46 @@ def test_agent_engineer_review_queue_rows_show_only_pending_human_reviews() -> N
         en_rows[0]["Output Summary"]
     )
     assert "等待工程师" not in str(en_rows)
+
+
+def test_agent_engineer_review_decision_rows_localize_approval_ledger() -> None:
+    state = run_local_agent_workflow_until_blocked(
+        ProjectReviewState(project_id="pv-ui-agent", intake=default_bv_review_intake())
+    )
+    reviewed = record_agent_review_decision(
+        state,
+        event_id="agent-event-001",
+        decision="approved",
+        reviewer="Engineer A",
+        comment="Document intake reviewed.",
+    )
+
+    zh_rows = build_agent_engineer_review_decision_rows(reviewed, "zh")
+    en_rows = build_agent_engineer_review_decision_rows(reviewed, "en")
+
+    assert zh_rows == [
+        {
+            "复核记录": "agent-review-agent-event-001",
+            "复核项": "agent-event-001",
+            "Agent": "资料接收 Agent",
+            "阶段": "资料检查",
+            "结论": "已批准",
+            "锁定": "是",
+            "复核人": "Engineer A",
+            "意见": "Document intake reviewed.",
+        }
+    ]
+    assert en_rows == [
+        {
+            "Decision Record": "agent-review-agent-event-001",
+            "Review Item": "agent-event-001",
+            "Agent": "Document Intake Agent",
+            "Phase": "Document Check",
+            "Decision": "Approved",
+            "Locked": "Yes",
+            "Reviewer": "Engineer A",
+            "Comment": "Document intake reviewed.",
+        }
+    ]
+    assert "document_check" not in str(zh_rows)
+    assert "已批准" not in str(en_rows)
