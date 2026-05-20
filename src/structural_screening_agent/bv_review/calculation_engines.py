@@ -23,6 +23,7 @@ class FoundationEngineInput(BaseModel):
     bearing_capacity_characteristic_kpa: float | None = None
     uplift_force_kn: float | None = None
     compression_force_kn: float | None = None
+    horizontal_force_kn: float | None = None
 
 
 class SuperstructureEngineInput(BaseModel):
@@ -44,6 +45,7 @@ FOUNDATION_FIELD_IDS: tuple[str, ...] = (
     "bearing_capacity_characteristic_kpa",
     "uplift_force_kn",
     "compression_force_kn",
+    "horizontal_force_kn",
 )
 SUPERSTRUCTURE_FIELD_IDS: tuple[str, ...] = (
     "section_area_mm2",
@@ -73,6 +75,7 @@ def build_foundation_calculation_run_from_fields(
             ],
             uplift_force_kn=values["uplift_force_kn"],
             compression_force_kn=values["compression_force_kn"],
+            horizontal_force_kn=values["horizontal_force_kn"],
         ),
         input_field_ids=list(FOUNDATION_FIELD_IDS),
     )
@@ -120,6 +123,7 @@ def build_foundation_calculation_run(
             "bearing_capacity_characteristic_kpa",
             "uplift_force_kn",
             "compression_force_kn",
+            "horizontal_force_kn",
         ],
     )
     if errors:
@@ -145,9 +149,13 @@ def build_foundation_calculation_run(
         input_field_ids,
         {
             "screening_boundary": SCREENING_BOUNDARY,
-            "overturning_check_note": "not covered; engineer review required",
+            "lateral_and_overturning_check_note": (
+                "horizontal force captured for engineer review; "
+                "lateral and overturning checks are not covered"
+            ),
             "uplift_capacity_kn": _rounded(uplift_capacity_kn),
             "bearing_capacity_kn": _rounded(bearing_capacity_kn),
+            "horizontal_force_kn": _rounded(_as_float(input_data.horizontal_force_kn)),
             "uplift_utilization_ratio": _rounded(uplift_utilization_ratio),
             "bearing_utilization_ratio": _rounded(bearing_utilization_ratio),
             "controlling_utilization_ratio": _rounded(controlling_ratio),

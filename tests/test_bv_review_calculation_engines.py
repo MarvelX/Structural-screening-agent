@@ -57,6 +57,7 @@ def test_foundation_engine_returns_completed_screening_run_with_traceable_ratios
             bearing_capacity_characteristic_kpa=180,
             uplift_force_kn=140,
             compression_force_kn=10,
+            horizontal_force_kn=12,
         ),
         input_field_ids=[
             "pile_diameter_mm",
@@ -65,6 +66,7 @@ def test_foundation_engine_returns_completed_screening_run_with_traceable_ratios
             "bearing_capacity_characteristic_kpa",
             "uplift_force_kn",
             "compression_force_kn",
+            "horizontal_force_kn",
         ],
     )
 
@@ -73,7 +75,11 @@ def test_foundation_engine_returns_completed_screening_run_with_traceable_ratios
     assert run.input_locked is True
     assert run.structured_errors == []
     assert run.result_summary["screening_boundary"] == "screening-level review support only"
-    assert run.result_summary["overturning_check_note"] == "not covered; engineer review required"
+    assert (
+        run.result_summary["lateral_and_overturning_check_note"]
+        == "horizontal force captured for engineer review; lateral and overturning checks are not covered"
+    )
+    assert run.result_summary["horizontal_force_kn"] == pytest.approx(12, abs=0.01)
     assert run.result_summary["uplift_utilization_ratio"] == pytest.approx(1.21, abs=0.01)
     assert run.result_summary["bearing_utilization_ratio"] == pytest.approx(0.79, abs=0.01)
     assert run.result_summary["screening_status"] == "review_required"
@@ -111,6 +117,7 @@ def test_foundation_engine_runs_from_engineer_confirmed_fields() -> None:
             _confirmed_field("bearing_capacity_characteristic_kpa", "180", unit="kPa"),
             _confirmed_field("uplift_force_kn", "140", unit="kN"),
             _confirmed_field("compression_force_kn", "10", unit="kN"),
+            _confirmed_field("horizontal_force_kn", "12", unit="kN"),
         ],
     )
 
@@ -122,8 +129,27 @@ def test_foundation_engine_runs_from_engineer_confirmed_fields() -> None:
         "bearing_capacity_characteristic_kpa",
         "uplift_force_kn",
         "compression_force_kn",
+        "horizontal_force_kn",
     ]
+    assert run.result_summary["horizontal_force_kn"] == pytest.approx(12, abs=0.01)
     assert run.result_summary["screening_status"] == "review_required"
+
+
+def test_foundation_engine_from_fields_blocks_missing_horizontal_force_evidence() -> None:
+    run = build_foundation_calculation_run_from_fields(
+        run_id="foundation-run-from-fields-missing-horizontal",
+        fields=[
+            _confirmed_field("pile_diameter_mm", "300", unit="mm"),
+            _confirmed_field("pile_length_m", "3.5", unit="m"),
+            _confirmed_field("side_resistance_standard_kpa", "35", unit="kPa"),
+            _confirmed_field("bearing_capacity_characteristic_kpa", "180", unit="kPa"),
+            _confirmed_field("uplift_force_kn", "140", unit="kN"),
+            _confirmed_field("compression_force_kn", "10", unit="kN"),
+        ],
+    )
+
+    assert run.status == "blocked"
+    assert "horizontal_force_kn is required." in run.structured_errors
 
 
 def test_foundation_engine_from_fields_blocks_unconfirmed_or_non_numeric_values() -> None:
@@ -148,6 +174,7 @@ def test_foundation_engine_from_fields_blocks_unconfirmed_or_non_numeric_values(
             _confirmed_field("bearing_capacity_characteristic_kpa", "180", unit="kPa"),
             unconfirmed_force,
             _confirmed_field("compression_force_kn", "10", unit="kN"),
+            _confirmed_field("horizontal_force_kn", "12", unit="kN"),
         ],
     )
 
@@ -170,6 +197,7 @@ def test_foundation_engine_from_fields_blocks_confirmed_fields_excluded_from_cal
             _confirmed_field("bearing_capacity_characteristic_kpa", "180", unit="kPa"),
             _confirmed_field("uplift_force_kn", "140", unit="kN"),
             _confirmed_field("compression_force_kn", "10", unit="kN"),
+            _confirmed_field("horizontal_force_kn", "12", unit="kN"),
         ],
     )
 

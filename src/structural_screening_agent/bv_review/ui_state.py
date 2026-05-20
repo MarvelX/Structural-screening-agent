@@ -240,6 +240,18 @@ def build_ground_fixed_human_gate_rows(language: Language) -> list[dict[str, obj
                 "include_in_calculation": True,
             },
             {
+                "field_id": "horizontal_force_kn",
+                "field_name": "最不利水平力",
+                "candidate_value": "12",
+                "unit": "kN",
+                "source_document_id": "calculation-report-c001",
+                "page_or_section": "基础反力汇总表",
+                "quote": "最不利水平反力 Hk=12kN。",
+                "confidence": 0.84,
+                "is_confirmed": True,
+                "include_in_calculation": True,
+            },
+            {
                 "field_id": "section_area_mm2",
                 "field_name": "立柱截面面积",
                 "candidate_value": "2400",
@@ -406,6 +418,18 @@ def build_ground_fixed_human_gate_rows(language: Language) -> list[dict[str, obj
             "source_document_id": "calculation-report-c001",
             "page_or_section": "Foundation reaction summary",
             "quote": "Worst compression reaction Nk=10kN.",
+            "confidence": 0.84,
+            "is_confirmed": True,
+            "include_in_calculation": True,
+        },
+        {
+            "field_id": "horizontal_force_kn",
+            "field_name": "Worst horizontal force",
+            "candidate_value": "12",
+            "unit": "kN",
+            "source_document_id": "calculation-report-c001",
+            "page_or_section": "Foundation reaction summary",
+            "quote": "Worst horizontal reaction Hk=12kN.",
             "confidence": 0.84,
             "is_confirmed": True,
             "include_in_calculation": True,
@@ -985,8 +1009,10 @@ def _localized_calculation_result_key(key: str, language: Language) -> str:
     labels = {
         "screening_boundary": "筛查边界",
         "overturning_check_note": "抗倾覆提示",
+        "lateral_and_overturning_check_note": "水平力与抗倾覆提示",
         "uplift_capacity_kn": "抗拔承载力",
         "bearing_capacity_kn": "地基承载力",
+        "horizontal_force_kn": "最不利水平力",
         "uplift_utilization_ratio": "抗拔利用率",
         "bearing_utilization_ratio": "地基承载力利用率",
         "controlling_utilization_ratio": "控制利用率",
@@ -1009,6 +1035,9 @@ def _localized_calculation_result_value(value: object, language: Language) -> ob
     labels = {
         "screening-level review support only": "仅用于筛查级审核支持",
         "not covered; engineer review required": "未覆盖；需工程师复核",
+        "horizontal force captured for engineer review; lateral and overturning checks are not covered": (
+            "已记录水平力供工程师复核；侧向与抗倾覆验算未覆盖"
+        ),
         "pass": "通过",
         "review_required": "需复核",
         "post": "立柱",

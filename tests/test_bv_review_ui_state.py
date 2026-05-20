@@ -115,9 +115,13 @@ def test_ground_fixed_human_gate_rows_follow_selected_language_and_traceability(
     assert all(row["source_document_id"] for row in zh_rows)
     assert all(row["page_or_section"] for row in zh_rows)
     assert all(row["quote"] for row in zh_rows)
-    assert {"pile_diameter_mm", "side_resistance_standard_kpa", "uplift_force_kn"} <= {
-        str(row["field_id"]) for row in zh_rows
-    }
+    assert {
+        "pile_diameter_mm",
+        "side_resistance_standard_kpa",
+        "uplift_force_kn",
+        "compression_force_kn",
+        "horizontal_force_kn",
+    } <= {str(row["field_id"]) for row in zh_rows}
     assert {"section_area_mm2", "steel_yield_strength_mpa", "bending_moment_knm"} <= {
         str(row["field_id"]) for row in zh_rows
     }
@@ -139,6 +143,7 @@ def test_human_gate_rows_convert_to_traceable_extracted_fields() -> None:
         "bearing_capacity_characteristic_kpa",
         "uplift_force_kn",
         "compression_force_kn",
+        "horizontal_force_kn",
     }
     superstructure_field_ids = {
         "section_area_mm2",
@@ -272,7 +277,11 @@ def test_calculation_result_summary_rows_localize_internal_keys_for_chinese_ui()
     rows = build_calculation_result_summary_rows(
         {
             "screening_boundary": "screening-level review support only",
-            "overturning_check_note": "not covered; engineer review required",
+            "lateral_and_overturning_check_note": (
+                "horizontal force captured for engineer review; "
+                "lateral and overturning checks are not covered"
+            ),
+            "horizontal_force_kn": 12,
             "screening_status": "review_required",
             "uplift_utilization_ratio": 1.21,
             "member_type": "post",
@@ -282,11 +291,15 @@ def test_calculation_result_summary_rows_localize_internal_keys_for_chinese_ui()
     )
 
     assert rows[0] == {"项目": "筛查边界", "结果": "仅用于筛查级审核支持"}
-    assert rows[1] == {"项目": "抗倾覆提示", "结果": "未覆盖；需工程师复核"}
-    assert rows[2] == {"项目": "筛查状态", "结果": "需复核"}
-    assert rows[3] == {"项目": "抗拔利用率", "结果": 1.21}
-    assert rows[4] == {"项目": "构件类型", "结果": "立柱"}
-    assert rows[5] == {"项目": "强度利用率", "结果": 0.53}
+    assert rows[1] == {
+        "项目": "水平力与抗倾覆提示",
+        "结果": "已记录水平力供工程师复核；侧向与抗倾覆验算未覆盖",
+    }
+    assert rows[2] == {"项目": "最不利水平力", "结果": 12}
+    assert rows[3] == {"项目": "筛查状态", "结果": "需复核"}
+    assert rows[4] == {"项目": "抗拔利用率", "结果": 1.21}
+    assert rows[5] == {"项目": "构件类型", "结果": "立柱"}
+    assert rows[6] == {"项目": "强度利用率", "结果": 0.53}
 
 
 def test_agent_workflow_phase_rows_localize_state_for_chinese_ui() -> None:
