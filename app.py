@@ -73,6 +73,8 @@ from structural_screening_agent.bv_review.project_management import (
 from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
+    build_sample_agent_response_json,
+    validate_agent_json_response,
 )
 from structural_screening_agent.bv_review.report import (
     build_bv_markdown_report,
@@ -1228,6 +1230,48 @@ with bv_review_tab:
             expanded=False,
         ):
             st.json(selected_agent_prompt_package.output_schema)
+        validation_sandbox_heading = (
+            "Agent JSON Response Validation Sandbox"
+            if ui_language == "en"
+            else "Agent JSON 响应验证沙盒"
+        )
+        st.markdown(f"##### {validation_sandbox_heading}")
+        sample_agent_response_json = build_sample_agent_response_json(
+            selected_agent_prompt_package.agent_role,
+            reviewed_workflow_state,
+        )
+        agent_response_json = st.text_area(
+            "Agent JSON Response"
+            if ui_language == "en"
+            else "Agent JSON 响应",
+            value=sample_agent_response_json,
+            height=180,
+            key=f"bv_agent_response_validation_{selected_agent_contract}",
+        )
+        if st.button(
+            "Validate Agent JSON Response"
+            if ui_language == "en"
+            else "验证 Agent JSON 响应",
+            key="bv_validate_agent_json_response",
+            use_container_width=True,
+        ):
+            validation_result = validate_agent_json_response(
+                selected_agent_prompt_package.agent_role,
+                agent_response_json,
+                state=reviewed_workflow_state,
+            )
+            if validation_result.ok:
+                st.success(
+                    validation_result.summary
+                    if ui_language == "en"
+                    else "Agent JSON 响应已通过结构化契约校验。"
+                )
+            else:
+                st.warning(
+                    validation_result.error
+                    if ui_language == "en"
+                    else f"Agent JSON 响应未通过校验：{validation_result.error}"
+                )
         project_management_actions = build_project_management_actions(
             reviewed_workflow_state
         )

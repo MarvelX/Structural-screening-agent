@@ -51,6 +51,14 @@ class AgentPromptPackage(BaseModel):
     output_schema: dict[str, object] = Field(default_factory=dict)
 
 
+class AgentResponseValidationResult(BaseModel):
+    agent_role: AgentRole
+    ok: bool
+    output_model_name: str = Field(min_length=1)
+    summary: str = ""
+    error: str = ""
+
+
 def build_agent_prompt_package(
     agent_role: AgentRole,
     state: ProjectReviewState,
@@ -122,6 +130,41 @@ def parse_agent_json_response(
     if isinstance(parsed, CalculationCheckAgentOutput):
         validate_calculation_check_output_against_state(parsed, state)
     return parsed
+
+
+def validate_agent_json_response(
+    agent_role: AgentRole,
+    response_text: str,
+    *,
+    state: ProjectReviewState | None = None,
+) -> AgentResponseValidationResult:
+    output_model_name = _output_model_for_role(agent_role).__name__
+    try:
+        parse_agent_json_response(agent_role, response_text, state=state)
+    except ValueError as exc:
+        return AgentResponseValidationResult(
+            agent_role=agent_role,
+            ok=False,
+            output_model_name=output_model_name,
+            error=str(exc),
+        )
+    return AgentResponseValidationResult(
+        agent_role=agent_role,
+        ok=True,
+        output_model_name=output_model_name,
+        summary=f"Validated {output_model_name} for {agent_role}.",
+    )
+
+
+def build_sample_agent_response_json(
+    agent_role: AgentRole,
+    state: ProjectReviewState,
+) -> str:
+    return json.dumps(
+        _sample_payload_for_role(agent_role, state),
+        ensure_ascii=False,
+        indent=2,
+    )
 
 
 def _build_system_prompt(
@@ -214,6 +257,96 @@ def _output_model_for_role(agent_role: AgentRole) -> AgentOutputModel:
         "report_composer": ReportComposerAgentOutput,
     }
     return models[agent_role]
+
+
+def _sample_payload_for_role(
+    agent_role: AgentRole,
+    state: ProjectReviewState,
+) -> dict[str, object]:
+    base = {
+        "project_id": state.project_id,
+        "schema_version": AGENT_CONTRACT_SCHEMA_VERSION,
+    }
+    if agent_role == "document_intake":
+        return {
+            **base,
+            "document_versions": [
+                {
+                    "document_id": "sample-document-001",
+                    "document_type": "calculation_report",
+                    "revision": "A",
+                    "source_name": "sample-calculation-report.pdf",
+                    "status": "partial",
+                }
+            ],
+            "extracted_fields": [],
+            "missing_document_keys": [],
+            "notes": ["Sample JSON only; replace with traceable source evidence."],
+        }
+    if agent_role == "basis_code":
+        return {
+            **base,
+            "basis_references": [
+                {
+                    "basis_id": "sample-review-basis",
+                    "title": "Sample project review basis",
+                    "source_type": "project_specification",
+                    "review_actions": ["Confirm applicability with engineer."],
+                }
+            ],
+        }
+    if agent_role == "review_plan":
+        return {
+            **base,
+            "review_plan": [
+                {
+                    "item_id": "sample-review-plan-item",
+                    "phase": "technical_check",
+                    "method": "Confirm inputs before deterministic screening.",
+                    "responsible_role": "BV structural review engineer",
+                    "deliverable": "Traceable review note",
+                }
+            ],
+        }
+    if agent_role == "structural_review":
+        return {
+            **base,
+            "review_paths": [
+                {
+                    "path_id": "sample-foundation-review",
+                    "review_object": "foundation",
+                    "title": "Sample foundation review path",
+                    "method": "Check confirmed geotechnical and reaction inputs.",
+                    "status": "manual_confirmation_required",
+                }
+            ],
+        }
+    if agent_role == "calculation_check":
+        run_ids = [run.run_id for run in state.calculation_runs] or [
+            "replace-with-existing-run-id"
+        ]
+        return {**base, "calculation_run_ids": run_ids[:1]}
+    if agent_role == "risk_ncr":
+        return {
+            **base,
+            "risks": [],
+            "source_calculation_run_ids": [run.run_id for run in state.calculation_runs],
+        }
+    if agent_role == "report_composer":
+        return {
+            **base,
+            "report_sections": [
+                {
+                    "heading": "Review boundary",
+                    "items": ["This draft is for screening-level review support only."],
+                }
+            ],
+            "rfi_items": [],
+            "boundary_statement": (
+                "This draft is for screening-level review-support only."
+            ),
+        }
+    raise ValueError(f"Unsupported agent role: {agent_role}")
 
 
 def _required_schema_fields(package: AgentPromptPackage) -> list[str]:

@@ -188,6 +188,12 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"Agent 契约提示词预览"' in app_source
     assert '"JSON Schema Preview"' in app_source
     assert '"JSON Schema 预览"' in app_source
+    assert "validate_agent_json_response" in app_source
+    assert "build_sample_agent_response_json" in app_source
+    assert '"Agent JSON Response Validation Sandbox"' in app_source
+    assert '"Agent JSON 响应验证沙盒"' in app_source
+    assert '"Validate Agent JSON Response"' in app_source
+    assert '"验证 Agent JSON 响应"' in app_source
     assert "effective_bv_result" in app_source
     assert "list_project_inventory" in app_source
     assert "invalid_project_ids" in app_source

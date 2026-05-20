@@ -10,7 +10,9 @@ from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_prompt_package,
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
+    build_sample_agent_response_json,
     parse_agent_json_response,
+    validate_agent_json_response,
 )
 from structural_screening_agent.bv_review.agent_contracts import (
     DocumentIntakeAgentOutput,
@@ -244,6 +246,81 @@ def test_parse_agent_json_response_returns_report_composer_output_for_valid_boun
     )
 
     assert isinstance(parsed, ReportComposerAgentOutput)
+
+
+def test_validate_agent_json_response_returns_structured_success_and_failure() -> None:
+    state = ProjectReviewState(
+        project_id="pv-prompt-001",
+        intake=_sample_intake(),
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_locked=True,
+                status="completed",
+                result_summary={"screening_boundary": "screening-level review support only"},
+            )
+        ],
+    )
+
+    success = validate_agent_json_response(
+        "calculation_check",
+        json.dumps(
+            {
+                "project_id": "pv-prompt-001",
+                "calculation_run_ids": ["foundation-run-001"],
+            }
+        ),
+        state=state,
+    )
+    failure = validate_agent_json_response(
+        "calculation_check",
+        json.dumps(
+            {
+                "project_id": "pv-prompt-001",
+                "calculation_run_ids": ["fabricated-run-999"],
+            }
+        ),
+        state=state,
+    )
+
+    assert success.ok is True
+    assert success.output_model_name == "CalculationCheckAgentOutput"
+    assert success.summary == "Validated CalculationCheckAgentOutput for calculation_check."
+    assert failure.ok is False
+    assert failure.output_model_name == "CalculationCheckAgentOutput"
+    assert "fabricated-run-999" in failure.error
+
+
+def test_sample_agent_response_json_matches_selected_contract() -> None:
+    document_sample = build_sample_agent_response_json(
+        "document_intake",
+        ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake()),
+    )
+    calculation_sample = build_sample_agent_response_json(
+        "calculation_check",
+        ProjectReviewState(
+            project_id="pv-prompt-001",
+            intake=_sample_intake(),
+            calculation_runs=[
+                CalculationRun(
+                    run_id="foundation-run-001",
+                    engine_name="foundation",
+                    engine_version="phase1-deterministic-screening",
+                    input_locked=True,
+                    status="completed",
+                    result_summary={
+                        "screening_boundary": "screening-level review support only"
+                    },
+                )
+            ],
+        ),
+    )
+
+    assert json.loads(document_sample)["project_id"] == "pv-prompt-001"
+    assert json.loads(document_sample)["document_versions"][0]["document_id"]
+    assert json.loads(calculation_sample)["calculation_run_ids"] == ["foundation-run-001"]
 
 
 def _sample_intake() -> BVReviewIntake:
