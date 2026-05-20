@@ -11,12 +11,18 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     get_active_persisted_project_id,
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
+    close_persisted_rfi_after_engineer_review,
     record_persisted_agent_review_decision,
     record_persisted_report_revision,
+    record_persisted_rfi_client_response,
     store_persisted_workflow_state,
     store_persisted_workflow_result,
 )
-from structural_screening_agent.bv_review.project_state import CalculationRun, EngineerApproval
+from structural_screening_agent.bv_review.project_state import (
+    CalculationRun,
+    EngineerApproval,
+    RFIItem,
+)
 from structural_screening_agent.bv_review.report import build_bv_report_preview
 from structural_screening_agent.bv_review.state_repository import (
     JsonProjectReviewStateRepository,
@@ -191,6 +197,65 @@ def test_persisted_workflow_report_revision_saves_state_and_session(tmp_path) ->
     assert revision.revision_id == "report-rev-001"
     assert revision.created_by == "demo-review-engineer"
     assert revision.note == "Recorded from Streamlit report gate."
+
+
+def test_persisted_workflow_rfi_response_and_closeout_save_state_and_session(tmp_path) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    state = ProjectReviewState(
+        project_id="pv-rfi-closeout",
+        intake=_report_ready_intake(),
+        current_phase="report_draft",
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-run-001",
+                question="Please confirm foundation reaction updates.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation run requires clarification.",
+                required_document_or_field="uplift_force_kn",
+                status="open",
+                reopen_review_items=["uplift_force_kn"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+    repository.save(state)
+    session_state: dict[str, object] = {}
+    store_persisted_workflow_state(session_state, state)
+
+    responded_state = record_persisted_rfi_client_response(
+        session_state,
+        repository,
+        project_id="pv-rfi-closeout",
+        rfi_id="rfi-foundation-run-001",
+        client_response="Designer submitted Rev B reaction table.",
+    )
+
+    assert repository.load("pv-rfi-closeout") == responded_state
+    assert (
+        get_active_persisted_workflow_state(session_state, "pv-rfi-closeout")
+        == responded_state
+    )
+    assert responded_state.rfi_items[0].status == "responded"
+    assert responded_state.phase_statuses["issue_rfi_closeout"] == "waiting_for_engineer"
+
+    closed_state = close_persisted_rfi_after_engineer_review(
+        session_state,
+        repository,
+        project_id="pv-rfi-closeout",
+        rfi_id="rfi-foundation-run-001",
+        closeout_note="Engineer completed incremental recheck.",
+        completed_recheck_item_ids=["uplift_force_kn"],
+    )
+
+    closed_rfi = closed_state.rfi_items[0]
+    assert repository.load("pv-rfi-closeout") == closed_state
+    assert (
+        get_active_persisted_workflow_state(session_state, "pv-rfi-closeout")
+        == closed_state
+    )
+    assert closed_rfi.status == "closed"
+    assert closed_rfi.completed_recheck_items == ["uplift_force_kn"]
+    assert closed_state.phase_statuses["issue_rfi_closeout"] == "approved"
 
 
 def _sample_intake() -> BVReviewIntake:

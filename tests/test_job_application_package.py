@@ -156,6 +156,8 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "get_active_persisted_workflow_summary" in app_source
     assert "record_persisted_agent_review_decision" in app_source
     assert "record_persisted_report_revision" in app_source
+    assert "record_persisted_rfi_client_response" in app_source
+    assert "close_persisted_rfi_after_engineer_review" in app_source
     assert "store_persisted_workflow_state" in app_source
     assert "build_bv_review_result_from_project_state" in app_source
     assert "record_report_revision" in app_source
@@ -165,6 +167,14 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"记录报告修订快照"' in app_source
     assert "Report Revision History" in app_source
     assert "报告修订历史" in app_source
+    assert '"Persisted RFI Register"' in app_source
+    assert '"持久化 RFI 台账"' in app_source
+    assert '"Record RFI Client Response"' in app_source
+    assert '"记录 RFI 客户回复"' in app_source
+    assert '"Close RFI After Engineer Review"' in app_source
+    assert '"工程师复核后关闭 RFI"' in app_source
+    assert 'f"bv_persisted_rfi_client_response_{selected_persisted_rfi_id}"' in app_source
+    assert 'f"bv_persisted_rfi_closeout_note_{selected_persisted_rfi_id}"' in app_source
     assert "effective_bv_result" in app_source
     assert "list_project_inventory" in app_source
     assert "invalid_project_ids" in app_source

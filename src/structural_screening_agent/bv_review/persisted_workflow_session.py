@@ -7,8 +7,10 @@ from structural_screening_agent.bv_review.agent_runner import (
 )
 from structural_screening_agent.bv_review.human_gate import (
     ReportDraftGateResult,
+    close_rfi_after_engineer_review,
     record_agent_review_decision,
     record_report_revision,
+    record_rfi_client_response,
 )
 from structural_screening_agent.bv_review.models import BVReportPreview
 from structural_screening_agent.bv_review.project_state import ProjectReviewState
@@ -128,6 +130,52 @@ def record_persisted_report_revision(
         reviewer=reviewer,
         note=note,
         created_at=created_at,
+    )
+    repository.save(updated_state)
+    store_persisted_workflow_state(session_state, updated_state)
+    return updated_state
+
+
+def record_persisted_rfi_client_response(
+    session_state: MutableMapping[str, object],
+    repository: JsonProjectReviewStateRepository,
+    *,
+    project_id: str,
+    rfi_id: str,
+    client_response: str,
+) -> ProjectReviewState:
+    state = get_active_persisted_workflow_state(session_state, project_id)
+    if state is None:
+        raise ValueError("No active persisted workflow state is loaded for this project.")
+
+    updated_state = record_rfi_client_response(
+        state,
+        rfi_id=rfi_id,
+        client_response=client_response,
+    )
+    repository.save(updated_state)
+    store_persisted_workflow_state(session_state, updated_state)
+    return updated_state
+
+
+def close_persisted_rfi_after_engineer_review(
+    session_state: MutableMapping[str, object],
+    repository: JsonProjectReviewStateRepository,
+    *,
+    project_id: str,
+    rfi_id: str,
+    closeout_note: str,
+    completed_recheck_item_ids: list[str] | None = None,
+) -> ProjectReviewState:
+    state = get_active_persisted_workflow_state(session_state, project_id)
+    if state is None:
+        raise ValueError("No active persisted workflow state is loaded for this project.")
+
+    updated_state = close_rfi_after_engineer_review(
+        state,
+        rfi_id=rfi_id,
+        closeout_note=closeout_note,
+        completed_recheck_item_ids=completed_recheck_item_ids,
     )
     repository.save(updated_state)
     store_persisted_workflow_state(session_state, updated_state)

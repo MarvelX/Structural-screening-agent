@@ -54,12 +54,14 @@ from structural_screening_agent.bv_review.human_gate import (
     record_report_revision,
 )
 from structural_screening_agent.bv_review.persisted_workflow_session import (
+    close_persisted_rfi_after_engineer_review,
     clear_persisted_workflow_session,
     get_active_persisted_project_id,
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
     record_persisted_agent_review_decision,
     record_persisted_report_revision,
+    record_persisted_rfi_client_response,
     store_persisted_workflow_state,
     store_persisted_workflow_result,
 )
@@ -1373,6 +1375,161 @@ with bv_review_tab:
                 if ui_language == "en"
                 else "当前没有已关闭 RFI 的增量复核证据。"
             )
+
+        if persisted_workflow_is_active and reviewed_workflow_state.rfi_items:
+            persisted_rfi_register_heading = (
+                "Persisted RFI Register"
+                if ui_language == "en"
+                else "持久化 RFI 台账"
+            )
+            st.markdown(f"##### {persisted_rfi_register_heading}")
+            rfi_status_labels = {
+                "open": "Open" if ui_language == "en" else "待回复",
+                "responded": "Responded" if ui_language == "en" else "已回复",
+                "closed": "Closed" if ui_language == "en" else "已关闭",
+                "reopened": "Reopened" if ui_language == "en" else "重新打开",
+            }
+            st.dataframe(
+                [
+                    (
+                        {
+                            "RFI ID": item.rfi_id,
+                            "问题": item.question,
+                            "责任方": item.responsible_party,
+                            "状态": rfi_status_labels[item.status],
+                            "客户回复": item.client_response or "",
+                            "待复核项": ", ".join(item.reopen_review_items),
+                            "已完成复核": ", ".join(item.completed_recheck_items),
+                        }
+                        if ui_language == "zh"
+                        else {
+                            "RFI ID": item.rfi_id,
+                            "Question": item.question,
+                            "Responsible Party": item.responsible_party,
+                            "Status": rfi_status_labels[item.status],
+                            "Client Response": item.client_response or "",
+                            "Pending Recheck Items": ", ".join(
+                                item.reopen_review_items
+                            ),
+                            "Completed Recheck Items": ", ".join(
+                                item.completed_recheck_items
+                            ),
+                        }
+                    )
+                    for item in reviewed_workflow_state.rfi_items
+                ],
+                hide_index=True,
+                use_container_width=True,
+            )
+            actionable_rfi_items = [
+                item
+                for item in reviewed_workflow_state.rfi_items
+                if item.status in {"open", "reopened", "responded"}
+            ]
+            if actionable_rfi_items:
+                selected_persisted_rfi_id = st.selectbox(
+                    "RFI ID",
+                    [item.rfi_id for item in actionable_rfi_items],
+                    key="bv_persisted_rfi_id",
+                )
+                selected_persisted_rfi = next(
+                    item
+                    for item in actionable_rfi_items
+                    if item.rfi_id == selected_persisted_rfi_id
+                )
+                persisted_rfi_client_response_key = (
+                    f"bv_persisted_rfi_client_response_{selected_persisted_rfi_id}"
+                )
+                persisted_rfi_closeout_note_key = (
+                    f"bv_persisted_rfi_closeout_note_{selected_persisted_rfi_id}"
+                )
+                persisted_rfi_client_response = st.text_area(
+                    "RFI Client Response"
+                    if ui_language == "en"
+                    else "RFI 客户回复",
+                    value=selected_persisted_rfi.client_response or "",
+                    key=persisted_rfi_client_response_key,
+                    height=80,
+                )
+                persisted_rfi_closeout_note = st.text_area(
+                    "RFI Closeout Note"
+                    if ui_language == "en"
+                    else "RFI 关闭备注",
+                    value=(
+                        "Engineer reviewed the client response and closed the RFI."
+                        if ui_language == "en"
+                        else "工程师已复核客户回复并关闭该 RFI。"
+                    ),
+                    key=persisted_rfi_closeout_note_key,
+                    height=80,
+                )
+                response_col, closeout_col = st.columns(2)
+                with response_col:
+                    response_disabled = selected_persisted_rfi.status not in {
+                        "open",
+                        "reopened",
+                    }
+                    if st.button(
+                        "Record RFI Client Response"
+                        if ui_language == "en"
+                        else "记录 RFI 客户回复",
+                        key="bv_record_persisted_rfi_client_response",
+                        use_container_width=True,
+                        disabled=response_disabled,
+                    ):
+                        try:
+                            record_persisted_rfi_client_response(
+                                st.session_state,
+                                persisted_repository,
+                                project_id=active_persisted_project_id,
+                                rfi_id=selected_persisted_rfi_id,
+                                client_response=persisted_rfi_client_response,
+                            )
+                        except ValueError as exc:
+                            st.warning(str(exc))
+                        else:
+                            st.success(
+                                "RFI client response recorded."
+                                if ui_language == "en"
+                                else "已记录 RFI 客户回复。"
+                            )
+                            st.rerun()
+                with closeout_col:
+                    closeout_disabled = selected_persisted_rfi.status != "responded"
+                    if st.button(
+                        "Close RFI After Engineer Review"
+                        if ui_language == "en"
+                        else "工程师复核后关闭 RFI",
+                        key="bv_close_persisted_rfi_after_engineer_review",
+                        use_container_width=True,
+                        disabled=closeout_disabled,
+                    ):
+                        try:
+                            close_persisted_rfi_after_engineer_review(
+                                st.session_state,
+                                persisted_repository,
+                                project_id=active_persisted_project_id,
+                                rfi_id=selected_persisted_rfi_id,
+                                closeout_note=persisted_rfi_closeout_note,
+                                completed_recheck_item_ids=(
+                                    selected_persisted_rfi.reopen_review_items
+                                ),
+                            )
+                        except ValueError as exc:
+                            st.warning(str(exc))
+                        else:
+                            st.success(
+                                "RFI closed after engineer review."
+                                if ui_language == "en"
+                                else "工程师复核后已关闭 RFI。"
+                            )
+                            st.rerun()
+            else:
+                st.caption(
+                    "No persisted RFI items are waiting for response or closeout."
+                    if ui_language == "en"
+                    else "当前没有等待回复或关闭的持久化 RFI。"
+                )
 
         bv_markdown_filename = build_bv_report_filename(effective_bv_intake.project_type)
         bv_word_filename = bv_markdown_filename.replace(".md", ".docx")
