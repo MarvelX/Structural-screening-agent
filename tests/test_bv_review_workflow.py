@@ -92,6 +92,20 @@ def test_document_checklist_marks_missing_calculation_and_geotechnical_reports_a
     assert any("foundation" in item.affected_review_objects for item in checklist)
 
 
+def test_foundation_geotechnical_checklist_names_required_evidence_parameters() -> None:
+    checklist = build_document_checklist(_sample_intake())
+
+    geotechnical_item = next(
+        item for item in checklist if item.document_key == "geotechnical_report"
+    )
+
+    assert geotechnical_item.review_blocked is True
+    assert "地基承载力特征值 fak" in geotechnical_item.required_action
+    assert "桩侧阻力标准值 qsk" in geotechnical_item.required_action
+    assert "土层参数" in geotechnical_item.required_action
+    assert "地下水条件" in geotechnical_item.required_action
+
+
 def test_structural_review_path_creates_object_specific_review_methods_and_holds() -> None:
     checklist = build_document_checklist(_sample_intake())
     paths = build_structural_review_path(_sample_intake(), checklist)

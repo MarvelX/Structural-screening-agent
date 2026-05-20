@@ -33,7 +33,7 @@ DOCUMENT_RULES = {
     "geotechnical_report": (
         "地勘报告",
         ["foundation"],
-        "补充地勘报告、地基承载力和地下水条件。",
+        "补充地勘报告、地基承载力特征值 fak、桩侧阻力标准值 qsk、土层参数和地下水条件。",
     ),
     "vendor_datasheets": (
         "厂家资料",
