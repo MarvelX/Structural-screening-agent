@@ -99,6 +99,21 @@ class AgentProviderInvocationRequest(BaseModel):
     )
 
 
+class AgentResponseSandboxResult(BaseModel):
+    agent_role: AgentRole
+    mode: Literal["sandbox_preview"] = "sandbox_preview"
+    invocation_request: AgentProviderInvocationRequest
+    response_text: str
+    validation_result: AgentResponseValidationResult
+    impact_preview: AgentResponseImpactPreview | None = None
+    ready_for_engineer_review: bool = False
+    network_request_sent: bool = False
+    project_state_changed: bool = False
+    boundary_statement: str = (
+        "Sandbox result only; no network request is sent and project state is unchanged."
+    )
+
+
 def build_agent_prompt_package(
     agent_role: AgentRole,
     state: ProjectReviewState,
@@ -210,6 +225,99 @@ def build_agent_provider_invocation_rows(
         {"Item": "Temperature", "Value": request.temperature},
         {"Item": "Network Request", "Value": "Yes" if request.network_request_sent else "No"},
         {"Item": "Boundary", "Value": request.boundary_statement},
+    ]
+
+
+def build_agent_response_sandbox_result(
+    package: AgentPromptPackage,
+    response_text: str,
+    *,
+    state: ProjectReviewState,
+    provider_name: str = "minimax",
+    model_name: str | None = None,
+) -> AgentResponseSandboxResult:
+    invocation_request = build_agent_provider_invocation_request(
+        package,
+        provider_name=provider_name,
+        model_name=model_name,
+    )
+    validation_result = validate_agent_json_response(
+        package.agent_role,
+        response_text,
+        state=state,
+    )
+    impact_preview = (
+        preview_agent_response_impact(package.agent_role, response_text, state=state)
+        if validation_result.ok
+        else None
+    )
+    return AgentResponseSandboxResult(
+        agent_role=package.agent_role,
+        invocation_request=invocation_request,
+        response_text=response_text,
+        validation_result=validation_result,
+        impact_preview=impact_preview,
+        ready_for_engineer_review=bool(
+            validation_result.ok
+            and impact_preview is not None
+            and impact_preview.requires_engineer_review
+        ),
+    )
+
+
+def build_agent_response_sandbox_rows(
+    sandbox: AgentResponseSandboxResult,
+    language: AgentPromptLanguage,
+) -> list[dict[str, object]]:
+    target_phase = sandbox.impact_preview.target_phase if sandbox.impact_preview else "-"
+    output_summary = (
+        _format_summary_counts(sandbox.impact_preview.summary_counts)
+        if sandbox.impact_preview
+        else "-"
+    )
+    if language == "zh":
+        return [
+            {"项目": "Agent", "内容": _agent_label(sandbox.agent_role, "zh")},
+            {
+                "项目": "校验结果",
+                "内容": "通过" if sandbox.validation_result.ok else "未通过",
+            },
+            {"项目": "目标阶段", "内容": target_phase},
+            {"项目": "产物摘要", "内容": output_summary},
+            {"项目": "模式", "内容": sandbox.mode},
+            {
+                "项目": "可进入工程师复核",
+                "内容": "是" if sandbox.ready_for_engineer_review else "否",
+            },
+            {"项目": "网络调用", "内容": "是" if sandbox.network_request_sent else "否"},
+            {
+                "项目": "项目状态",
+                "内容": "已修改" if sandbox.project_state_changed else "未修改",
+            },
+            {"项目": "边界", "内容": "仅沙盒结果；不发送网络请求，项目状态不变。"},
+        ]
+    return [
+        {"Item": "Agent", "Value": _agent_label(sandbox.agent_role, "en")},
+        {
+            "Item": "Validation",
+            "Value": "Pass" if sandbox.validation_result.ok else "Fail",
+        },
+        {"Item": "Target Phase", "Value": target_phase},
+        {"Item": "Output Summary", "Value": output_summary},
+        {"Item": "Mode", "Value": sandbox.mode},
+        {
+            "Item": "Ready For Engineer Review",
+            "Value": "Yes" if sandbox.ready_for_engineer_review else "No",
+        },
+        {
+            "Item": "Network Request",
+            "Value": "Yes" if sandbox.network_request_sent else "No",
+        },
+        {
+            "Item": "Project State",
+            "Value": "Changed" if sandbox.project_state_changed else "Unchanged",
+        },
+        {"Item": "Boundary", "Value": sandbox.boundary_statement},
     ]
 
 

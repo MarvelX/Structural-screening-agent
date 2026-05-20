@@ -13,6 +13,8 @@ from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
     build_agent_response_impact_rows,
+    build_agent_response_sandbox_result,
+    build_agent_response_sandbox_rows,
     build_sample_agent_response_json,
     parse_agent_json_response,
     preview_agent_response_impact,
@@ -124,6 +126,79 @@ def test_agent_provider_invocation_rows_are_localized_for_workbench() -> None:
     assert {"Item": "Response Format", "Value": "json_schema"} in en_rows
     assert {"Item": "Schema Strict", "Value": "Yes"} in en_rows
     assert {"Item": "Network Request", "Value": "No"} in en_rows
+
+
+def test_agent_response_sandbox_result_links_invocation_validation_and_impact_without_mutating_state() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    original_state = state.model_dump()
+    package = build_agent_prompt_package("document_intake", state)
+    response_text = build_sample_agent_response_json("document_intake", state)
+
+    sandbox = build_agent_response_sandbox_result(
+        package,
+        response_text,
+        state=state,
+        provider_name="minimax",
+        model_name="MiniMax-M2.5",
+    )
+
+    assert sandbox.agent_role == "document_intake"
+    assert sandbox.mode == "sandbox_preview"
+    assert sandbox.network_request_sent is False
+    assert sandbox.invocation_request.provider_name == "minimax"
+    assert sandbox.invocation_request.mode == "preview"
+    assert sandbox.invocation_request.network_request_sent is False
+    assert sandbox.response_text == response_text
+    assert sandbox.validation_result.ok is True
+    assert sandbox.impact_preview is not None
+    assert sandbox.impact_preview.target_phase == "document_check"
+    assert sandbox.ready_for_engineer_review is True
+    assert sandbox.boundary_statement == (
+        "Sandbox result only; no network request is sent and project state is unchanged."
+    )
+    sandbox_payload = sandbox.model_dump()
+    assert "MINIMAX_API_KEY" not in str(sandbox_payload)
+    assert "OPENAI_API_KEY" not in str(sandbox_payload)
+    assert "Authorization" not in str(sandbox_payload)
+    assert state.model_dump() == original_state
+
+
+def test_agent_response_sandbox_result_keeps_failed_validation_read_only() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    package = build_agent_prompt_package("document_intake", state)
+
+    sandbox = build_agent_response_sandbox_result(
+        package,
+        "not json",
+        state=state,
+    )
+
+    assert sandbox.validation_result.ok is False
+    assert "valid JSON object" in sandbox.validation_result.error
+    assert sandbox.impact_preview is None
+    assert sandbox.ready_for_engineer_review is False
+    assert sandbox.network_request_sent is False
+    assert sandbox.invocation_request.network_request_sent is False
+
+
+def test_agent_response_sandbox_rows_are_localized_for_workbench() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    package = build_agent_prompt_package("document_intake", state)
+    sandbox = build_agent_response_sandbox_result(
+        package,
+        build_sample_agent_response_json("document_intake", state),
+        state=state,
+    )
+
+    zh_rows = build_agent_response_sandbox_rows(sandbox, "zh")
+    en_rows = build_agent_response_sandbox_rows(sandbox, "en")
+
+    assert {"项目": "校验结果", "内容": "通过"} in zh_rows
+    assert {"项目": "可进入工程师复核", "内容": "是"} in zh_rows
+    assert {"项目": "项目状态", "内容": "未修改"} in zh_rows
+    assert {"Item": "Validation", "Value": "Pass"} in en_rows
+    assert {"Item": "Ready For Engineer Review", "Value": "Yes"} in en_rows
+    assert {"Item": "Project State", "Value": "Unchanged"} in en_rows
 
 
 def test_calculation_check_prompt_references_existing_runs_without_authoring_calculations() -> None:

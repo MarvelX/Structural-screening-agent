@@ -76,10 +76,10 @@ from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
     build_agent_response_impact_rows,
+    build_agent_response_sandbox_result,
+    build_agent_response_sandbox_rows,
     build_sample_agent_response_json,
     default_agent_provider_model,
-    preview_agent_response_impact,
-    validate_agent_json_response,
 )
 from structural_screening_agent.bv_review.report import (
     build_bv_markdown_report,
@@ -1297,10 +1297,29 @@ with bv_review_tab:
             key="bv_validate_agent_json_response",
             use_container_width=True,
         ):
-            validation_result = validate_agent_json_response(
-                selected_agent_prompt_package.agent_role,
+            sandbox_result = build_agent_response_sandbox_result(
+                selected_agent_prompt_package,
                 agent_response_json,
                 state=reviewed_workflow_state,
+                provider_name=agent_provider_name,
+                model_name=agent_model_name,
+            )
+            validation_result = sandbox_result.validation_result
+            sandbox_summary_heading = (
+                "Agent Response Sandbox Summary"
+                if ui_language == "en"
+                else "Agent 响应沙盒摘要"
+            )
+            st.markdown(f"##### {sandbox_summary_heading}")
+            st.dataframe(
+                build_agent_response_sandbox_rows(sandbox_result, ui_language),
+                hide_index=True,
+                use_container_width=True,
+            )
+            st.caption(
+                "Sandbox result only; no network request is sent and project state is unchanged."
+                if ui_language == "en"
+                else "仅沙盒结果；不发送网络请求，项目状态不变。"
             )
             if validation_result.ok:
                 st.success(
@@ -1308,22 +1327,19 @@ with bv_review_tab:
                     if ui_language == "en"
                     else "Agent JSON 响应已通过结构化契约校验。"
                 )
-                impact_preview = preview_agent_response_impact(
-                    selected_agent_prompt_package.agent_role,
-                    agent_response_json,
-                    state=reviewed_workflow_state,
-                )
+                impact_preview = sandbox_result.impact_preview
                 impact_preview_heading = (
                     "Agent Response Impact Preview"
                     if ui_language == "en"
                     else "Agent 响应影响预览"
                 )
                 st.markdown(f"##### {impact_preview_heading}")
-                st.dataframe(
-                    build_agent_response_impact_rows(impact_preview, ui_language),
-                    hide_index=True,
-                    use_container_width=True,
-                )
+                if impact_preview is not None:
+                    st.dataframe(
+                        build_agent_response_impact_rows(impact_preview, ui_language),
+                        hide_index=True,
+                        use_container_width=True,
+                    )
                 st.caption(
                     "Preview only; engineer approval is still required before applying agent output."
                     if ui_language == "en"
