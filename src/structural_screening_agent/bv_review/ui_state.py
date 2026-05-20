@@ -803,6 +803,11 @@ def localize_report_gate_reason(reason: str, language: Language) -> str:
     incremental_prefix = "Open RFI items trigger incremental recheck: "
     if language == "zh" and reason.startswith(incremental_prefix):
         return "未关闭的 RFI 触发增量复核：" + reason.removeprefix(incremental_prefix)
+    agent_review_prefix = "Pending agent engineer review blocks report draft input: "
+    if language == "zh" and reason.startswith(agent_review_prefix):
+        return "待工程师复核的 Agent 产物阻塞报告草稿输入：" + reason.removeprefix(
+            agent_review_prefix
+        )
     return reason
 
 

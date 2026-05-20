@@ -157,6 +157,18 @@ def build_report_draft_gate_result(
             + ", ".join(incremental_rfi_ids)
         )
 
+    pending_agent_review_event_ids = [
+        event.event_id
+        for event in state.agent_events
+        if event.requires_engineer_review
+        and state.phase_statuses.get(event.target_phase) == "waiting_for_engineer"
+    ]
+    if pending_agent_review_event_ids:
+        reasons.append(
+            "Pending agent engineer review blocks report draft input: "
+            + ", ".join(pending_agent_review_event_ids)
+        )
+
     executable_runs = [
         run
         for run in state.calculation_runs

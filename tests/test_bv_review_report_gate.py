@@ -1,6 +1,7 @@
 from structural_screening_agent.bv_review.human_gate import build_report_draft_gate_result
 from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.project_state import (
+    AgentWorkflowEvent,
     CalculationRun,
     EngineerApproval,
     ProjectReviewState,
@@ -128,6 +129,75 @@ def test_report_draft_gate_allows_traceable_ready_inputs_without_blockers() -> N
     assert gate.reasons == []
     assert gate.calculation_run_ids == ["run-001"]
     assert any("not completed" in note.lower() for note in gate.notes)
+
+
+def test_report_draft_gate_blocks_pending_agent_engineer_review() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = _sample_state(intake).model_copy(
+        update={
+            "phase_statuses": {
+                **_sample_state(intake).phase_statuses,
+                "document_check": "waiting_for_engineer",
+            },
+            "agent_events": [
+                AgentWorkflowEvent(
+                    event_id="agent-event-001",
+                    agent_role="document_intake",
+                    target_phase="document_check",
+                    status="applied",
+                    output_schema_version="phase2-agent-contracts-v1",
+                    requires_engineer_review=True,
+                    summary_counts={"document_versions": 1},
+                )
+            ],
+        }
+    )
+
+    gate = build_report_draft_gate_result(state, result)
+
+    assert gate.status == "blocked"
+    assert any("pending agent engineer review" in reason.lower() for reason in gate.reasons)
+
+
+def test_report_draft_gate_allows_approved_agent_engineer_review() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = _sample_state(intake).model_copy(
+        update={
+            "phase_statuses": {
+                **_sample_state(intake).phase_statuses,
+                "document_check": "approved",
+            },
+            "agent_events": [
+                AgentWorkflowEvent(
+                    event_id="agent-event-001",
+                    agent_role="document_intake",
+                    target_phase="document_check",
+                    status="applied",
+                    output_schema_version="phase2-agent-contracts-v1",
+                    requires_engineer_review=True,
+                    summary_counts={"document_versions": 1},
+                )
+            ],
+            "approvals": [
+                *_sample_state(intake).approvals,
+                EngineerApproval(
+                    approval_id="agent-review-agent-event-001",
+                    target_type="agent_event",
+                    target_id="agent-event-001",
+                    status="approved",
+                    reviewer="Engineer A",
+                    locked=True,
+                ),
+            ],
+        }
+    )
+
+    gate = build_report_draft_gate_result(state, result)
+
+    assert gate.status == "ready"
+    assert not any("pending agent engineer review" in reason.lower() for reason in gate.reasons)
 
 
 def test_report_draft_gate_blocks_when_open_incremental_recheck_rfi_exists() -> None:
