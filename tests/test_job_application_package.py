@@ -126,3 +126,25 @@ def test_readme_and_app_expose_public_demo_context() -> None:
     assert any(host in readme for host in ["trycloudflare.com", "streamlit.app"])
     assert 'translate(ui_language, "public_demo_banner")' in app_source
     assert 'translate(ui_language, "public_demo_caption")' in app_source
+
+
+def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls() -> None:
+    root = project_root()
+    app_source = (root / "app.py").read_text()
+    gitignore = (root / ".gitignore").read_text()
+
+    assert "JsonProjectReviewStateRepository" in app_source
+    assert "run_persisted_local_agent_workflow_with_summary" in app_source
+    assert "build_persisted_workflow_run_summary_rows" in app_source
+    assert 'Path(".local_data") / "bv_review_states"' in app_source
+    assert ".local_data/" in gitignore
+    assert '"Save Current Review State"' in app_source
+    assert '"保存当前审核状态"' in app_source
+    assert '"Resume Saved Workflow"' in app_source
+    assert '"恢复已保存工作流"' in app_source
+    assert '"bv_persisted_workflow_summary"' in app_source
+    assert '"bv_persisted_workflow_summary_rows"' not in app_source
+    assert 'st.session_state.pop("bv_persisted_workflow_summary", None)' in app_source
+    assert '"bv_persisted_workflow_summary_project_id"' in app_source
+    assert app_source.count("st.session_state.pop(") >= 2
+    assert "只有点击按钮时才会保存或恢复本地 JSON 状态" in app_source

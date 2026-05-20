@@ -32,6 +32,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_field_diff_summary_rows,
     build_ground_fixed_human_gate_rows,
     build_incremental_recheck_summary_rows,
+    build_persisted_workflow_run_summary_rows,
     build_report_gate_evidence_rows,
     localize_report_gate_reason,
     default_bv_review_intake,
@@ -62,7 +63,11 @@ from structural_screening_agent.bv_review.ui import (
     build_bv_report_preview_sections,
     build_bv_risk_items,
 )
-from structural_screening_agent.bv_review import run_local_agent_workflow_until_blocked
+from structural_screening_agent.bv_review import (
+    JsonProjectReviewStateRepository,
+    run_local_agent_workflow_until_blocked,
+    run_persisted_local_agent_workflow_with_summary,
+)
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.core.persistence import ScreeningRepository
 from structural_screening_agent.localization import (
@@ -863,7 +868,114 @@ with bv_review_tab:
             rfi_items=registered_incremental_rfis,
             risks=bv_result.risks,
         )
-        workflow_state = run_local_agent_workflow_until_blocked(phase1_state)
+        st.markdown(
+            "#### Project Persistence / Resume"
+            if ui_language == "en"
+            else "项目持久化 / 恢复运行"
+        )
+        st.caption(
+            "Explicit buttons save or resume local JSON state; normal page rendering does not write files."
+            if ui_language == "en"
+            else "只有点击按钮时才会保存或恢复本地 JSON 状态，普通页面渲染不会写入文件。"
+        )
+        persisted_repository = JsonProjectReviewStateRepository(
+            Path(".local_data") / "bv_review_states"
+        )
+        persisted_project_id = st.text_input(
+            "Persisted Project ID" if ui_language == "en" else "持久化项目 ID",
+            value=phase1_state.project_id,
+            key="bv_persisted_project_id",
+        ).strip()
+        persisted_project_id = persisted_project_id or phase1_state.project_id
+        existing_project_ids = persisted_repository.list_project_ids()
+        if existing_project_ids:
+            st.caption(
+                (
+                    "Saved projects: "
+                    if ui_language == "en"
+                    else "已保存项目："
+                )
+                + ", ".join(existing_project_ids)
+            )
+        persisted_workflow_result = None
+        save_state_col, resume_state_col = st.columns(2)
+        with save_state_col:
+            if st.button(
+                "Save Current Review State"
+                if ui_language == "en"
+                else "保存当前审核状态",
+                key="bv_save_current_review_state",
+                use_container_width=True,
+            ):
+                try:
+                    persisted_repository.save(
+                        phase1_state.model_copy(update={"project_id": persisted_project_id})
+                    )
+                    st.session_state.pop("bv_persisted_workflow_summary", None)
+                    st.session_state.pop(
+                        "bv_persisted_workflow_summary_project_id",
+                        None,
+                    )
+                    st.success(
+                        f"Saved {persisted_project_id}."
+                        if ui_language == "en"
+                        else f"已保存 {persisted_project_id}。"
+                    )
+                except ValueError as exc:
+                    st.warning(str(exc))
+        with resume_state_col:
+            if st.button(
+                "Resume Saved Workflow"
+                if ui_language == "en"
+                else "恢复已保存工作流",
+                key="bv_resume_saved_workflow",
+                use_container_width=True,
+            ):
+                try:
+                    persisted_workflow_result = (
+                        run_persisted_local_agent_workflow_with_summary(
+                            persisted_repository,
+                            persisted_project_id,
+                        )
+                    )
+                    st.session_state["bv_persisted_workflow_summary"] = (
+                        persisted_workflow_result.summary
+                    )
+                    st.session_state["bv_persisted_workflow_summary_project_id"] = (
+                        persisted_project_id
+                    )
+                    st.success(
+                        f"Resumed {persisted_project_id}."
+                        if ui_language == "en"
+                        else f"已恢复 {persisted_project_id}。"
+                    )
+                except FileNotFoundError:
+                    st.warning(
+                        "Save this project before resuming a persisted workflow."
+                        if ui_language == "en"
+                        else "请先保存该项目，再恢复持久化工作流。"
+                    )
+                except ValueError as exc:
+                    st.warning(str(exc))
+        if (
+            st.session_state.get("bv_persisted_workflow_summary_project_id")
+            == persisted_project_id
+        ):
+            persisted_summary = st.session_state.get("bv_persisted_workflow_summary")
+            if persisted_summary:
+                st.dataframe(
+                    build_persisted_workflow_run_summary_rows(
+                        persisted_summary,
+                        ui_language,
+                    ),
+                    hide_index=True,
+                    use_container_width=True,
+                )
+        workflow_state = (
+            persisted_workflow_result.state
+            if persisted_workflow_result is not None
+            else run_local_agent_workflow_until_blocked(phase1_state)
+        )
         workflow_signature = f"{bv_intake.model_dump_json()}|{human_gate_signature}"
         if st.session_state.get("bv_agent_review_signature") != workflow_signature:
             st.session_state["bv_agent_review_signature"] = workflow_signature
