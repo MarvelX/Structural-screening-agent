@@ -32,6 +32,15 @@ def clear_persisted_workflow_session(session_state: MutableMapping[str, object])
     session_state.pop(_STATE_KEY, None)
 
 
+def get_active_persisted_project_id(
+    session_state: MutableMapping[str, object],
+) -> str | None:
+    project_id = session_state.get(_PROJECT_ID_KEY)
+    if isinstance(project_id, str) and project_id:
+        return project_id
+    return None
+
+
 def get_active_persisted_workflow_state(
     session_state: MutableMapping[str, object],
     project_id: str,

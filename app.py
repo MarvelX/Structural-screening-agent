@@ -53,6 +53,7 @@ from structural_screening_agent.bv_review.human_gate import (
 )
 from structural_screening_agent.bv_review.persisted_workflow_session import (
     clear_persisted_workflow_session,
+    get_active_persisted_project_id,
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
     record_persisted_agent_review_decision,
@@ -921,8 +922,23 @@ with bv_review_tab:
                 hide_index=True,
                 use_container_width=True,
             )
+            saved_project_ids = [
+                summary.project_id for summary in project_inventory.summaries
+            ]
+            selected_saved_project_id = st.selectbox(
+                "Saved Project ID" if ui_language == "en" else "已保存项目 ID",
+                saved_project_ids,
+                key="bv_selected_saved_project_id",
+            )
+        else:
+            selected_saved_project_id = None
         persisted_workflow_result = None
-        save_state_col, resume_state_col, current_state_col = st.columns(3)
+        (
+            save_state_col,
+            resume_state_col,
+            resume_selected_col,
+            current_state_col,
+        ) = st.columns(4)
         with save_state_col:
             if st.button(
                 "Save Current Review State"
@@ -975,6 +991,39 @@ with bv_review_tab:
                     )
                 except ValueError as exc:
                     st.warning(str(exc))
+        with resume_selected_col:
+            if st.button(
+                "Resume Selected Saved Project"
+                if ui_language == "en"
+                else "恢复所选已保存项目",
+                key="bv_resume_selected_saved_project",
+                use_container_width=True,
+                disabled=selected_saved_project_id is None,
+            ):
+                try:
+                    persisted_workflow_result = (
+                        run_persisted_local_agent_workflow_with_summary(
+                            persisted_repository,
+                            str(selected_saved_project_id),
+                        )
+                    )
+                    store_persisted_workflow_result(
+                        st.session_state,
+                        persisted_workflow_result,
+                    )
+                    st.success(
+                        f"Resumed {selected_saved_project_id}."
+                        if ui_language == "en"
+                        else f"已恢复 {selected_saved_project_id}。"
+                    )
+                except FileNotFoundError:
+                    st.warning(
+                        "Save this project before resuming a persisted workflow."
+                        if ui_language == "en"
+                        else "请先保存该项目，再恢复持久化工作流。"
+                    )
+                except ValueError as exc:
+                    st.warning(str(exc))
         with current_state_col:
             if st.button(
                 "Use Current Form State"
@@ -989,9 +1038,13 @@ with bv_review_tab:
                     if ui_language == "en"
                     else "已切换为使用当前表单状态。"
                 )
+        active_persisted_project_id = (
+            get_active_persisted_project_id(st.session_state)
+            or persisted_project_id
+        )
         persisted_summary = get_active_persisted_workflow_summary(
             st.session_state,
-            persisted_project_id,
+            active_persisted_project_id,
         )
         if persisted_summary:
             st.dataframe(
@@ -1004,7 +1057,7 @@ with bv_review_tab:
             )
         persisted_session_state = get_active_persisted_workflow_state(
             st.session_state,
-            persisted_project_id,
+            active_persisted_project_id,
         )
         persisted_workflow_is_active = persisted_session_state is not None
         workflow_state = (
@@ -1131,7 +1184,7 @@ with bv_review_tab:
                             record_persisted_agent_review_decision(
                                 st.session_state,
                                 persisted_repository,
-                                project_id=persisted_project_id,
+                                project_id=active_persisted_project_id,
                                 event_id=selected_agent_review_item,
                                 decision="approved",
                                 reviewer="demo-review-engineer",
@@ -1162,7 +1215,7 @@ with bv_review_tab:
                             record_persisted_agent_review_decision(
                                 st.session_state,
                                 persisted_repository,
-                                project_id=persisted_project_id,
+                                project_id=active_persisted_project_id,
                                 event_id=selected_agent_review_item,
                                 decision="rejected",
                                 reviewer="demo-review-engineer",

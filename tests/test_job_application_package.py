@@ -142,10 +142,16 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"保存当前审核状态"' in app_source
     assert '"Resume Saved Workflow"' in app_source
     assert '"恢复已保存工作流"' in app_source
+    assert '"Saved Project ID"' in app_source
+    assert '"已保存项目 ID"' in app_source
+    assert '"Resume Selected Saved Project"' in app_source
+    assert '"恢复所选已保存项目"' in app_source
     assert '"Use Current Form State"' in app_source
     assert '"使用当前表单状态"' in app_source
     assert "store_persisted_workflow_result" in app_source
     assert "clear_persisted_workflow_session" in app_source
+    assert "get_active_persisted_project_id" in app_source
+    assert "active_persisted_project_id" in app_source
     assert "get_active_persisted_workflow_state" in app_source
     assert "get_active_persisted_workflow_summary" in app_source
     assert "record_persisted_agent_review_decision" in app_source

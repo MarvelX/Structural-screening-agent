@@ -7,6 +7,7 @@ from structural_screening_agent.bv_review import (
 )
 from structural_screening_agent.bv_review.persisted_workflow_session import (
     clear_persisted_workflow_session,
+    get_active_persisted_project_id,
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
     record_persisted_agent_review_decision,
@@ -40,6 +41,7 @@ def test_persisted_workflow_session_keeps_resumed_state_for_matching_project() -
 
     active_state = get_active_persisted_workflow_state(session_state, "pv-001")
     active_summary = get_active_persisted_workflow_summary(session_state, "pv-001")
+    assert get_active_persisted_project_id(session_state) == "pv-001"
     assert active_state is not None
     assert active_state.current_phase == "engineer_data_lock"
     assert active_summary is not None
@@ -65,6 +67,7 @@ def test_clear_persisted_workflow_session_removes_resumed_state_and_summary() ->
 
     assert get_active_persisted_workflow_state(session_state, "pv-001") is None
     assert get_active_persisted_workflow_summary(session_state, "pv-001") is None
+    assert get_active_persisted_project_id(session_state) is None
 
 
 def test_persisted_workflow_agent_review_decision_saves_state_and_session(
