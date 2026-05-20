@@ -86,6 +86,12 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
     "assessment_tab": {"zh": "评估结论", "en": "Assessment"},
     "basis_traceability_tab": {"zh": "依据与追溯", "en": "Basis & Traceability"},
     "report_export_tab": {"zh": "报告导出", "en": "Report Export"},
+    "pv_3d_studio_tab": {"zh": "3D 展示", "en": "3D Studio"},
+    "pv_3d_studio_heading": {"zh": "光伏支架 3D 结构实验室", "en": "PV Mounting 3D Structure Studio"},
+    "pv_3d_studio_boundary": {
+        "zh": "用于展示固定支架构件、传力链、基础和场区接口；不替代厂家模型、结构计算书或签章成果。",
+        "en": "Demonstrates fixed rack components, load path, foundation, and site interfaces; it does not replace vendor models, structural calculations, or signed deliverables.",
+    },
     "calculation_extension_tab": {"zh": "计算扩展", "en": "Calculation Extension"},
     "public_demo_banner": {
         "zh": "公开演示版本：仅用于 screening-level 审核支持展示，不替代正式设计、法定审批或签章计算。",

@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Optional
 
 import streamlit as st
+import streamlit.components.v1 as components
 from pydantic import ValidationError
 
 from structural_screening_agent.app_state import (
@@ -36,6 +37,7 @@ from structural_screening_agent.localization import (
 )
 from structural_screening_agent.photo_assist import build_photo_assist_interface
 from structural_screening_agent.presentation import ContentCard, build_workbench_view
+from structural_screening_agent.pv_3d_studio import build_pv_3d_studio_html
 from structural_screening_agent.report_export import build_docx_report_bytes, build_pdf_report_bytes
 from structural_screening_agent.report_generator import build_report_filename, build_report_preview
 
@@ -303,13 +305,14 @@ with st.container(border=True):
         )
 st.info(translate(ui_language, "public_demo_banner"))
 
-bv_review_tab, assessment_tab, input_tab, basis_tab, export_tab, extension_tab = st.tabs(
+bv_review_tab, assessment_tab, input_tab, basis_tab, export_tab, pv_3d_tab, extension_tab = st.tabs(
     [
         translate(ui_language, "bv_review_tab"),
         translate(ui_language, "assessment_tab"),
         translate(ui_language, "project_input_tab"),
         translate(ui_language, "basis_traceability_tab"),
         translate(ui_language, "report_export_tab"),
+        translate(ui_language, "pv_3d_studio_tab"),
         translate(ui_language, "portal_frame_tab"),
     ]
 )
@@ -798,6 +801,15 @@ with export_tab:
             st.markdown(f"**{section.heading}**")
             for item in section.items[:4]:
                 st.write(item)
+
+with pv_3d_tab:
+    st.subheader(translate(ui_language, "pv_3d_studio_heading"))
+    st.caption(translate(ui_language, "pv_3d_studio_boundary"))
+    components.html(
+        build_pv_3d_studio_html(ui_language),
+        height=920,
+        scrolling=True,
+    )
 
 with extension_tab:
     st.subheader(translate(ui_language, "calculation_extension_tab"))

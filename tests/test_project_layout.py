@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 
 from structural_screening_agent.localization import TRANSLATIONS
+from structural_screening_agent.pv_3d_studio import build_pv_3d_studio_html
 
 
 def project_root() -> Path:
@@ -38,6 +39,7 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'translate(ui_language, "project_input_tab")' in source
     assert 'translate(ui_language, "basis_traceability_tab")' in source
     assert 'translate(ui_language, "report_export_tab")' in source
+    assert 'translate(ui_language, "pv_3d_studio_tab")' in source
     assert 'translate(ui_language, "calculation_extension_tab")' in source
     assert 'translate(ui_language, "public_demo_banner")' in source
     assert 'translate(ui_language, "public_demo_caption")' in source
@@ -68,6 +70,8 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'translate(ui_language, "download_pdf_report")' in source
     assert "build_bv_markdown_report" in source
     assert "build_bv_report_filename" in source
+    assert "build_pv_3d_studio_html" in source
+    assert "components.html" in source
     assert "bv_markdown_download" in source
     assert "bv_word_download" in source
     assert "bv_pdf_download" in source
@@ -88,11 +92,27 @@ def test_public_demo_translation_keys_exist_for_both_languages() -> None:
         "bv_review_plan_heading",
         "bv_review_warning_standards",
         "bv_review_warning_objects",
+        "pv_3d_studio_tab",
+        "pv_3d_studio_heading",
+        "pv_3d_studio_boundary",
     ]
 
     for key in required_keys:
         assert TRANSLATIONS[key]["zh"]
         assert TRANSLATIONS[key]["en"]
+
+
+def test_pv_3d_studio_html_supports_chinese_and_english() -> None:
+    zh_html = build_pv_3d_studio_html("zh")
+    en_html = build_pv_3d_studio_html("en")
+
+    assert "data-pv-structure-studio" in zh_html
+    assert "pv-structure-canvas" in zh_html
+    assert "光伏组件" in zh_html
+    assert "暂停旋转" in zh_html
+    assert "Component List" in en_html
+    assert "Pause Rotation" in en_html
+    assert "光伏组件" not in en_html
 
 
 def test_app_py_no_longer_renders_legacy_report_grid_on_main_surface() -> None:
