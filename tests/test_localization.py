@@ -36,6 +36,8 @@ def test_translate_returns_default_chinese_labels() -> None:
     assert translate("zh", "report_export_tab") == "报告导出"
     assert translate("zh", "applicable_standards") == "适用规范体系"
     assert translate("zh", "evidence_requirements") == "证据需求"
+    assert translate("zh", "human_gate_heading") == "工程师数据确认门禁"
+    assert translate("en", "calculation_gate_ready").startswith("Calculation gate ready")
 
 
 def test_format_bilingual_item_respects_selected_language() -> None:

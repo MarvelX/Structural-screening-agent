@@ -49,6 +49,9 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'translate(ui_language, "bv_review_path_heading")' in source
     assert 'translate(ui_language, "bv_review_risk_heading")' in source
     assert 'translate(ui_language, "bv_review_plan_heading")' in source
+    assert 'translate(ui_language, "multi_agent_workflow_heading")' in source
+    assert 'translate(ui_language, "human_gate_heading")' in source
+    assert 'translate(ui_language, "data_lock_button")' in source
     assert 'translate(ui_language, "bv_review_warning_standards")' in source
     assert 'translate(ui_language, "bv_review_warning_objects")' in source
     assert "view.traceability_cards" in source
@@ -90,6 +93,12 @@ def test_public_demo_translation_keys_exist_for_both_languages() -> None:
         "bv_review_path_heading",
         "bv_review_risk_heading",
         "bv_review_plan_heading",
+        "multi_agent_workflow_heading",
+        "human_gate_heading",
+        "human_gate_caption",
+        "data_lock_button",
+        "calculation_gate_ready",
+        "calculation_gate_blocked",
         "bv_review_warning_standards",
         "bv_review_warning_objects",
         "pv_3d_studio_tab",

@@ -1,4 +1,6 @@
 from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.project_state import ExtractedField
+from structural_screening_agent.localization import Language
 
 
 BV_STANDARD_LABELS = {
@@ -96,3 +98,104 @@ def build_bv_review_intake(
         client_requirements=_split_client_requirements(client_requirements_text),
         documents={key: documents.get(key, default.documents[key]) for key in BV_DOCUMENT_LABELS},
     )
+
+
+def build_ground_fixed_human_gate_rows(language: Language) -> list[dict[str, object]]:
+    if language == "zh":
+        return [
+            {
+                "field_id": "tilt_angle_deg",
+                "field_name": "支架倾角",
+                "candidate_value": "25",
+                "unit": "deg",
+                "source_document_id": "structural-drawing-s101",
+                "page_or_section": "S-101 支架布置图，第 3 条说明",
+                "quote": "支架安装倾角 25 deg。",
+                "confidence": 0.95,
+                "is_confirmed": True,
+                "include_in_calculation": True,
+            },
+            {
+                "field_id": "pile_length_m",
+                "field_name": "桩长",
+                "candidate_value": "3.5",
+                "unit": "m",
+                "source_document_id": "foundation-drawing-f201",
+                "page_or_section": "F-201 基础表",
+                "quote": "PHC 桩长 L=3.5m。",
+                "confidence": 0.9,
+                "is_confirmed": True,
+                "include_in_calculation": True,
+            },
+            {
+                "field_id": "bearing_capacity_characteristic_kpa",
+                "field_name": "地基承载力特征值",
+                "candidate_value": "180",
+                "unit": "kPa",
+                "source_document_id": "geotechnical-report-g001",
+                "page_or_section": "地勘报告第 4.2 节",
+                "quote": "建议地基承载力特征值 fak=180kPa。",
+                "confidence": 0.72,
+                "is_confirmed": False,
+                "include_in_calculation": False,
+            },
+        ]
+
+    return [
+        {
+            "field_id": "tilt_angle_deg",
+            "field_name": "Rack tilt angle",
+            "candidate_value": "25",
+            "unit": "deg",
+            "source_document_id": "structural-drawing-s101",
+            "page_or_section": "S-101 mounting layout, note 3",
+            "quote": "Rack installation tilt angle: 25 deg.",
+            "confidence": 0.95,
+            "is_confirmed": True,
+            "include_in_calculation": True,
+        },
+        {
+            "field_id": "pile_length_m",
+            "field_name": "Pile length",
+            "candidate_value": "3.5",
+            "unit": "m",
+            "source_document_id": "foundation-drawing-f201",
+            "page_or_section": "F-201 foundation schedule",
+            "quote": "PHC pile length L=3.5m.",
+            "confidence": 0.9,
+            "is_confirmed": True,
+            "include_in_calculation": True,
+        },
+        {
+            "field_id": "bearing_capacity_characteristic_kpa",
+            "field_name": "Characteristic bearing capacity",
+            "candidate_value": "180",
+            "unit": "kPa",
+            "source_document_id": "geotechnical-report-g001",
+            "page_or_section": "Geotechnical report section 4.2",
+            "quote": "Recommended characteristic bearing capacity fak=180kPa.",
+            "confidence": 0.72,
+            "is_confirmed": False,
+            "include_in_calculation": False,
+        },
+    ]
+
+
+def build_extracted_fields_from_human_gate_rows(rows: list[dict[str, object]]) -> list[ExtractedField]:
+    return [
+        ExtractedField(
+            field_id=str(row["field_id"]),
+            name=str(row["field_name"]),
+            candidate_value=str(row["candidate_value"]),
+            unit=str(row["unit"]) if row.get("unit") else None,
+            source_document_id=str(row["source_document_id"]),
+            page_or_section=str(row["page_or_section"]),
+            quote=str(row["quote"]),
+            confidence=float(row["confidence"]),
+            is_confirmed=bool(row["is_confirmed"]),
+            confirmed_value=str(row["candidate_value"]) if row.get("is_confirmed") else None,
+            confirmed_unit=str(row["unit"]) if row.get("is_confirmed") and row.get("unit") else None,
+            include_in_calculation=bool(row["include_in_calculation"]),
+        )
+        for row in rows
+    ]

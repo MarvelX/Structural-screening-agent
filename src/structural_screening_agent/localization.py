@@ -109,6 +109,21 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
     "bv_review_path_heading": {"zh": "结构审核路径", "en": "Structural Review Path"},
     "bv_review_risk_heading": {"zh": "风险与不符合项清单", "en": "Risk & Nonconformity Register"},
     "bv_review_plan_heading": {"zh": "ITP 与审核计划", "en": "ITP & Review Plan"},
+    "multi_agent_workflow_heading": {"zh": "多 Agent 工作流底座", "en": "Multi-Agent Workflow Foundation"},
+    "human_gate_heading": {"zh": "工程师数据确认门禁", "en": "Engineer Data Confirmation Gate"},
+    "human_gate_caption": {
+        "zh": "示例参数来自地面固定支架审核场景。只有经工程师确认并标记进入计算的字段，才允许进入后续 A+B 计算接口。",
+        "en": "Example fields come from the ground-fixed PV mounting review scenario. Only engineer-confirmed fields marked for calculation can enter later A+B calculation interfaces.",
+    },
+    "data_lock_button": {"zh": "确认并检查计算门禁", "en": "Confirm and Check Calculation Gate"},
+    "calculation_gate_ready": {
+        "zh": "计算门禁已准备：当前仅表示接口输入已锁定，不代表完成结构验算。",
+        "en": "Calculation gate ready: this only means interface inputs are locked; it does not mean structural checks are complete.",
+    },
+    "calculation_gate_blocked": {
+        "zh": "计算门禁阻塞：请先确认至少一个可追溯字段并标记进入计算。",
+        "en": "Calculation gate blocked: confirm at least one traceable field and mark it for calculation first.",
+    },
     "bv_review_warning_standards": {"zh": "请至少选择一个标准体系。", "en": "Select at least one standards system."},
     "bv_review_warning_objects": {"zh": "请至少选择一个审核对象。", "en": "Select at least one review object."},
     "photo_assist_entry": {"zh": "拍照辅助识别入口", "en": "Photo Assist Entry"},

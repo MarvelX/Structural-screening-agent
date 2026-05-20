@@ -20,9 +20,12 @@ from structural_screening_agent.bv_review.ui_state import (
     BV_PROJECT_TYPE_LABELS,
     BV_REVIEW_OBJECT_LABELS,
     BV_STANDARD_LABELS,
+    build_extracted_fields_from_human_gate_rows,
     build_bv_review_intake,
+    build_ground_fixed_human_gate_rows,
     default_bv_review_intake,
 )
+from structural_screening_agent.bv_review.human_gate import build_calculation_gate_run
 from structural_screening_agent.bv_review.models import BVReportSection
 from structural_screening_agent.bv_review.report import build_bv_markdown_report, build_bv_report_filename
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
@@ -636,6 +639,56 @@ with bv_review_tab:
                 format_func=lambda value: _label(BV_DOCUMENT_STATUS_LABELS, value, ui_language),
                 key=f"bv_doc_{document_key}",
             )
+
+    st.markdown(f'#### {translate(ui_language, "multi_agent_workflow_heading")}')
+    st.caption(translate(ui_language, "human_gate_caption"))
+    st.markdown(f'##### {translate(ui_language, "human_gate_heading")}')
+    human_gate_rows = st.data_editor(
+        build_ground_fixed_human_gate_rows(ui_language),
+        column_config={
+            "field_id": None,
+            "field_name": st.column_config.TextColumn("字段" if ui_language == "zh" else "Field"),
+            "candidate_value": st.column_config.TextColumn("候选值" if ui_language == "zh" else "Candidate Value"),
+            "unit": st.column_config.TextColumn("单位" if ui_language == "zh" else "Unit"),
+            "source_document_id": st.column_config.TextColumn("来源文件 ID" if ui_language == "zh" else "Source Document ID"),
+            "page_or_section": st.column_config.TextColumn("页码 / 章节" if ui_language == "zh" else "Page / Section"),
+            "quote": st.column_config.TextColumn("原文片段" if ui_language == "zh" else "Evidence Quote"),
+            "confidence": st.column_config.NumberColumn("置信度" if ui_language == "zh" else "Confidence", min_value=0.0, max_value=1.0),
+            "is_confirmed": st.column_config.CheckboxColumn("工程师确认" if ui_language == "zh" else "Engineer Confirmed"),
+            "include_in_calculation": st.column_config.CheckboxColumn("进入计算接口" if ui_language == "zh" else "Enter Calculation Interface"),
+        },
+        disabled=["source_document_id"],
+        hide_index=True,
+        num_rows="fixed",
+        use_container_width=True,
+        key="bv_human_gate_rows",
+    )
+    human_gate_records = (
+        human_gate_rows.to_dict("records")
+        if hasattr(human_gate_rows, "to_dict")
+        else list(human_gate_rows)
+    )
+    try:
+        human_gate_fields = build_extracted_fields_from_human_gate_rows(human_gate_records)
+        calculation_gate_run = build_calculation_gate_run(
+            run_id="phase1-ground-fixed-gate",
+            engine_name="foundation",
+            fields=human_gate_fields,
+        )
+    except (KeyError, TypeError, ValueError, ValidationError) as exc:
+        human_gate_fields = []
+        calculation_gate_run = None
+        st.warning(str(exc))
+
+    if st.button(translate(ui_language, "data_lock_button"), use_container_width=True):
+        if calculation_gate_run is not None and calculation_gate_run.status == "ready":
+            st.success(translate(ui_language, "calculation_gate_ready"))
+            st.caption(", ".join(calculation_gate_run.input_field_ids))
+        else:
+            st.warning(translate(ui_language, "calculation_gate_blocked"))
+            if calculation_gate_run is not None:
+                for error in calculation_gate_run.structured_errors:
+                    st.write(f"- {error}")
 
     if not bv_standards:
         st.warning(translate(ui_language, "bv_review_warning_standards"))

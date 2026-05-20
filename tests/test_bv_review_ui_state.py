@@ -5,7 +5,9 @@ from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
+    build_extracted_fields_from_human_gate_rows,
     build_bv_review_intake,
+    build_ground_fixed_human_gate_rows,
     default_bv_review_intake,
 )
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
@@ -81,3 +83,27 @@ def test_build_bv_review_intake_rejects_empty_user_selected_scope() -> None:
             client_requirements_text="",
             documents={},
         )
+
+
+def test_ground_fixed_human_gate_rows_follow_selected_language_and_traceability() -> None:
+    zh_rows = build_ground_fixed_human_gate_rows("zh")
+    en_rows = build_ground_fixed_human_gate_rows("en")
+
+    assert zh_rows[0]["field_name"] == "支架倾角"
+    assert en_rows[0]["field_name"] == "Rack tilt angle"
+    assert "支架" not in str(en_rows[0]["field_name"])
+    assert all(row["source_document_id"] for row in zh_rows)
+    assert all(row["page_or_section"] for row in zh_rows)
+    assert all(row["quote"] for row in zh_rows)
+
+
+def test_human_gate_rows_convert_to_traceable_extracted_fields() -> None:
+    fields = build_extracted_fields_from_human_gate_rows(
+        build_ground_fixed_human_gate_rows("en")
+    )
+
+    assert fields[0].field_id == "tilt_angle_deg"
+    assert fields[0].source_document_id == "structural-drawing-s101"
+    assert fields[0].include_in_calculation is True
+    assert fields[0].is_confirmed is True
+    assert fields[2].include_in_calculation is False
