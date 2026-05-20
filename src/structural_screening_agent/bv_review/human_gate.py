@@ -8,6 +8,7 @@ from structural_screening_agent.bv_review.project_state import (
     EngineerApproval,
     ExtractedField,
     ProjectReviewState,
+    RFIItem,
 )
 
 
@@ -81,6 +82,65 @@ def record_agent_review_decision(
     )
 
 
+def record_rfi_client_response(
+    state: ProjectReviewState,
+    *,
+    rfi_id: str,
+    client_response: str,
+) -> ProjectReviewState:
+    if not client_response.strip():
+        raise ValueError("RFI client response must not be empty.")
+
+    rfi = _find_unique_rfi(state, rfi_id)
+    if rfi.status not in {"open", "reopened"}:
+        raise ValueError("Only open or reopened RFI items can record a client response.")
+
+    updated_rfi = rfi.model_copy(
+        update={
+            "status": "responded",
+            "client_response": client_response,
+        }
+    )
+    return _copy_with_rfi_update(
+        state,
+        updated_rfi,
+        phase_status="waiting_for_engineer",
+    )
+
+
+def close_rfi_after_engineer_review(
+    state: ProjectReviewState,
+    *,
+    rfi_id: str,
+    closeout_note: str,
+) -> ProjectReviewState:
+    if not closeout_note.strip():
+        raise ValueError("RFI closeout note must not be empty.")
+
+    rfi = _find_unique_rfi(state, rfi_id)
+    if rfi.status != "responded":
+        raise ValueError("Only responded RFI items can be closed after engineer review.")
+
+    response_with_closeout = f"{rfi.client_response}\nCloseout: {closeout_note}"
+    updated_rfi = rfi.model_copy(
+        update={
+            "status": "closed",
+            "client_response": response_with_closeout,
+        }
+    )
+    updated_items = _replace_rfi(state.rfi_items, updated_rfi)
+    phase_status = (
+        "approved"
+        if _all_incremental_rfis_closed(updated_items)
+        else "waiting_for_engineer"
+    )
+    return _copy_with_rfi_items(
+        state,
+        updated_items,
+        phase_status=phase_status,
+    )
+
+
 def build_calculation_gate_run(
     run_id: str,
     engine_name: str,
@@ -107,6 +167,60 @@ def build_calculation_gate_run(
         input_field_ids=[field.field_id for field in calculation_fields],
         input_locked=True,
         status="ready",
+    )
+
+
+def _find_unique_rfi(state: ProjectReviewState, rfi_id: str) -> RFIItem:
+    matches = [item for item in state.rfi_items if item.rfi_id == rfi_id]
+    if not matches:
+        raise ValueError(f"RFI item {rfi_id!r} does not exist.")
+    if len(matches) > 1:
+        raise ValueError(f"RFI item {rfi_id!r} is duplicated in project state.")
+    return matches[0]
+
+
+def _copy_with_rfi_update(
+    state: ProjectReviewState,
+    updated_rfi: RFIItem,
+    *,
+    phase_status: str,
+) -> ProjectReviewState:
+    return _copy_with_rfi_items(
+        state,
+        _replace_rfi(state.rfi_items, updated_rfi),
+        phase_status=phase_status,
+    )
+
+
+def _copy_with_rfi_items(
+    state: ProjectReviewState,
+    rfi_items: list[RFIItem],
+    *,
+    phase_status: str,
+) -> ProjectReviewState:
+    statuses = dict(state.phase_statuses)
+    statuses["issue_rfi_closeout"] = phase_status
+    return state.model_copy(
+        update={
+            "current_phase": "issue_rfi_closeout",
+            "phase_statuses": statuses,
+            "rfi_items": rfi_items,
+        }
+    )
+
+
+def _replace_rfi(rfi_items: list[RFIItem], updated_rfi: RFIItem) -> list[RFIItem]:
+    return [
+        updated_rfi if item.rfi_id == updated_rfi.rfi_id else item
+        for item in rfi_items
+    ]
+
+
+def _all_incremental_rfis_closed(rfi_items: list[RFIItem]) -> bool:
+    return all(
+        item.status == "closed"
+        for item in rfi_items
+        if item.triggers_incremental_recheck
     )
 
 

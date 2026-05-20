@@ -49,9 +49,14 @@ from structural_screening_agent.bv_review.project_state import (
     REVIEW_PHASES,
     RFIItem,
 )
+from structural_screening_agent.bv_review.report import build_bv_open_rfi_items
 from structural_screening_agent.bv_review.state_repository import JsonProjectReviewStateRepository
 from structural_screening_agent.bv_review.state_machine import advance_project_phase
-from structural_screening_agent.bv_review.human_gate import record_agent_review_decision
+from structural_screening_agent.bv_review.human_gate import (
+    close_rfi_after_engineer_review,
+    record_agent_review_decision,
+    record_rfi_client_response,
+)
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
 __all__ = [
@@ -87,12 +92,15 @@ __all__ = [
     "apply_agent_output_to_state",
     "build_foundation_calculation_run",
     "build_foundation_calculation_run_from_fields",
+    "build_bv_open_rfi_items",
     "build_incremental_recheck_plan",
     "build_review_basis",
     "build_superstructure_calculation_run",
     "build_superstructure_calculation_run_from_fields",
+    "close_rfi_after_engineer_review",
     "diff_extracted_fields",
     "evaluate_bv_review",
+    "record_rfi_client_response",
     "resolve_calculation_check_output_against_state",
     "record_agent_review_decision",
     "validate_calculation_check_output_against_state",
