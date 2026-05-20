@@ -26,6 +26,7 @@ from structural_screening_agent.bv_review.agent_runner import (
 from structural_screening_agent.bv_review.agent_prompting import (
     AgentPromptPackage,
     build_agent_prompt_package,
+    build_agent_prompt_package_rows,
     build_agent_prompt_packages,
     parse_agent_json_response,
 )
@@ -123,6 +124,7 @@ __all__ = [
     "apply_agent_output_to_state",
     "build_foundation_calculation_run",
     "build_agent_prompt_package",
+    "build_agent_prompt_package_rows",
     "build_agent_prompt_packages",
     "build_foundation_calculation_run_from_fields",
     "build_bv_open_rfi_items",

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import TypeAlias
+from typing import Literal, TypeAlias
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -39,6 +39,7 @@ AgentParsedOutput: TypeAlias = (
     | RiskNCRAgentOutput
     | ReportComposerAgentOutput
 )
+AgentPromptLanguage = Literal["zh", "en"]
 
 
 class AgentPromptPackage(BaseModel):
@@ -66,6 +67,33 @@ def build_agent_prompt_package(
 
 def build_agent_prompt_packages(state: ProjectReviewState) -> list[AgentPromptPackage]:
     return [build_agent_prompt_package(role, state) for role in AGENT_ROLE_SEQUENCE]
+
+
+def build_agent_prompt_package_rows(
+    packages: list[AgentPromptPackage],
+    language: AgentPromptLanguage,
+) -> list[dict[str, object]]:
+    if language == "zh":
+        return [
+            {
+                "Agent": _agent_label(package.agent_role, "zh"),
+                "输出模型": package.output_model_name,
+                "契约版本": package.schema_version,
+                "必填字段": ", ".join(_required_schema_fields(package)),
+                "边界": "JSON 输出 / 工程师复核 / 不替代签发",
+            }
+            for package in packages
+        ]
+    return [
+        {
+            "Agent": _agent_label(package.agent_role, "en"),
+            "Output Model": package.output_model_name,
+            "Schema Version": package.schema_version,
+            "Required Fields": ", ".join(_required_schema_fields(package)),
+            "Boundary": "JSON output / engineer review / no signing authority",
+        }
+        for package in packages
+    ]
 
 
 def parse_agent_json_response(
@@ -186,3 +214,44 @@ def _output_model_for_role(agent_role: AgentRole) -> AgentOutputModel:
         "report_composer": ReportComposerAgentOutput,
     }
     return models[agent_role]
+
+
+def _required_schema_fields(package: AgentPromptPackage) -> list[str]:
+    required = package.output_schema.get("required", [])
+    if not isinstance(required, list):
+        return []
+    return [str(field) for field in required]
+
+
+def _agent_label(agent_role: AgentRole, language: AgentPromptLanguage) -> str:
+    labels = {
+        "document_intake": {
+            "zh": "资料接收 Agent",
+            "en": "Document Intake Agent",
+        },
+        "basis_code": {
+            "zh": "依据与标准 Agent",
+            "en": "Basis & Code Agent",
+        },
+        "review_plan": {
+            "zh": "审核计划 Agent",
+            "en": "Review Plan Agent",
+        },
+        "structural_review": {
+            "zh": "结构审核路径 Agent",
+            "en": "Structural Review Agent",
+        },
+        "calculation_check": {
+            "zh": "计算校核 Agent",
+            "en": "Calculation Check Agent",
+        },
+        "risk_ncr": {
+            "zh": "风险 / NCR Agent",
+            "en": "Risk & NCR Agent",
+        },
+        "report_composer": {
+            "zh": "报告编制 Agent",
+            "en": "Report Composer Agent",
+        },
+    }
+    return labels[agent_role][language]

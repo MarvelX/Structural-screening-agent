@@ -8,6 +8,7 @@ from structural_screening_agent.bv_review import (
 )
 from structural_screening_agent.bv_review.agent_prompting import (
     build_agent_prompt_package,
+    build_agent_prompt_package_rows,
     build_agent_prompt_packages,
     parse_agent_json_response,
 )
@@ -43,6 +44,21 @@ def test_build_agent_prompt_packages_follows_goal_agent_sequence() -> None:
 
     assert [package.agent_role for package in packages] == list(AGENT_ROLE_SEQUENCE)
     assert len({package.output_model_name for package in packages}) == len(packages)
+
+
+def test_agent_prompt_package_rows_are_localized_for_workbench_preview() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    packages = build_agent_prompt_packages(state)
+
+    zh_rows = build_agent_prompt_package_rows(packages, "zh")
+    en_rows = build_agent_prompt_package_rows(packages, "en")
+
+    assert zh_rows[0]["Agent"] == "资料接收 Agent"
+    assert zh_rows[0]["输出模型"] == "DocumentIntakeAgentOutput"
+    assert zh_rows[0]["边界"] == "JSON 输出 / 工程师复核 / 不替代签发"
+    assert en_rows[0]["Agent"] == "Document Intake Agent"
+    assert en_rows[0]["Output Model"] == "DocumentIntakeAgentOutput"
+    assert en_rows[0]["Boundary"] == "JSON output / engineer review / no signing authority"
 
 
 def test_calculation_check_prompt_references_existing_runs_without_authoring_calculations() -> None:

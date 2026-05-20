@@ -70,6 +70,10 @@ from structural_screening_agent.bv_review.project_management import (
     build_project_management_action_rows,
     build_project_management_actions,
 )
+from structural_screening_agent.bv_review.agent_prompting import (
+    build_agent_prompt_package_rows,
+    build_agent_prompt_packages,
+)
 from structural_screening_agent.bv_review.report import (
     build_bv_markdown_report,
     build_bv_report_filename,
@@ -1186,6 +1190,44 @@ with bv_review_tab:
             if ui_language == "en"
             else "本地确定性 runner 会在工程师数据锁定阶段等待计算门禁批准。"
         )
+        agent_prompt_packages = build_agent_prompt_packages(reviewed_workflow_state)
+        agent_contract_heading = (
+            "Agent Contract Prompt Preview"
+            if ui_language == "en"
+            else "Agent 契约提示词预览"
+        )
+        st.markdown(f"##### {agent_contract_heading}")
+        st.dataframe(
+            build_agent_prompt_package_rows(
+                agent_prompt_packages,
+                ui_language,
+            ),
+            hide_index=True,
+            use_container_width=True,
+        )
+        selected_agent_contract = st.selectbox(
+            "Agent Contract" if ui_language == "en" else "Agent 契约",
+            [package.agent_role for package in agent_prompt_packages],
+            key="bv_agent_contract_prompt_preview",
+        )
+        selected_agent_prompt_package = next(
+            package
+            for package in agent_prompt_packages
+            if package.agent_role == selected_agent_contract
+        )
+        with st.expander(
+            "System and User Prompt"
+            if ui_language == "en"
+            else "系统提示词与用户上下文",
+            expanded=False,
+        ):
+            st.code(selected_agent_prompt_package.system_prompt)
+            st.code(selected_agent_prompt_package.user_prompt)
+        with st.expander(
+            "JSON Schema Preview" if ui_language == "en" else "JSON Schema 预览",
+            expanded=False,
+        ):
+            st.json(selected_agent_prompt_package.output_schema)
         project_management_actions = build_project_management_actions(
             reviewed_workflow_state
         )

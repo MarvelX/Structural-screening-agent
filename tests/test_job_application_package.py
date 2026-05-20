@@ -182,6 +182,12 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "build_project_management_action_rows" in app_source
     assert '"Project Management Action Dashboard"' in app_source
     assert '"项目管理行动看板"' in app_source
+    assert "build_agent_prompt_packages" in app_source
+    assert "build_agent_prompt_package_rows" in app_source
+    assert '"Agent Contract Prompt Preview"' in app_source
+    assert '"Agent 契约提示词预览"' in app_source
+    assert '"JSON Schema Preview"' in app_source
+    assert '"JSON Schema 预览"' in app_source
     assert "effective_bv_result" in app_source
     assert "list_project_inventory" in app_source
     assert "invalid_project_ids" in app_source
