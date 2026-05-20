@@ -3,7 +3,9 @@ from structural_screening_agent.bv_review.calculation_engines import (
     FoundationEngineInput,
     SuperstructureEngineInput,
     build_foundation_calculation_run,
+    build_foundation_calculation_run_from_fields,
     build_superstructure_calculation_run,
+    build_superstructure_calculation_run_from_fields,
 )
 from structural_screening_agent.bv_review.field_diff import (
     AffectedReviewItem,
@@ -49,9 +51,11 @@ __all__ = [
     "JsonProjectReviewStateRepository",
     "advance_project_phase",
     "build_foundation_calculation_run",
+    "build_foundation_calculation_run_from_fields",
     "build_incremental_recheck_plan",
     "build_review_basis",
     "build_superstructure_calculation_run",
+    "build_superstructure_calculation_run_from_fields",
     "diff_extracted_fields",
     "evaluate_bv_review",
 ]

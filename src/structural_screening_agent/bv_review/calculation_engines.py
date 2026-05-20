@@ -5,7 +5,11 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from structural_screening_agent.bv_review.project_state import CalculationRun, FieldValue
+from structural_screening_agent.bv_review.project_state import (
+    CalculationRun,
+    ExtractedField,
+    FieldValue,
+)
 
 
 ENGINE_VERSION = "phase1-deterministic-screening"
@@ -31,6 +35,74 @@ class SuperstructureEngineInput(BaseModel):
     steel_yield_strength_mpa: float | None = None
     axial_force_kn: float | None = None
     bending_moment_knm: float | None = None
+
+
+FOUNDATION_FIELD_IDS: tuple[str, ...] = (
+    "pile_diameter_mm",
+    "pile_length_m",
+    "side_resistance_standard_kpa",
+    "bearing_capacity_characteristic_kpa",
+    "uplift_force_kn",
+    "compression_force_kn",
+)
+SUPERSTRUCTURE_FIELD_IDS: tuple[str, ...] = (
+    "section_area_mm2",
+    "section_modulus_mm3",
+    "radius_of_gyration_mm",
+    "effective_length_m",
+    "steel_yield_strength_mpa",
+    "axial_force_kn",
+    "bending_moment_knm",
+)
+
+
+def build_foundation_calculation_run_from_fields(
+    *,
+    run_id: str,
+    fields: list[ExtractedField],
+) -> CalculationRun:
+    values, mapping_errors = _confirmed_numeric_values(fields, FOUNDATION_FIELD_IDS)
+    run = build_foundation_calculation_run(
+        run_id=run_id,
+        input_data=FoundationEngineInput(
+            pile_diameter_mm=values["pile_diameter_mm"],
+            pile_length_m=values["pile_length_m"],
+            side_resistance_standard_kpa=values["side_resistance_standard_kpa"],
+            bearing_capacity_characteristic_kpa=values[
+                "bearing_capacity_characteristic_kpa"
+            ],
+            uplift_force_kn=values["uplift_force_kn"],
+            compression_force_kn=values["compression_force_kn"],
+        ),
+        input_field_ids=list(FOUNDATION_FIELD_IDS),
+    )
+    return _prepend_mapping_errors(run, mapping_errors)
+
+
+def build_superstructure_calculation_run_from_fields(
+    *,
+    run_id: str,
+    fields: list[ExtractedField],
+    member_id: str,
+    member_type: Literal["post", "beam", "purlin", "brace"],
+) -> CalculationRun:
+    values, mapping_errors = _confirmed_numeric_values(fields, SUPERSTRUCTURE_FIELD_IDS)
+    run = build_superstructure_calculation_run(
+        run_id=run_id,
+        input_data=SuperstructureEngineInput(
+            member_id=member_id,
+            member_type=member_type,
+            section_area_mm2=values["section_area_mm2"],
+            section_modulus_mm3=values["section_modulus_mm3"],
+            radius_of_gyration_mm=values["radius_of_gyration_mm"],
+            effective_length_m=values["effective_length_m"],
+            steel_yield_strength_mpa=values["steel_yield_strength_mpa"],
+            axial_force_kn=values["axial_force_kn"],
+            bending_moment_knm=values["bending_moment_knm"],
+        ),
+        input_field_ids=list(SUPERSTRUCTURE_FIELD_IDS),
+    )
+    return _prepend_mapping_errors(run, mapping_errors)
 
 
 def build_foundation_calculation_run(
@@ -156,6 +228,47 @@ def _validate_positive_inputs(input_data: BaseModel, field_names: list[str]) -> 
         elif value <= 0:
             errors.append(f"{field_name} must be greater than zero.")
     return errors
+
+
+def _confirmed_numeric_values(
+    fields: list[ExtractedField],
+    field_ids: tuple[str, ...],
+) -> tuple[dict[str, float | None], list[str]]:
+    field_by_id = {field.field_id: field for field in fields}
+    values: dict[str, float | None] = {}
+    errors: list[str] = []
+
+    for field_id in field_ids:
+        field = field_by_id.get(field_id)
+        if field is None:
+            values[field_id] = None
+            continue
+        if not field.is_confirmed or not field.include_in_calculation:
+            values[field_id] = None
+            errors.append(f"{field_id} must be engineer-confirmed and marked for calculation.")
+            continue
+        try:
+            values[field_id] = float(field.confirmed_value)
+        except (TypeError, ValueError):
+            values[field_id] = None
+            errors.append(f"{field_id} confirmed value must be numeric.")
+
+    return values, errors
+
+
+def _prepend_mapping_errors(run: CalculationRun, mapping_errors: list[str]) -> CalculationRun:
+    if not mapping_errors:
+        return run
+
+    merged_errors = list(dict.fromkeys(mapping_errors + run.structured_errors))
+    return run.model_copy(
+        update={
+            "input_locked": False,
+            "status": "blocked",
+            "structured_errors": merged_errors,
+            "result_summary": {},
+        }
+    )
 
 
 def _blocked_run(

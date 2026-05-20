@@ -12,7 +12,9 @@ from structural_screening_agent.bv_review import (
     diff_extracted_fields,
     evaluate_bv_review,
     build_foundation_calculation_run,
+    build_foundation_calculation_run_from_fields,
     build_superstructure_calculation_run,
+    build_superstructure_calculation_run_from_fields,
 )
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
@@ -254,4 +256,6 @@ def test_bv_review_package_exports_existing_and_phase1_state_objects() -> None:
     assert FoundationEngineInput is not None
     assert SuperstructureEngineInput is not None
     assert build_foundation_calculation_run is not None
+    assert build_foundation_calculation_run_from_fields is not None
     assert build_superstructure_calculation_run is not None
+    assert build_superstructure_calculation_run_from_fields is not None
