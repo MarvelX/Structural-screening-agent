@@ -105,6 +105,32 @@ def test_structural_review_path_creates_object_specific_review_methods_and_holds
     assert "地勘报告" in foundation_path.method
 
 
+def test_foundation_review_path_defines_bearing_capacity_evidence_path() -> None:
+    intake = _sample_intake().model_copy(
+        update={
+            "review_objects": ["foundation"],
+            "documents": {
+                "calculation_report": "available",
+                "technical_specification": "available",
+                "geotechnical_report": "available",
+                "contract_requirements": "available",
+            },
+        }
+    )
+    checklist = build_document_checklist(intake)
+
+    foundation_path = build_structural_review_path(intake, checklist)[0]
+
+    assert foundation_path.status == "ready"
+    assert foundation_path.path_id == "foundation_review"
+    assert "地基承载力特征值 fak" in foundation_path.required_inputs
+    assert "桩径、桩长、桩型和桩间距" in foundation_path.required_inputs
+    assert "最不利抗拔力、压力和水平力" in foundation_path.required_inputs
+    assert "地勘参数" in foundation_path.method
+    assert "基础计算输出" in foundation_path.method
+    assert "基础证据路径与承载力审核意见" in foundation_path.deliverables
+
+
 def test_review_plan_generates_itp_items_with_roles_methods_and_deliverables() -> None:
     checklist = build_document_checklist(_sample_intake())
     paths = build_structural_review_path(_sample_intake(), checklist)
