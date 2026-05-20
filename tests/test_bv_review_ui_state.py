@@ -207,6 +207,14 @@ def test_report_gate_pending_agent_review_reason_localizes_to_chinese() -> None:
     assert localized == "待工程师复核的 Agent 产物阻塞报告草稿输入：agent-event-001"
 
 
+def test_report_gate_rejected_agent_review_reason_localizes_to_chinese() -> None:
+    reason = "Rejected agent engineer review blocks report draft input: agent-event-001"
+
+    localized = localize_report_gate_reason(reason, "zh")
+
+    assert localized == "已驳回的 Agent 产物阻塞报告草稿输入：agent-event-001"
+
+
 def test_calculation_result_summary_rows_localize_internal_keys_for_chinese_ui() -> None:
     rows = build_calculation_result_summary_rows(
         {

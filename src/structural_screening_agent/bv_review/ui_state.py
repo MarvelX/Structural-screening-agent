@@ -808,6 +808,13 @@ def localize_report_gate_reason(reason: str, language: Language) -> str:
         return "待工程师复核的 Agent 产物阻塞报告草稿输入：" + reason.removeprefix(
             agent_review_prefix
         )
+    rejected_agent_review_prefix = (
+        "Rejected agent engineer review blocks report draft input: "
+    )
+    if language == "zh" and reason.startswith(rejected_agent_review_prefix):
+        return "已驳回的 Agent 产物阻塞报告草稿输入：" + reason.removeprefix(
+            rejected_agent_review_prefix
+        )
     return reason
 
 
