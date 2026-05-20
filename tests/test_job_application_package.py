@@ -142,9 +142,11 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"保存当前审核状态"' in app_source
     assert '"Resume Saved Workflow"' in app_source
     assert '"恢复已保存工作流"' in app_source
-    assert '"bv_persisted_workflow_summary"' in app_source
+    assert '"Use Current Form State"' in app_source
+    assert '"使用当前表单状态"' in app_source
+    assert "store_persisted_workflow_result" in app_source
+    assert "clear_persisted_workflow_session" in app_source
+    assert "get_active_persisted_workflow_state" in app_source
+    assert "get_active_persisted_workflow_summary" in app_source
     assert '"bv_persisted_workflow_summary_rows"' not in app_source
-    assert 'st.session_state.pop("bv_persisted_workflow_summary", None)' in app_source
-    assert '"bv_persisted_workflow_summary_project_id"' in app_source
-    assert app_source.count("st.session_state.pop(") >= 2
     assert "只有点击按钮时才会保存或恢复本地 JSON 状态" in app_source

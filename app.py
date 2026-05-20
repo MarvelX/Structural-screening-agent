@@ -50,6 +50,12 @@ from structural_screening_agent.bv_review.human_gate import (
     build_report_draft_gate_result,
     record_agent_review_decision,
 )
+from structural_screening_agent.bv_review.persisted_workflow_session import (
+    clear_persisted_workflow_session,
+    get_active_persisted_workflow_state,
+    get_active_persisted_workflow_summary,
+    store_persisted_workflow_result,
+)
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.report import (
     build_bv_markdown_report,
@@ -898,7 +904,7 @@ with bv_review_tab:
                 + ", ".join(existing_project_ids)
             )
         persisted_workflow_result = None
-        save_state_col, resume_state_col = st.columns(2)
+        save_state_col, resume_state_col, current_state_col = st.columns(3)
         with save_state_col:
             if st.button(
                 "Save Current Review State"
@@ -911,11 +917,7 @@ with bv_review_tab:
                     persisted_repository.save(
                         phase1_state.model_copy(update={"project_id": persisted_project_id})
                     )
-                    st.session_state.pop("bv_persisted_workflow_summary", None)
-                    st.session_state.pop(
-                        "bv_persisted_workflow_summary_project_id",
-                        None,
-                    )
+                    clear_persisted_workflow_session(st.session_state)
                     st.success(
                         f"Saved {persisted_project_id}."
                         if ui_language == "en"
@@ -938,11 +940,9 @@ with bv_review_tab:
                             persisted_project_id,
                         )
                     )
-                    st.session_state["bv_persisted_workflow_summary"] = (
-                        persisted_workflow_result.summary
-                    )
-                    st.session_state["bv_persisted_workflow_summary_project_id"] = (
-                        persisted_project_id
+                    store_persisted_workflow_result(
+                        st.session_state,
+                        persisted_workflow_result,
                     )
                     st.success(
                         f"Resumed {persisted_project_id}."
@@ -957,23 +957,42 @@ with bv_review_tab:
                     )
                 except ValueError as exc:
                     st.warning(str(exc))
-        if (
-            st.session_state.get("bv_persisted_workflow_summary_project_id")
-            == persisted_project_id
-        ):
-            persisted_summary = st.session_state.get("bv_persisted_workflow_summary")
-            if persisted_summary:
-                st.dataframe(
-                    build_persisted_workflow_run_summary_rows(
-                        persisted_summary,
-                        ui_language,
-                    ),
-                    hide_index=True,
-                    use_container_width=True,
+        with current_state_col:
+            if st.button(
+                "Use Current Form State"
+                if ui_language == "en"
+                else "使用当前表单状态",
+                key="bv_use_current_form_state",
+                use_container_width=True,
+            ):
+                clear_persisted_workflow_session(st.session_state)
+                st.success(
+                    "Using the current form state."
+                    if ui_language == "en"
+                    else "已切换为使用当前表单状态。"
                 )
+        persisted_summary = get_active_persisted_workflow_summary(
+            st.session_state,
+            persisted_project_id,
+        )
+        if persisted_summary:
+            st.dataframe(
+                build_persisted_workflow_run_summary_rows(
+                    persisted_summary,
+                    ui_language,
+                ),
+                hide_index=True,
+                use_container_width=True,
+            )
+        persisted_session_state = get_active_persisted_workflow_state(
+            st.session_state,
+            persisted_project_id,
+        )
         workflow_state = (
             persisted_workflow_result.state
             if persisted_workflow_result is not None
+            else persisted_session_state
+            if persisted_session_state is not None
             else run_local_agent_workflow_until_blocked(phase1_state)
         )
         workflow_signature = f"{bv_intake.model_dump_json()}|{human_gate_signature}"
