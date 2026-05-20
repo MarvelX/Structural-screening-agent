@@ -25,8 +25,13 @@ from structural_screening_agent.bv_review.ui_state import (
     build_ground_fixed_human_gate_rows,
     default_bv_review_intake,
 )
-from structural_screening_agent.bv_review.human_gate import build_calculation_gate_run
+from structural_screening_agent.bv_review.human_gate import (
+    build_calculation_gate_run,
+    build_engineer_approval,
+    build_report_draft_gate_result,
+)
 from structural_screening_agent.bv_review.models import BVReportSection
+from structural_screening_agent.bv_review.project_state import ProjectReviewState
 from structural_screening_agent.bv_review.report import build_bv_markdown_report, build_bv_report_filename
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.core.persistence import ScreeningRepository
@@ -668,6 +673,22 @@ with bv_review_tab:
         if hasattr(human_gate_rows, "to_dict")
         else list(human_gate_rows)
     )
+    human_gate_signature = repr(
+        [
+            (
+                row.get("field_id"),
+                row.get("candidate_value"),
+                row.get("unit"),
+                row.get("source_document_id"),
+                row.get("page_or_section"),
+                row.get("quote"),
+                row.get("confidence"),
+                row.get("is_confirmed"),
+                row.get("include_in_calculation"),
+            )
+            for row in human_gate_records
+        ]
+    )
     try:
         human_gate_fields = build_extracted_fields_from_human_gate_rows(human_gate_records)
         calculation_gate_run = build_calculation_gate_run(
@@ -680,11 +701,20 @@ with bv_review_tab:
         calculation_gate_run = None
         st.warning(str(exc))
 
-    if st.button(translate(ui_language, "data_lock_button"), use_container_width=True):
+    gate_is_still_locked = (
+        st.session_state.get("bv_calculation_gate_locked") is True
+        and st.session_state.get("bv_calculation_gate_signature") == human_gate_signature
+    )
+    calculation_gate_checked = st.button(translate(ui_language, "data_lock_button"), use_container_width=True)
+    if calculation_gate_checked:
         if calculation_gate_run is not None and calculation_gate_run.status == "ready":
+            st.session_state["bv_calculation_gate_locked"] = True
+            st.session_state["bv_calculation_gate_signature"] = human_gate_signature
             st.success(translate(ui_language, "calculation_gate_ready"))
             st.caption(", ".join(calculation_gate_run.input_field_ids))
         else:
+            st.session_state["bv_calculation_gate_locked"] = False
+            st.session_state["bv_calculation_gate_signature"] = None
             st.warning(translate(ui_language, "calculation_gate_blocked"))
             if calculation_gate_run is not None:
                 for error in calculation_gate_run.structured_errors:
@@ -707,6 +737,30 @@ with bv_review_tab:
         )
         bv_result = evaluate_bv_review(bv_intake)
         blockers = [item for item in bv_result.risks if item.blocks_report_issue]
+        phase1_approvals = []
+        if (
+            (calculation_gate_checked or gate_is_still_locked)
+            and calculation_gate_run is not None
+            and calculation_gate_run.status == "ready"
+        ):
+            phase1_approvals.append(
+                build_engineer_approval(
+                    approval_id="phase1-calculation-gate-approval",
+                    target_id="calculation",
+                    reviewer="demo-review-engineer",
+                    comment="Phase 1 demo data lock for report draft gate.",
+                )
+            )
+        phase1_calculation_runs = [calculation_gate_run] if calculation_gate_run is not None else []
+        phase1_state = ProjectReviewState(
+            project_id="phase1-ground-fixed-demo",
+            intake=bv_intake,
+            extracted_fields=human_gate_fields,
+            approvals=phase1_approvals,
+            calculation_runs=phase1_calculation_runs,
+            risks=bv_result.risks,
+        )
+        report_draft_gate = build_report_draft_gate_result(phase1_state, bv_result)
 
         metric_1, metric_2, metric_3 = st.columns(3)
         metric_1.metric("Decision" if ui_language == "en" else "审核结论", bv_result.decision)
@@ -737,45 +791,57 @@ with bv_review_tab:
                 limit=5,
             )
 
-        bv_report_preview = bv_result.report_preview
-        bv_markdown_payload = build_bv_markdown_report(bv_intake, bv_result)
+        st.markdown(f'#### {translate(ui_language, "report_draft_gate_heading")}')
+        if report_draft_gate.status == "ready":
+            st.success(translate(ui_language, "report_draft_gate_ready"))
+        else:
+            st.warning(translate(ui_language, "report_draft_gate_blocked"))
+            for reason in report_draft_gate.reasons[:5]:
+                st.write(f"- {reason}")
+        for note in report_draft_gate.notes:
+            st.caption(note)
+
         bv_markdown_filename = build_bv_report_filename(bv_intake.project_type)
         bv_word_filename = bv_markdown_filename.replace(".md", ".docx")
         bv_pdf_filename = bv_markdown_filename.replace(".md", ".pdf")
-        bv_docx_payload = build_docx_report_bytes(bv_report_preview)
-        bv_pdf_payload = build_pdf_report_bytes(bv_report_preview)
 
         st.markdown("#### Design Review Report Preview" if ui_language == "en" else "设计审查报告预览")
-        bv_export_col_1, bv_export_col_2, bv_export_col_3 = st.columns(3)
-        with bv_export_col_1:
-            bv_markdown_download = st.download_button(
-                translate(ui_language, "download_text_report"),
-                data=bv_markdown_payload,
-                file_name=bv_markdown_filename,
-                mime="text/markdown",
-                use_container_width=True,
-            )
-        with bv_export_col_2:
-            bv_word_download = st.download_button(
-                translate(ui_language, "download_word_report"),
-                data=bv_docx_payload,
-                file_name=bv_word_filename,
-                mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-                use_container_width=True,
-            )
-        with bv_export_col_3:
-            bv_pdf_download = st.download_button(
-                translate(ui_language, "download_pdf_report"),
-                data=bv_pdf_payload,
-                file_name=bv_pdf_filename,
-                mime="application/pdf",
-                use_container_width=True,
-            )
-        for section in _bv_report_preview_sections(bv_intake, bv_result, ui_language):
-            with st.container(border=True):
-                st.markdown(f"**{section.heading}**")
-                for item in section.items[:4]:
-                    st.write(item)
+        report_draft_ready = report_draft_gate.status == "ready"
+        if report_draft_ready:
+            bv_report_preview = bv_result.report_preview
+            bv_markdown_payload = build_bv_markdown_report(bv_intake, bv_result)
+            bv_docx_payload = build_docx_report_bytes(bv_report_preview)
+            bv_pdf_payload = build_pdf_report_bytes(bv_report_preview)
+            bv_export_col_1, bv_export_col_2, bv_export_col_3 = st.columns(3)
+            with bv_export_col_1:
+                bv_markdown_download = st.download_button(
+                    translate(ui_language, "download_text_report"),
+                    data=bv_markdown_payload,
+                    file_name=bv_markdown_filename,
+                    mime="text/markdown",
+                    use_container_width=True,
+                )
+            with bv_export_col_2:
+                bv_word_download = st.download_button(
+                    translate(ui_language, "download_word_report"),
+                    data=bv_docx_payload,
+                    file_name=bv_word_filename,
+                    mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                    use_container_width=True,
+                )
+            with bv_export_col_3:
+                bv_pdf_download = st.download_button(
+                    translate(ui_language, "download_pdf_report"),
+                    data=bv_pdf_payload,
+                    file_name=bv_pdf_filename,
+                    mime="application/pdf",
+                    use_container_width=True,
+                )
+            for section in _bv_report_preview_sections(bv_intake, bv_result, ui_language):
+                with st.container(border=True):
+                    st.markdown(f"**{section.heading}**")
+                    for item in section.items[:4]:
+                        st.write(item)
 
 with assessment_tab:
     metric_columns = st.columns(min(3, max(len(view.assessment_metric_cards), 1)))

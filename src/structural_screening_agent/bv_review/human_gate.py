@@ -1,7 +1,13 @@
+from typing import Literal
+
+from pydantic import BaseModel, Field
+
+from structural_screening_agent.bv_review.models import BVReviewResult
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
     EngineerApproval,
     ExtractedField,
+    ProjectReviewState,
 )
 
 
@@ -56,4 +62,65 @@ def build_calculation_gate_run(
         input_field_ids=[field.field_id for field in calculation_fields],
         input_locked=True,
         status="ready",
+    )
+
+
+class ReportDraftGateResult(BaseModel):
+    status: Literal["ready", "blocked"]
+    reasons: list[str] = Field(default_factory=list)
+    blocking_risk_ids: list[str] = Field(default_factory=list)
+    calculation_run_ids: list[str] = Field(default_factory=list)
+    notes: list[str] = Field(default_factory=list)
+
+
+def build_report_draft_gate_result(
+    state: ProjectReviewState,
+    result: BVReviewResult,
+) -> ReportDraftGateResult:
+    reasons: list[str] = []
+    notes: list[str] = []
+
+    if not result.basis_references:
+        reasons.append("Review basis is missing; report draft input is blocked.")
+
+    missing_documents = [
+        item.document_key for item in result.checklist_items if item.status == "missing"
+    ]
+    if missing_documents:
+        reasons.append(
+            "Missing required document inputs block report draft input: "
+            + ", ".join(missing_documents)
+        )
+
+    blocking_risk_ids = [
+        item.risk_id for item in result.risks if item.blocks_report_issue
+    ]
+    if blocking_risk_ids:
+        reasons.append(
+            "Blocking risks or nonconformities remain open: "
+            + ", ".join(blocking_risk_ids)
+        )
+
+    executable_runs = [
+        run
+        for run in state.calculation_runs
+        if run.input_locked and run.status in {"ready", "completed"}
+    ]
+    if not state.is_gate_locked("calculation"):
+        reasons.append("Calculation gate is not locked by an engineer.")
+    if not executable_runs:
+        reasons.append("No locked calculation interface run is ready for report drafting.")
+
+    calculation_run_ids = [run.run_id for run in executable_runs]
+    if any(run.status == "ready" for run in executable_runs):
+        notes.append(
+            "Calculation interface input is ready but not completed; report draft must not claim structural verification."
+        )
+
+    return ReportDraftGateResult(
+        status="blocked" if reasons else "ready",
+        reasons=reasons,
+        blocking_risk_ids=blocking_risk_ids,
+        calculation_run_ids=calculation_run_ids,
+        notes=notes,
     )

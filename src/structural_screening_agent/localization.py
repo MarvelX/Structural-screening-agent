@@ -124,6 +124,15 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
         "zh": "计算门禁阻塞：请先确认至少一个可追溯字段并标记进入计算。",
         "en": "Calculation gate blocked: confirm at least one traceable field and mark it for calculation first.",
     },
+    "report_draft_gate_heading": {"zh": "报告草稿输入门禁", "en": "Report Draft Input Gate"},
+    "report_draft_gate_ready": {
+        "zh": "报告草稿输入已准备：当前仅代表草稿资料链路可进入人工复核，不代表最终报告签发。",
+        "en": "Report draft input ready: this only means the draft evidence chain can enter engineer review; it does not mean final report issue.",
+    },
+    "report_draft_gate_blocked": {
+        "zh": "报告草稿输入阻塞：请先关闭下列资料、风险或计算接口门禁问题。",
+        "en": "Report draft input blocked: close the following document, risk, or calculation-gate issues first.",
+    },
     "bv_review_warning_standards": {"zh": "请至少选择一个标准体系。", "en": "Select at least one standards system."},
     "bv_review_warning_objects": {"zh": "请至少选择一个审核对象。", "en": "Select at least one review object."},
     "photo_assist_entry": {"zh": "拍照辅助识别入口", "en": "Photo Assist Entry"},

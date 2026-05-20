@@ -52,6 +52,7 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'translate(ui_language, "multi_agent_workflow_heading")' in source
     assert 'translate(ui_language, "human_gate_heading")' in source
     assert 'translate(ui_language, "data_lock_button")' in source
+    assert 'translate(ui_language, "report_draft_gate_heading")' in source
     assert 'translate(ui_language, "bv_review_warning_standards")' in source
     assert 'translate(ui_language, "bv_review_warning_objects")' in source
     assert "view.traceability_cards" in source
@@ -78,6 +79,11 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "bv_markdown_download" in source
     assert "bv_word_download" in source
     assert "bv_pdf_download" in source
+    assert "bv_calculation_gate_locked" in source
+    assert "report_draft_ready" in source
+    assert "if report_draft_ready:" in source
+    assert 'row.get("quote")' in source
+    assert 'row.get("confidence")' in source
     assert "st.file_uploader(" in source
 
 
@@ -99,6 +105,9 @@ def test_public_demo_translation_keys_exist_for_both_languages() -> None:
         "data_lock_button",
         "calculation_gate_ready",
         "calculation_gate_blocked",
+        "report_draft_gate_heading",
+        "report_draft_gate_ready",
+        "report_draft_gate_blocked",
         "bv_review_warning_standards",
         "bv_review_warning_objects",
         "pv_3d_studio_tab",

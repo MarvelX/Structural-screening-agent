@@ -5,6 +5,7 @@ from structural_screening_agent.bv_review import (
     BVReviewIntake,
     ExtractedField,
     ProjectReviewState,
+    advance_project_phase,
     evaluate_bv_review,
 )
 from structural_screening_agent.bv_review.project_state import (
@@ -194,3 +195,4 @@ def test_bv_review_package_exports_existing_and_phase1_state_objects() -> None:
     assert evaluate_bv_review is not None
     assert ProjectReviewState is not None
     assert ExtractedField is not None
+    assert advance_project_phase is not None
