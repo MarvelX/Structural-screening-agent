@@ -68,7 +68,7 @@ def build_bv_report_preview(intake: BVReviewIntake, result: BVReviewResult) -> B
             heading="审核边界声明",
             items=[
                 "本工具用于设计审核前期组织、资料完整性判断、风险识别和 screening-level 技术路径梳理。",
-                "输出不替代正式设计、第三方签章、有限元计算、施工图审查，也不代表 BV 官方签发流程。",
+                "输出不替代正式设计、法定审批、有限元计算、施工图审查，也不代表 BV 官方签发流程。",
                 "所有自动生成的不符合项、技术风险和优化建议均需由合格工程师复核。",
             ],
         ),

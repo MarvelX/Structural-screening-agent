@@ -79,7 +79,7 @@ def apply_agent_output_to_state(
         return _copy_with_phase(
             state,
             output.agent_role,
-            "review_plan",
+            "engineer_data_lock",
             review_paths=_upsert_by_id(
                 state.review_paths,
                 output.review_paths,

@@ -1,0 +1,86 @@
+from structural_screening_agent.bv_review import (
+    BVReviewIntake,
+    ProjectReviewState,
+    run_local_agent_workflow_step,
+    run_local_agent_workflow_until_blocked,
+)
+from structural_screening_agent.bv_review.project_state import CalculationRun, EngineerApproval
+
+
+def test_local_agent_workflow_runs_to_engineer_data_lock_without_external_api() -> None:
+    state = ProjectReviewState(project_id="pv-001", intake=_sample_intake())
+
+    final_state = run_local_agent_workflow_until_blocked(state)
+
+    assert final_state.current_phase == "engineer_data_lock"
+    assert final_state.phase_statuses["document_check"] == "waiting_for_engineer"
+    assert final_state.phase_statuses["basis_build"] == "waiting_for_engineer"
+    assert final_state.phase_statuses["review_plan"] == "waiting_for_engineer"
+    assert final_state.basis_references
+    assert final_state.review_plan
+    assert final_state.review_paths
+    assert final_state.calculation_runs == []
+
+
+def test_local_agent_workflow_applies_calculation_risk_and_report_after_locked_gate() -> None:
+    state = ProjectReviewState(
+        project_id="pv-001",
+        intake=_sample_intake(),
+        current_phase="engineer_data_lock",
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            )
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m"],
+                input_locked=True,
+                status="completed",
+                result_summary={"screening_boundary": "screening-level review support only"},
+            )
+        ],
+    )
+
+    final_state = run_local_agent_workflow_until_blocked(state)
+
+    assert final_state.current_phase == "report_draft"
+    assert final_state.phase_statuses["calculation_check"] == "waiting_for_engineer"
+    assert final_state.phase_statuses["risk_register"] == "waiting_for_engineer"
+    assert final_state.phase_statuses["report_draft"] == "waiting_for_engineer"
+    assert final_state.risks
+    assert final_state.report_sections
+    assert all(item.status == "open" for item in final_state.rfi_items)
+
+
+def test_local_agent_workflow_step_returns_none_when_waiting_for_human_data_lock() -> None:
+    state = ProjectReviewState(
+        project_id="pv-001",
+        intake=_sample_intake(),
+        current_phase="engineer_data_lock",
+    )
+
+    assert run_local_agent_workflow_step(state) is None
+
+
+def _sample_intake() -> BVReviewIntake:
+    return BVReviewIntake(
+        project_name="Ground PV design review",
+        country_or_region="China",
+        project_type="utility_pv",
+        design_stage="detailed_design",
+        standards_systems=["gb", "iec"],
+        review_objects=["mounting_structure", "foundation", "load_calculation"],
+        documents={
+            "structural_drawings": "available",
+            "calculation_report": "partial",
+            "geotechnical_report": "missing",
+        },
+    )

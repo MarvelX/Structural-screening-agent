@@ -15,6 +15,10 @@ from structural_screening_agent.bv_review.agent_workflow import (
     AgentWorkflowOutput,
     apply_agent_output_to_state,
 )
+from structural_screening_agent.bv_review.agent_runner import (
+    run_local_agent_workflow_step,
+    run_local_agent_workflow_until_blocked,
+)
 from structural_screening_agent.bv_review.basis import build_review_basis
 from structural_screening_agent.bv_review.calculation_engines import (
     FoundationEngineInput,
@@ -73,6 +77,8 @@ __all__ = [
     "ReportComposerAgentOutput",
     "ReviewPlanAgentOutput",
     "RiskNCRAgentOutput",
+    "run_local_agent_workflow_step",
+    "run_local_agent_workflow_until_blocked",
     "StructuralReviewAgentOutput",
     "SuperstructureEngineInput",
     "JsonProjectReviewStateRepository",

@@ -129,7 +129,8 @@ def test_review_plan_and_structural_review_outputs_update_state() -> None:
     assert with_plan.current_phase == "review_plan"
     assert with_plan.phase_statuses["review_plan"] == "waiting_for_engineer"
     assert with_path.review_paths[0].path_id == "PATH-FOUNDATION"
-    assert with_path.phase_statuses["review_plan"] == "waiting_for_engineer"
+    assert with_path.current_phase == "engineer_data_lock"
+    assert with_path.phase_statuses["engineer_data_lock"] == "waiting_for_engineer"
 
 
 def test_calculation_check_agent_output_only_resolves_existing_state_runs() -> None:
