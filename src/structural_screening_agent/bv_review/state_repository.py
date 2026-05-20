@@ -4,6 +4,10 @@ import json
 from pathlib import Path
 from re import fullmatch
 
+from structural_screening_agent.bv_review.field_diff import (
+    IncrementalRecheckPlan,
+    build_incremental_recheck_plan_from_closed_rfis,
+)
 from structural_screening_agent.bv_review.project_state import ProjectReviewState
 
 
@@ -30,6 +34,13 @@ class JsonProjectReviewStateRepository:
         if not path.exists():
             raise FileNotFoundError(f"No project review state found for {project_id!r}.")
         return ProjectReviewState.model_validate_json(path.read_text(encoding="utf-8"))
+
+    def load_closed_rfi_recheck_plan(self, project_id: str) -> IncrementalRecheckPlan:
+        state = self.load(project_id)
+        return build_incremental_recheck_plan_from_closed_rfis(
+            state.rfi_items,
+            calculation_runs=state.calculation_runs,
+        )
 
     def list_project_ids(self) -> list[str]:
         if not self.root.exists():

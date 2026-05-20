@@ -5,6 +5,7 @@ import pytest
 from structural_screening_agent.bv_review import BVReviewIntake, ProjectReviewState
 from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
+    CalculationRun,
     DocumentVersion,
     EngineerApproval,
     ExtractedField,
@@ -139,6 +140,46 @@ def test_json_state_repository_round_trips_incremental_recheck_rfi_state(tmp_pat
     assert loaded.rfi_items[0].status == "reopened"
     assert loaded.rfi_items[0].triggers_incremental_recheck is True
     assert loaded.rfi_items[0].reopen_review_items == ["calculation-recheck-pile_length_m"]
+
+
+def test_json_state_repository_loads_closed_rfi_recheck_plan_from_saved_state(tmp_path: Path) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    state = _sample_state().model_copy(
+        update={
+            "calculation_runs": [
+                CalculationRun(
+                    run_id="foundation-run-001",
+                    engine_name="foundation",
+                    engine_version="phase1-human-gate",
+                    input_field_ids=["pile_length_m"],
+                    input_locked=True,
+                    status="completed",
+                )
+            ],
+            "rfi_items": [
+                RFIItem(
+                    rfi_id="rfi-pile_length_m",
+                    question="Please confirm updated input for Pile Length M.",
+                    responsible_party="client",
+                    trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                    required_document_or_field="pile_length_m",
+                    status="closed",
+                    client_response="Confirmed Rev B pile length is 4.0 m.",
+                    reopen_review_items=["calculation-recheck-pile_length_m"],
+                    completed_recheck_items=["calculation-recheck-pile_length_m"],
+                    triggers_incremental_recheck=True,
+                )
+            ],
+        }
+    )
+
+    repository.save(state)
+    plan = repository.load_closed_rfi_recheck_plan("pv-ground-001")
+
+    assert [item.rfi_id for item in plan.rfi_items] == ["rfi-pile_length_m"]
+    assert plan.affected_items[0].item_id == "calculation-recheck-pile_length_m"
+    assert plan.affected_items[0].field_ids == ["pile_length_m"]
+    assert plan.affected_items[0].calculation_run_ids == ["foundation-run-001"]
 
 
 def test_json_state_repository_raises_for_missing_project(tmp_path: Path) -> None:
