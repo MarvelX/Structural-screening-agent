@@ -22,8 +22,15 @@ from structural_screening_agent.bv_review.ui_state import (
     BV_STANDARD_LABELS,
     build_extracted_fields_from_human_gate_rows,
     build_bv_review_intake,
+    build_field_diff_summary_rows,
     build_ground_fixed_human_gate_rows,
+    build_incremental_recheck_summary_rows,
+    localize_report_gate_reason,
     default_bv_review_intake,
+)
+from structural_screening_agent.bv_review.field_diff import (
+    build_incremental_recheck_plan,
+    diff_extracted_fields,
 )
 from structural_screening_agent.bv_review.human_gate import (
     build_calculation_gate_run,
@@ -31,7 +38,7 @@ from structural_screening_agent.bv_review.human_gate import (
     build_report_draft_gate_result,
 )
 from structural_screening_agent.bv_review.models import BVReportSection
-from structural_screening_agent.bv_review.project_state import ProjectReviewState
+from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.report import build_bv_markdown_report, build_bv_report_filename
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.core.persistence import ScreeningRepository
@@ -720,6 +727,112 @@ with bv_review_tab:
                 for error in calculation_gate_run.structured_errors:
                     st.write(f"- {error}")
 
+    st.markdown(f'#### {translate(ui_language, "version_diff_heading")}')
+    st.caption(translate(ui_language, "version_diff_caption"))
+    previous_human_gate_rows = build_ground_fixed_human_gate_rows(ui_language)
+    previous_human_gate_rows[1]["candidate_value"] = "3.5"
+    current_human_gate_rows = list(human_gate_records)
+    field_diffs = diff_extracted_fields(
+        build_extracted_fields_from_human_gate_rows(previous_human_gate_rows),
+        build_extracted_fields_from_human_gate_rows(current_human_gate_rows),
+        calculation_runs=[calculation_gate_run] if calculation_gate_run is not None else [],
+    )
+    incremental_recheck_plan = build_incremental_recheck_plan(field_diffs)
+    if field_diffs:
+        st.dataframe(
+            build_field_diff_summary_rows(field_diffs, ui_language),
+            hide_index=True,
+            use_container_width=True,
+        )
+    st.markdown(f'##### {translate(ui_language, "incremental_recheck_heading")}')
+    incremental_recheck_rows = build_incremental_recheck_summary_rows(incremental_recheck_plan, ui_language)
+    if incremental_recheck_rows:
+        st.dataframe(incremental_recheck_rows, hide_index=True, use_container_width=True)
+    else:
+        st.caption("当前没有增量复核项。" if ui_language == "zh" else "No incremental recheck items at this point.")
+    registered_incremental_rfis: list[RFIItem] = []
+    if incremental_recheck_plan.rfi_items:
+        rfi_source_by_id = {item.rfi_id: item for item in incremental_recheck_plan.rfi_items}
+        rfi_status_labels = (
+            {"open": "待回复", "responded": "已回复", "closed": "已关闭", "reopened": "已重开"}
+            if ui_language == "zh"
+            else {"open": "open", "responded": "responded", "closed": "closed", "reopened": "reopened"}
+        )
+        rfi_status_values = {
+            **{label: value for value, label in rfi_status_labels.items()},
+            "open": "open",
+            "responded": "responded",
+            "closed": "closed",
+            "reopened": "reopened",
+            "待回复": "open",
+            "已回复": "responded",
+            "已关闭": "closed",
+            "已重开": "reopened",
+        }
+        rfi_closeout_rows = st.data_editor(
+            [
+                {
+                    "rfi_id": item.rfi_id,
+                    "question": (
+                        f"请确认字段 {item.required_document_or_field} 的更新输入。"
+                        if ui_language == "zh"
+                        else item.question
+                    ),
+                    "status": rfi_status_labels[item.status],
+                    "client_response": item.client_response or "",
+                    "required_document_or_field": item.required_document_or_field,
+                }
+                for item in incremental_recheck_plan.rfi_items
+            ],
+            column_config={
+                "rfi_id": st.column_config.TextColumn("RFI ID"),
+                "question": st.column_config.TextColumn("问题" if ui_language == "zh" else "Question"),
+                "status": st.column_config.SelectboxColumn(
+                    "状态" if ui_language == "zh" else "Status",
+                    options=list(rfi_status_labels.values()),
+                ),
+                "client_response": st.column_config.TextColumn(
+                    "客户回复" if ui_language == "zh" else "Client Response"
+                ),
+                "required_document_or_field": st.column_config.TextColumn(
+                    "所需资料 / 字段" if ui_language == "zh" else "Required Document / Field"
+                ),
+            },
+            disabled=["rfi_id", "question", "required_document_or_field"],
+            hide_index=True,
+            num_rows="fixed",
+            use_container_width=True,
+            key=f"bv_incremental_rfi_closeout_rows_{ui_language}",
+        )
+        rfi_closeout_records = (
+            rfi_closeout_rows.to_dict("records")
+            if hasattr(rfi_closeout_rows, "to_dict")
+            else list(rfi_closeout_rows)
+        )
+        for row in rfi_closeout_records:
+            source_rfi = rfi_source_by_id[str(row["rfi_id"])]
+            try:
+                registered_incremental_rfis.append(
+                    RFIItem(
+                        rfi_id=source_rfi.rfi_id,
+                        question=source_rfi.question,
+                        responsible_party=source_rfi.responsible_party,
+                        trigger_basis=source_rfi.trigger_basis,
+                        required_document_or_field=source_rfi.required_document_or_field,
+                        status=rfi_status_values[str(row["status"])],
+                        client_response=str(row.get("client_response") or "") or None,
+                        reopen_review_items=source_rfi.reopen_review_items,
+                        triggers_incremental_recheck=source_rfi.triggers_incremental_recheck,
+                    )
+                )
+            except ValidationError as exc:
+                registered_incremental_rfis.append(source_rfi)
+                st.warning(
+                    "将 RFI 标记为已回复或已关闭前必须填写客户回复。"
+                    if ui_language == "zh"
+                    else str(exc)
+                )
+
     if not bv_standards:
         st.warning(translate(ui_language, "bv_review_warning_standards"))
     elif not bv_review_objects:
@@ -758,6 +871,7 @@ with bv_review_tab:
             extracted_fields=human_gate_fields,
             approvals=phase1_approvals,
             calculation_runs=phase1_calculation_runs,
+            rfi_items=registered_incremental_rfis,
             risks=bv_result.risks,
         )
         report_draft_gate = build_report_draft_gate_result(phase1_state, bv_result)
@@ -797,7 +911,7 @@ with bv_review_tab:
         else:
             st.warning(translate(ui_language, "report_draft_gate_blocked"))
             for reason in report_draft_gate.reasons[:5]:
-                st.write(f"- {reason}")
+                st.write(f"- {localize_report_gate_reason(reason, ui_language)}")
         for note in report_draft_gate.notes:
             st.caption(note)
 

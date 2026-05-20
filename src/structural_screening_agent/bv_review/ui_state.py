@@ -1,4 +1,5 @@
 from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.field_diff import FieldDiff, IncrementalRecheckPlan
 from structural_screening_agent.bv_review.project_state import ExtractedField
 from structural_screening_agent.localization import Language
 
@@ -199,3 +200,125 @@ def build_extracted_fields_from_human_gate_rows(rows: list[dict[str, object]]) -
         )
         for row in rows
     ]
+
+
+def build_incremental_recheck_summary_rows(
+    plan: IncrementalRecheckPlan, language: Language
+) -> list[dict[str, object]]:
+    if language == "zh":
+        item_type_labels = {
+            "field_confirmation": "字段确认",
+            "calculation_recheck": "计算复核",
+            "risk_reopen": "风险重开",
+            "rfi": "RFI",
+        }
+        field_labels = {
+            "item_id": "复核项 ID",
+            "item_type_label": "类型",
+            "reason": "原因",
+            "field_ids": "字段 ID",
+            "calculation_run_ids": "计算运行 ID",
+            "risk_ids": "风险 ID",
+        }
+    else:
+        item_type_labels = {
+            "field_confirmation": "Field Confirmation",
+            "calculation_recheck": "Calculation Recheck",
+            "risk_reopen": "Risk Reopen",
+            "rfi": "RFI",
+        }
+        field_labels = {
+            "item_id": "Item ID",
+            "item_type_label": "Type",
+            "reason": "Reason",
+            "field_ids": "Field IDs",
+            "calculation_run_ids": "Calculation Run IDs",
+            "risk_ids": "Risk IDs",
+        }
+
+    return [
+        {
+            field_labels["item_id"]: item.item_id,
+            field_labels["item_type_label"]: item_type_labels[item.item_type],
+            field_labels["reason"]: _localized_recheck_reason(item, language),
+            field_labels["field_ids"]: ", ".join(item.field_ids),
+            field_labels["calculation_run_ids"]: ", ".join(item.calculation_run_ids),
+            field_labels["risk_ids"]: ", ".join(item.risk_ids),
+        }
+        for item in plan.affected_items
+    ]
+
+
+def build_field_diff_summary_rows(
+    diffs: list[FieldDiff], language: Language
+) -> list[dict[str, object]]:
+    if language == "zh":
+        labels = {
+            "field_id": "字段 ID",
+            "diff_type": "差分类型",
+            "old_value": "原值",
+            "new_value": "新值",
+            "affects_calculation": "影响已锁定计算",
+            "reopen_risk": "重开风险",
+        }
+        diff_type_labels = {
+            "added": "新增",
+            "modified": "修改",
+            "removed": "删除",
+            "source_changed": "来源变化",
+        }
+    else:
+        labels = {
+            "field_id": "Field ID",
+            "diff_type": "Diff Type",
+            "old_value": "Old Value",
+            "new_value": "New Value",
+            "affects_calculation": "Affects Locked Calculation",
+            "reopen_risk": "Reopen Risk",
+        }
+        diff_type_labels = {
+            "added": "Added",
+            "modified": "Modified",
+            "removed": "Removed",
+            "source_changed": "Source Changed",
+        }
+
+    return [
+        {
+            labels["field_id"]: diff.field_id,
+            labels["diff_type"]: diff_type_labels[diff.diff_type],
+            labels["old_value"]: diff.old_value,
+            labels["new_value"]: diff.new_value,
+            labels["affects_calculation"]: _localized_bool(
+                diff.affects_confirmed_calculation, language
+            ),
+            labels["reopen_risk"]: _localized_bool(diff.should_reopen_risk_items, language),
+        }
+        for diff in diffs
+    ]
+
+
+def localize_report_gate_reason(reason: str, language: Language) -> str:
+    incremental_prefix = "Open RFI items trigger incremental recheck: "
+    if language == "zh" and reason.startswith(incremental_prefix):
+        return "未关闭的 RFI 触发增量复核：" + reason.removeprefix(incremental_prefix)
+    return reason
+
+
+def _localized_recheck_reason(item, language: Language) -> str:
+    field_ids = ", ".join(item.field_ids)
+    if language == "zh":
+        if item.item_type == "calculation_recheck":
+            return f"{field_ids} 已变化，需要重新复核已锁定计算输入。"
+        if item.item_type == "risk_reopen":
+            return f"{field_ids} 已变化，需要重开关联风险项。"
+        if item.item_type == "field_confirmation":
+            return f"{field_ids} 需要工程师重新确认。"
+        return item.reason
+    return item.reason
+
+
+def _localized_bool(value: bool, language: Language) -> str:
+    if language == "zh":
+        return "是" if value else "否"
+    return "Yes" if value else "No"

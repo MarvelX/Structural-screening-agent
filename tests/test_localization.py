@@ -39,6 +39,7 @@ def test_translate_returns_default_chinese_labels() -> None:
     assert translate("zh", "human_gate_heading") == "工程师数据确认门禁"
     assert translate("en", "calculation_gate_ready").startswith("Calculation gate ready")
     assert translate("zh", "report_draft_gate_heading") == "报告草稿输入门禁"
+    assert translate("zh", "version_diff_heading") == "版本差分与 RFI 闭环"
 
 
 def test_format_bilingual_item_respects_selected_language() -> None:

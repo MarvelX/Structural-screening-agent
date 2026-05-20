@@ -89,6 +89,44 @@ def test_json_state_repository_round_trips_project_review_state(tmp_path: Path) 
     assert repository.list_project_ids() == ["pv-ground-001"]
 
 
+def test_json_state_repository_round_trips_incremental_recheck_rfi_state(tmp_path: Path) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    state = _sample_state().model_copy(
+        update={
+            "document_versions": [
+                DocumentVersion(
+                    document_id="foundation-drawing-f201-rev-b",
+                    document_type="structural_drawings",
+                    revision="B",
+                    source_name="F-201 Foundation Schedule Rev B.pdf",
+                    status="available",
+                    supersedes="foundation-drawing-f201-rev-a",
+                )
+            ],
+            "rfi_items": [
+                RFIItem(
+                    rfi_id="rfi-pile_length_m",
+                    question="Please confirm updated input for Pile Length M.",
+                    responsible_party="client",
+                    trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                    required_document_or_field="pile_length_m",
+                    status="reopened",
+                    reopen_review_items=["calculation-recheck-pile_length_m"],
+                    triggers_incremental_recheck=True,
+                )
+            ],
+        }
+    )
+
+    repository.save(state)
+    loaded = repository.load("pv-ground-001")
+
+    assert loaded.document_versions[0].supersedes == "foundation-drawing-f201-rev-a"
+    assert loaded.rfi_items[0].status == "reopened"
+    assert loaded.rfi_items[0].triggers_incremental_recheck is True
+    assert loaded.rfi_items[0].reopen_review_items == ["calculation-recheck-pile_length_m"]
+
+
 def test_json_state_repository_raises_for_missing_project(tmp_path: Path) -> None:
     repository = JsonProjectReviewStateRepository(tmp_path)
 

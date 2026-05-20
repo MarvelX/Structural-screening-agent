@@ -58,6 +58,12 @@ class DocumentVersion(BaseModel):
     supersedes: Optional[str] = None
     notes: Optional[str] = None
 
+    @model_validator(mode="after")
+    def reject_self_supersession(self) -> "DocumentVersion":
+        if self.supersedes == self.document_id:
+            raise ValueError("DocumentVersion.supersedes cannot reference the same document_id.")
+        return self
+
 
 class ExtractedField(BaseModel):
     field_id: str = Field(min_length=1)
@@ -152,8 +158,14 @@ class RFIItem(BaseModel):
 
     @model_validator(mode="after")
     def require_response_before_close(self) -> "RFIItem":
-        if self.status == "closed" and not self.client_response:
-            raise ValueError("Closed RFI items require a client response.")
+        if self.status in {"responded", "closed"} and not self.client_response:
+            raise ValueError("Responded or closed RFI items require a client response.")
+        if (
+            self.status in {"open", "reopened"}
+            and self.triggers_incremental_recheck
+            and not self.reopen_review_items
+        ):
+            raise ValueError("Incremental recheck RFI items require review items.")
         return self
 
 

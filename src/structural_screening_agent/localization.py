@@ -133,6 +133,12 @@ TRANSLATIONS: Dict[str, Dict[Language, str]] = {
         "zh": "报告草稿输入阻塞：请先关闭下列资料、风险或计算接口门禁问题。",
         "en": "Report draft input blocked: close the following document, risk, or calculation-gate issues first.",
     },
+    "version_diff_heading": {"zh": "版本差分与 RFI 闭环", "en": "Version Diff and RFI Closeout"},
+    "version_diff_caption": {
+        "zh": "示例展示字段级差分如何触发增量复核和 RFI，不执行 OCR、CAD 审图或自动计算。",
+        "en": "Demonstrates how field-level diff triggers incremental recheck and RFI without OCR, CAD review, or automatic calculation.",
+    },
+    "incremental_recheck_heading": {"zh": "增量复核项", "en": "Incremental Recheck Items"},
     "bv_review_warning_standards": {"zh": "请至少选择一个标准体系。", "en": "Select at least one standards system."},
     "bv_review_warning_objects": {"zh": "请至少选择一个审核对象。", "en": "Select at least one review object."},
     "photo_assist_entry": {"zh": "拍照辅助识别入口", "en": "Photo Assist Entry"},

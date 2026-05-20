@@ -53,6 +53,10 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'translate(ui_language, "human_gate_heading")' in source
     assert 'translate(ui_language, "data_lock_button")' in source
     assert 'translate(ui_language, "report_draft_gate_heading")' in source
+    assert 'translate(ui_language, "version_diff_heading")' in source
+    assert "diff_extracted_fields" in source
+    assert "build_incremental_recheck_plan" in source
+    assert "build_incremental_recheck_summary_rows" in source
     assert 'translate(ui_language, "bv_review_warning_standards")' in source
     assert 'translate(ui_language, "bv_review_warning_objects")' in source
     assert "view.traceability_cards" in source
@@ -108,6 +112,9 @@ def test_public_demo_translation_keys_exist_for_both_languages() -> None:
         "report_draft_gate_heading",
         "report_draft_gate_ready",
         "report_draft_gate_blocked",
+        "version_diff_heading",
+        "version_diff_caption",
+        "incremental_recheck_heading",
         "bv_review_warning_standards",
         "bv_review_warning_objects",
         "pv_3d_studio_tab",

@@ -4,6 +4,7 @@ from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
     EngineerApproval,
     ProjectReviewState,
+    RFIItem,
 )
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
@@ -127,3 +128,82 @@ def test_report_draft_gate_allows_traceable_ready_inputs_without_blockers() -> N
     assert gate.reasons == []
     assert gate.calculation_run_ids == ["run-001"]
     assert any("not completed" in note.lower() for note in gate.notes)
+
+
+def test_report_draft_gate_blocks_when_open_incremental_recheck_rfi_exists() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = _sample_state(intake).model_copy(
+        update={
+            "rfi_items": [
+                RFIItem(
+                    rfi_id="rfi-pile_length_m",
+                    question="Please confirm updated input for Pile Length M.",
+                    responsible_party="client",
+                    trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                    required_document_or_field="pile_length_m",
+                    status="reopened",
+                    reopen_review_items=["calculation-recheck-pile_length_m"],
+                    triggers_incremental_recheck=True,
+                )
+            ]
+        }
+    )
+
+    gate = build_report_draft_gate_result(state, result)
+
+    assert gate.status == "blocked"
+    assert any("incremental recheck" in reason.lower() for reason in gate.reasons)
+
+
+def test_report_draft_gate_allows_closed_incremental_recheck_rfi() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = _sample_state(intake).model_copy(
+        update={
+            "rfi_items": [
+                RFIItem(
+                    rfi_id="rfi-pile_length_m",
+                    question="Please confirm updated input for Pile Length M.",
+                    responsible_party="client",
+                    trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                    required_document_or_field="pile_length_m",
+                    status="closed",
+                    client_response="Confirmed Rev B pile length is 4.0 m.",
+                    reopen_review_items=["calculation-recheck-pile_length_m"],
+                    triggers_incremental_recheck=True,
+                )
+            ]
+        }
+    )
+
+    gate = build_report_draft_gate_result(state, result)
+
+    assert gate.status == "ready"
+
+
+def test_report_draft_gate_blocks_responded_incremental_recheck_rfi_before_closeout() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = _sample_state(intake).model_copy(
+        update={
+            "rfi_items": [
+                RFIItem(
+                    rfi_id="rfi-pile_length_m",
+                    question="Please confirm updated input for Pile Length M.",
+                    responsible_party="client",
+                    trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                    required_document_or_field="pile_length_m",
+                    status="responded",
+                    client_response="Client response received; engineer closeout still pending.",
+                    reopen_review_items=["calculation-recheck-pile_length_m"],
+                    triggers_incremental_recheck=True,
+                )
+            ]
+        }
+    )
+
+    gate = build_report_draft_gate_result(state, result)
+
+    assert gate.status == "blocked"
+    assert any("incremental recheck" in reason.lower() for reason in gate.reasons)

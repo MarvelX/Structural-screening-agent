@@ -101,6 +101,17 @@ def build_report_draft_gate_result(
             + ", ".join(blocking_risk_ids)
         )
 
+    incremental_rfi_ids = [
+        item.rfi_id
+        for item in state.rfi_items
+        if item.triggers_incremental_recheck and item.status != "closed"
+    ]
+    if incremental_rfi_ids:
+        reasons.append(
+            "Open RFI items trigger incremental recheck: "
+            + ", ".join(incremental_rfi_ids)
+        )
+
     executable_runs = [
         run
         for run in state.calculation_runs

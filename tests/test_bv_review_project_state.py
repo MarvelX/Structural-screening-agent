@@ -4,12 +4,15 @@ from pydantic import ValidationError
 from structural_screening_agent.bv_review import (
     BVReviewIntake,
     ExtractedField,
+    FieldDiff,
     ProjectReviewState,
     advance_project_phase,
+    diff_extracted_fields,
     evaluate_bv_review,
 )
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
+    DocumentVersion,
     EngineerApproval,
     PVStructuralSpec,
     REVIEW_PHASES,
@@ -123,7 +126,7 @@ def test_calculation_run_ready_or_completed_requires_locked_inputs() -> None:
     assert blocked.structured_errors
 
 
-def test_rfi_closed_requires_client_response_and_reopened_can_trigger_recheck() -> None:
+def test_rfi_responded_or_closed_requires_client_response_and_reopened_can_trigger_recheck() -> None:
     with pytest.raises(ValidationError):
         RFIItem(
             rfi_id="rfi-001",
@@ -132,6 +135,16 @@ def test_rfi_closed_requires_client_response_and_reopened_can_trigger_recheck() 
             trigger_basis="Missing foundation input",
             required_document_or_field="pile_length_m",
             status="closed",
+        )
+
+    with pytest.raises(ValidationError):
+        RFIItem(
+            rfi_id="rfi-001a",
+            question="Please confirm pile length.",
+            responsible_party="client",
+            trigger_basis="Missing foundation input",
+            required_document_or_field="pile_length_m",
+            status="responded",
         )
 
     reopened = RFIItem(
@@ -145,6 +158,42 @@ def test_rfi_closed_requires_client_response_and_reopened_can_trigger_recheck() 
         triggers_incremental_recheck=True,
     )
     assert reopened.triggers_incremental_recheck is True
+
+
+def test_rfi_open_or_reopened_incremental_recheck_requires_reopen_review_items() -> None:
+    with pytest.raises(ValidationError):
+        RFIItem(
+            rfi_id="rfi-003",
+            question="Please confirm updated pile length.",
+            responsible_party="client",
+            trigger_basis="Pile length changed in revised foundation drawing.",
+            required_document_or_field="pile_length_m",
+            status="open",
+            triggers_incremental_recheck=True,
+        )
+
+    with pytest.raises(ValidationError):
+        RFIItem(
+            rfi_id="rfi-004",
+            question="Please confirm updated pile length.",
+            responsible_party="client",
+            trigger_basis="Pile length changed in revised foundation drawing.",
+            required_document_or_field="pile_length_m",
+            status="reopened",
+            triggers_incremental_recheck=True,
+        )
+
+
+def test_document_version_supersedes_cannot_reference_itself() -> None:
+    with pytest.raises(ValidationError):
+        DocumentVersion(
+            document_id="foundation-drawing-f201",
+            document_type="structural_drawings",
+            revision="B",
+            source_name="F-201 Foundation Schedule Rev B.pdf",
+            status="available",
+            supersedes="foundation-drawing-f201",
+        )
 
 
 def test_project_review_state_returns_locked_calculation_fields_and_gate_status() -> None:
@@ -196,3 +245,5 @@ def test_bv_review_package_exports_existing_and_phase1_state_objects() -> None:
     assert ProjectReviewState is not None
     assert ExtractedField is not None
     assert advance_project_phase is not None
+    assert FieldDiff is not None
+    assert diff_extracted_fields is not None
