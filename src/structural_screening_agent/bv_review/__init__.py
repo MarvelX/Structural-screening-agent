@@ -55,6 +55,11 @@ from structural_screening_agent.bv_review.project_state import (
     RFIItem,
     ReportRevision,
 )
+from structural_screening_agent.bv_review.project_management import (
+    ProjectManagementAction,
+    build_project_management_action_rows,
+    build_project_management_actions,
+)
 from structural_screening_agent.bv_review.report import build_bv_open_rfi_items
 from structural_screening_agent.bv_review.service_scope import (
     ServiceScopeRecommendation,
@@ -89,6 +94,7 @@ __all__ = [
     "FoundationEngineInput",
     "IncrementalRecheckPlan",
     "ProjectReviewState",
+    "ProjectManagementAction",
     "PVStructuralSpec",
     "PersistedWorkflowRunResult",
     "PersistedWorkflowRunSummary",
@@ -113,6 +119,8 @@ __all__ = [
     "build_bv_open_rfi_items",
     "build_incremental_recheck_plan",
     "build_incremental_recheck_plan_from_closed_rfis",
+    "build_project_management_action_rows",
+    "build_project_management_actions",
     "build_review_basis",
     "build_service_scope_display_rows",
     "build_service_scope_recommendations",

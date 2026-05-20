@@ -66,6 +66,10 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     store_persisted_workflow_result,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
+from structural_screening_agent.bv_review.project_management import (
+    build_project_management_action_rows,
+    build_project_management_actions,
+)
 from structural_screening_agent.bv_review.report import (
     build_bv_markdown_report,
     build_bv_report_filename,
@@ -1182,6 +1186,30 @@ with bv_review_tab:
             if ui_language == "en"
             else "本地确定性 runner 会在工程师数据锁定阶段等待计算门禁批准。"
         )
+        project_management_actions = build_project_management_actions(
+            reviewed_workflow_state
+        )
+        project_management_heading = (
+            "Project Management Action Dashboard"
+            if ui_language == "en"
+            else "项目管理行动看板"
+        )
+        st.markdown(f"##### {project_management_heading}")
+        if project_management_actions:
+            st.dataframe(
+                build_project_management_action_rows(
+                    project_management_actions,
+                    ui_language,
+                ),
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No project management actions are currently open."
+                if ui_language == "en"
+                else "当前没有待处理的项目管理行动。"
+            )
         st.markdown("##### Engineer Review Queue" if ui_language == "en" else "工程师复核队列")
         engineer_review_queue_rows = build_agent_engineer_review_queue_rows(
             reviewed_workflow_state,
