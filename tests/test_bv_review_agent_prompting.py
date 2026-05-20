@@ -7,6 +7,8 @@ from structural_screening_agent.bv_review import (
     ProjectReviewState,
 )
 from structural_screening_agent.bv_review.agent_prompting import (
+    build_agent_provider_invocation_request,
+    build_agent_provider_invocation_rows,
     build_agent_prompt_package,
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
@@ -63,6 +65,65 @@ def test_agent_prompt_package_rows_are_localized_for_workbench_preview() -> None
     assert en_rows[0]["Agent"] == "Document Intake Agent"
     assert en_rows[0]["Output Model"] == "DocumentIntakeAgentOutput"
     assert en_rows[0]["Boundary"] == "JSON output / engineer review / no signing authority"
+
+
+def test_agent_provider_invocation_request_is_minimax_compatible_without_secrets() -> None:
+    state = ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake())
+    package = build_agent_prompt_package("document_intake", state)
+
+    request = build_agent_provider_invocation_request(
+        package,
+        provider_name="minimax",
+        model_name="MiniMax-M2.5",
+    )
+
+    assert request.agent_role == "document_intake"
+    assert request.provider_name == "minimax"
+    assert request.model_name == "MiniMax-M2.5"
+    assert request.mode == "preview"
+    assert request.messages == [
+        {"role": "system", "content": package.system_prompt},
+        {"role": "user", "content": package.user_prompt},
+    ]
+    assert request.response_format["type"] == "json_schema"
+    assert request.response_format["json_schema"]["name"] == "DocumentIntakeAgentOutput"
+    assert request.response_format["json_schema"]["strict"] is True
+    assert request.response_format["json_schema"]["schema"] == package.output_schema
+    assert request.temperature == 0.0
+    assert request.output_schema["title"] == "DocumentIntakeAgentOutput"
+    assert request.boundary_statement == (
+        "Invocation preview only; no network request is sent and no API key is stored."
+    )
+    request_payload = request.model_dump()
+    assert "api_key" not in request_payload
+    assert "MINIMAX_API_KEY" not in str(request_payload)
+    assert "OPENAI_API_KEY" not in str(request_payload)
+    assert "Authorization" not in str(request_payload)
+    assert "test-key" not in str(request_payload)
+
+
+def test_agent_provider_invocation_rows_are_localized_for_workbench() -> None:
+    package = build_agent_prompt_package(
+        "report_composer",
+        ProjectReviewState(project_id="pv-prompt-001", intake=_sample_intake()),
+    )
+    request = build_agent_provider_invocation_request(
+        package,
+        provider_name="mock",
+        model_name="demo-mock",
+    )
+
+    zh_rows = build_agent_provider_invocation_rows(request, "zh")
+    en_rows = build_agent_provider_invocation_rows(request, "en")
+
+    assert {"项目": "供应商", "内容": "mock"} in zh_rows
+    assert {"项目": "响应格式", "内容": "json_schema"} in zh_rows
+    assert {"项目": "Schema 严格模式", "内容": "是"} in zh_rows
+    assert {"项目": "网络调用", "内容": "否"} in zh_rows
+    assert {"Item": "Provider", "Value": "mock"} in en_rows
+    assert {"Item": "Response Format", "Value": "json_schema"} in en_rows
+    assert {"Item": "Schema Strict", "Value": "Yes"} in en_rows
+    assert {"Item": "Network Request", "Value": "No"} in en_rows
 
 
 def test_calculation_check_prompt_references_existing_runs_without_authoring_calculations() -> None:

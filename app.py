@@ -71,10 +71,13 @@ from structural_screening_agent.bv_review.project_management import (
     build_project_management_actions,
 )
 from structural_screening_agent.bv_review.agent_prompting import (
+    build_agent_provider_invocation_request,
+    build_agent_provider_invocation_rows,
     build_agent_prompt_package_rows,
     build_agent_prompt_packages,
     build_agent_response_impact_rows,
     build_sample_agent_response_json,
+    default_agent_provider_model,
     preview_agent_response_impact,
     validate_agent_json_response,
 )
@@ -1227,6 +1230,43 @@ with bv_review_tab:
         ):
             st.code(selected_agent_prompt_package.system_prompt)
             st.code(selected_agent_prompt_package.user_prompt)
+        provider_col, model_col = st.columns(2)
+        with provider_col:
+            agent_provider_name = st.selectbox(
+                "Agent Provider" if ui_language == "en" else "Agent 供应商",
+                ["minimax", "openai", "mock"],
+                key="bv_agent_invocation_provider",
+            )
+        with model_col:
+            agent_model_name = st.text_input(
+                "Agent Model" if ui_language == "en" else "Agent 模型",
+                value=default_agent_provider_model(agent_provider_name),
+                key=f"bv_agent_invocation_model_{agent_provider_name}",
+            )
+        agent_invocation_request = build_agent_provider_invocation_request(
+            selected_agent_prompt_package,
+            provider_name=agent_provider_name,
+            model_name=agent_model_name,
+        )
+        agent_invocation_heading = (
+            "Agent Provider Invocation Preview"
+            if ui_language == "en"
+            else "Agent 供应商调用预览"
+        )
+        st.markdown(f"##### {agent_invocation_heading}")
+        st.dataframe(
+            build_agent_provider_invocation_rows(
+                agent_invocation_request,
+                ui_language,
+            ),
+            hide_index=True,
+            use_container_width=True,
+        )
+        st.caption(
+            "Invocation preview only; no network request is sent and no API key is stored."
+            if ui_language == "en"
+            else "仅调用预览；不发送网络请求，也不保存密钥。"
+        )
         with st.expander(
             "JSON Schema Preview" if ui_language == "en" else "JSON Schema 预览",
             expanded=False,

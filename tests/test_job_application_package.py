@@ -184,8 +184,17 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"项目管理行动看板"' in app_source
     assert "build_agent_prompt_packages" in app_source
     assert "build_agent_prompt_package_rows" in app_source
+    assert "build_agent_provider_invocation_request" in app_source
+    assert "build_agent_provider_invocation_rows" in app_source
     assert '"Agent Contract Prompt Preview"' in app_source
     assert '"Agent 契约提示词预览"' in app_source
+    assert '"Agent Provider Invocation Preview"' in app_source
+    assert '"Agent 供应商调用预览"' in app_source
+    assert "Invocation preview only; no network request is sent" in app_source
+    assert "resolve_provider" not in app_source[
+        app_source.index('"Agent Contract Prompt Preview"') :
+        app_source.index('"Agent JSON Response Validation Sandbox"')
+    ]
     assert '"JSON Schema Preview"' in app_source
     assert '"JSON Schema 预览"' in app_source
     assert "validate_agent_json_response" in app_source

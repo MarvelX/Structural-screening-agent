@@ -25,6 +25,12 @@ from structural_screening_agent.bv_review.project_state import (
 )
 
 
+AGENT_PROVIDER_DEFAULT_MODELS = {
+    "minimax": "MiniMax-M2.5",
+    "openai": "gpt-4.1-mini",
+    "mock": "demo-mock",
+}
+
 AgentOutputModel: TypeAlias = (
     type[DocumentIntakeAgentOutput]
     | type[BasisCodeAgentOutput]
@@ -78,6 +84,21 @@ class AgentResponseImpactPreview(BaseModel):
     )
 
 
+class AgentProviderInvocationRequest(BaseModel):
+    agent_role: AgentRole
+    provider_name: str = Field(min_length=1)
+    model_name: str = Field(min_length=1)
+    mode: Literal["preview"] = "preview"
+    messages: list[dict[str, str]] = Field(min_length=2)
+    response_format: dict[str, object] = Field(default_factory=dict)
+    temperature: float = 0.0
+    output_schema: dict[str, object] = Field(default_factory=dict)
+    network_request_sent: bool = False
+    boundary_statement: str = (
+        "Invocation preview only; no network request is sent and no API key is stored."
+    )
+
+
 def build_agent_prompt_package(
     agent_role: AgentRole,
     state: ProjectReviewState,
@@ -120,6 +141,75 @@ def build_agent_prompt_package_rows(
             "Boundary": "JSON output / engineer review / no signing authority",
         }
         for package in packages
+    ]
+
+
+def build_agent_provider_invocation_request(
+    package: AgentPromptPackage,
+    *,
+    provider_name: str = "minimax",
+    model_name: str | None = None,
+) -> AgentProviderInvocationRequest:
+    return AgentProviderInvocationRequest(
+        agent_role=package.agent_role,
+        provider_name=provider_name,
+        model_name=model_name or default_agent_provider_model(provider_name),
+        messages=[
+            {"role": "system", "content": package.system_prompt},
+            {"role": "user", "content": package.user_prompt},
+        ],
+        response_format={
+            "type": "json_schema",
+            "json_schema": {
+                "name": package.output_model_name,
+                "strict": True,
+                "schema": package.output_schema,
+            },
+        },
+        output_schema=package.output_schema,
+    )
+
+
+def default_agent_provider_model(provider_name: str) -> str:
+    return AGENT_PROVIDER_DEFAULT_MODELS.get(
+        provider_name,
+        AGENT_PROVIDER_DEFAULT_MODELS["minimax"],
+    )
+
+
+def build_agent_provider_invocation_rows(
+    request: AgentProviderInvocationRequest,
+    language: AgentPromptLanguage,
+) -> list[dict[str, object]]:
+    response_format = request.response_format.get("type", "")
+    json_schema = request.response_format.get("json_schema", {})
+    schema_is_strict = bool(
+        isinstance(json_schema, dict) and json_schema.get("strict") is True
+    )
+    if language == "zh":
+        return [
+            {"项目": "Agent", "内容": _agent_label(request.agent_role, "zh")},
+            {"项目": "供应商", "内容": request.provider_name},
+            {"项目": "模型", "内容": request.model_name},
+            {"项目": "模式", "内容": request.mode},
+            {"项目": "消息数", "内容": len(request.messages)},
+            {"项目": "响应格式", "内容": response_format},
+            {"项目": "Schema 严格模式", "内容": "是" if schema_is_strict else "否"},
+            {"项目": "温度", "内容": request.temperature},
+            {"项目": "网络调用", "内容": "是" if request.network_request_sent else "否"},
+            {"项目": "边界", "内容": "仅调用预览；不发送网络请求，也不保存密钥。"},
+        ]
+    return [
+        {"Item": "Agent", "Value": _agent_label(request.agent_role, "en")},
+        {"Item": "Provider", "Value": request.provider_name},
+        {"Item": "Model", "Value": request.model_name},
+        {"Item": "Mode", "Value": request.mode},
+        {"Item": "Message Count", "Value": len(request.messages)},
+        {"Item": "Response Format", "Value": response_format},
+        {"Item": "Schema Strict", "Value": "Yes" if schema_is_strict else "No"},
+        {"Item": "Temperature", "Value": request.temperature},
+        {"Item": "Network Request", "Value": "Yes" if request.network_request_sent else "No"},
+        {"Item": "Boundary", "Value": request.boundary_statement},
     ]
 
 
