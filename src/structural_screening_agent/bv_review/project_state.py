@@ -5,8 +5,12 @@ from typing import Dict, List, Literal, Optional
 from pydantic import BaseModel, Field, model_validator
 
 from structural_screening_agent.bv_review.models import (
+    BVBasisReference,
+    BVReportSection,
+    BVReviewPathItem,
     BVDocumentStatus,
     BVReviewIntake,
+    BVReviewPlanItem,
     BVRiskItem,
 )
 
@@ -183,10 +187,14 @@ class ProjectReviewState(BaseModel):
     document_versions: List[DocumentVersion] = Field(default_factory=list)
     extracted_fields: List[ExtractedField] = Field(default_factory=list)
     structural_spec: PVStructuralSpec = Field(default_factory=PVStructuralSpec)
+    basis_references: List[BVBasisReference] = Field(default_factory=list)
+    review_plan: List[BVReviewPlanItem] = Field(default_factory=list)
+    review_paths: List[BVReviewPathItem] = Field(default_factory=list)
     approvals: List[EngineerApproval] = Field(default_factory=list)
     calculation_runs: List[CalculationRun] = Field(default_factory=list)
     rfi_items: List[RFIItem] = Field(default_factory=list)
     risks: List[BVRiskItem] = Field(default_factory=list)
+    report_sections: List[BVReportSection] = Field(default_factory=list)
 
     def locked_calculation_fields(self) -> list[ExtractedField]:
         return [

@@ -11,6 +11,10 @@ from structural_screening_agent.bv_review.agent_contracts import (
     resolve_calculation_check_output_against_state,
     validate_calculation_check_output_against_state,
 )
+from structural_screening_agent.bv_review.agent_workflow import (
+    AgentWorkflowOutput,
+    apply_agent_output_to_state,
+)
 from structural_screening_agent.bv_review.basis import build_review_basis
 from structural_screening_agent.bv_review.calculation_engines import (
     FoundationEngineInput,
@@ -51,6 +55,7 @@ __all__ = [
     "AGENT_CONTRACT_SCHEMA_VERSION",
     "AGENT_ROLE_SEQUENCE",
     "AffectedReviewItem",
+    "AgentWorkflowOutput",
     "BasisCodeAgentOutput",
     "CalculationRun",
     "CalculationCheckAgentOutput",
@@ -72,6 +77,7 @@ __all__ = [
     "SuperstructureEngineInput",
     "JsonProjectReviewStateRepository",
     "advance_project_phase",
+    "apply_agent_output_to_state",
     "build_foundation_calculation_run",
     "build_foundation_calculation_run_from_fields",
     "build_incremental_recheck_plan",
