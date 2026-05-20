@@ -288,6 +288,7 @@ def test_report_draft_gate_allows_closed_incremental_recheck_rfi() -> None:
                     status="closed",
                     client_response="Confirmed Rev B pile length is 4.0 m.",
                     reopen_review_items=["calculation-recheck-pile_length_m"],
+                    completed_recheck_items=["calculation-recheck-pile_length_m"],
                     triggers_incremental_recheck=True,
                 )
             ]
@@ -298,6 +299,60 @@ def test_report_draft_gate_allows_closed_incremental_recheck_rfi() -> None:
 
     assert gate.status == "ready"
     assert gate.incremental_recheck_rfi_ids == []
+
+
+def test_report_draft_gate_blocks_closed_incremental_rfi_without_completed_recheck_items() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = _sample_state(intake).model_copy(
+        update={
+            "rfi_items": [
+                RFIItem(
+                    rfi_id="rfi-pile_length_m",
+                    question="Please confirm updated input for Pile Length M.",
+                    responsible_party="client",
+                    trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                    required_document_or_field="pile_length_m",
+                    status="closed",
+                    client_response="Confirmed Rev B pile length is 4.0 m.",
+                    reopen_review_items=["calculation-recheck-pile_length_m"],
+                    triggers_incremental_recheck=True,
+                )
+            ]
+        }
+    )
+
+    gate = build_report_draft_gate_result(state, result)
+
+    assert gate.status == "blocked"
+    assert gate.incremental_recheck_rfi_ids == ["rfi-pile_length_m"]
+    assert any("incremental recheck" in reason.lower() for reason in gate.reasons)
+
+
+def test_report_draft_gate_blocks_closed_incremental_rfi_without_recheck_scope() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = _sample_state(intake).model_copy(
+        update={
+            "rfi_items": [
+                RFIItem(
+                    rfi_id="rfi-empty-closeout",
+                    question="Please confirm updated input for Pile Length M.",
+                    responsible_party="client",
+                    trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                    required_document_or_field="pile_length_m",
+                    status="closed",
+                    client_response="Confirmed Rev B pile length is 4.0 m.",
+                    triggers_incremental_recheck=True,
+                )
+            ]
+        }
+    )
+
+    gate = build_report_draft_gate_result(state, result)
+
+    assert gate.status == "blocked"
+    assert gate.incremental_recheck_rfi_ids == ["rfi-empty-closeout"]
 
 
 def test_report_draft_gate_blocks_responded_incremental_recheck_rfi_before_closeout() -> None:

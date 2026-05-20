@@ -160,6 +160,7 @@ class RFIItem(BaseModel):
     status: Literal["open", "responded", "closed", "reopened"]
     client_response: Optional[str] = None
     reopen_review_items: List[str] = Field(default_factory=list)
+    completed_recheck_items: List[str] = Field(default_factory=list)
     triggers_incremental_recheck: bool = False
 
     @model_validator(mode="after")

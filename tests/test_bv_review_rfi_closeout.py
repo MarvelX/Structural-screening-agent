@@ -80,10 +80,12 @@ def test_close_rfi_after_engineer_review_closes_responded_rfi_and_unblocks_incre
         responded,
         rfi_id="rfi-foundation-run-001",
         closeout_note="工程师已完成增量复核，RFI 可关闭。",
+        completed_recheck_item_ids=["uplift_force_kn", "compression_force_kn"],
     )
 
     rfi = closed.rfi_items[0]
     assert rfi.status == "closed"
+    assert rfi.completed_recheck_items == ["uplift_force_kn", "compression_force_kn"]
     assert (rfi.client_response or "").startswith("设计院提交 Rev B 计算书并确认基础反力取值。")
     assert "工程师已完成增量复核" in (rfi.client_response or "")
     assert closed.phase_statuses["issue_rfi_closeout"] == "approved"
@@ -108,6 +110,7 @@ def test_rfi_closeout_rejects_unknown_duplicate_or_wrong_status_rfi() -> None:
             state,
             rfi_id="rfi-foundation-run-001",
             closeout_note="工程师关闭。",
+            completed_recheck_item_ids=["uplift_force_kn", "compression_force_kn"],
         )
 
     duplicate_state = state.model_copy(
@@ -118,4 +121,39 @@ def test_rfi_closeout_rejects_unknown_duplicate_or_wrong_status_rfi() -> None:
             duplicate_state,
             rfi_id="rfi-foundation-run-001",
             client_response="设计院回复。",
+        )
+
+
+def test_close_incremental_rfi_requires_completed_recheck_items() -> None:
+    responded = record_rfi_client_response(
+        _state_with_open_incremental_rfi(),
+        rfi_id="rfi-foundation-run-001",
+        client_response="设计院提交 Rev B 计算书并确认基础反力取值。",
+    )
+
+    with pytest.raises(ValueError, match="completed recheck items"):
+        close_rfi_after_engineer_review(
+            responded,
+            rfi_id="rfi-foundation-run-001",
+            closeout_note="工程师关闭。",
+        )
+
+    with pytest.raises(ValueError, match="missing"):
+        close_rfi_after_engineer_review(
+            responded,
+            rfi_id="rfi-foundation-run-001",
+            closeout_note="工程师关闭。",
+            completed_recheck_item_ids=["uplift_force_kn"],
+        )
+
+    with pytest.raises(ValueError, match="unknown"):
+        close_rfi_after_engineer_review(
+            responded,
+            rfi_id="rfi-foundation-run-001",
+            closeout_note="工程师关闭。",
+            completed_recheck_item_ids=[
+                "uplift_force_kn",
+                "compression_force_kn",
+                "untracked_item",
+            ],
         )

@@ -33,6 +33,7 @@ from structural_screening_agent.bv_review.field_diff import (
     FieldDiff,
     IncrementalRecheckPlan,
     build_incremental_recheck_plan,
+    build_incremental_recheck_plan_from_closed_rfis,
     diff_extracted_fields,
 )
 from structural_screening_agent.bv_review.models import (
@@ -94,6 +95,7 @@ __all__ = [
     "build_foundation_calculation_run_from_fields",
     "build_bv_open_rfi_items",
     "build_incremental_recheck_plan",
+    "build_incremental_recheck_plan_from_closed_rfis",
     "build_review_basis",
     "build_superstructure_calculation_run",
     "build_superstructure_calculation_run_from_fields",

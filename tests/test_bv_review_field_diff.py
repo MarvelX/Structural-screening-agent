@@ -1,9 +1,14 @@
 from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan,
+    build_incremental_recheck_plan_from_closed_rfis,
     diff_extracted_fields,
 )
 from structural_screening_agent.bv_review.models import BVRiskItem
-from structural_screening_agent.bv_review.project_state import CalculationRun, ExtractedField
+from structural_screening_agent.bv_review.project_state import (
+    CalculationRun,
+    ExtractedField,
+    RFIItem,
+)
 
 
 def _field(
@@ -185,3 +190,111 @@ def test_incremental_recheck_plan_creates_rfi_item_without_agent_generated_langu
     assert plan.rfi_items[0].responsible_party == "client"
     assert "Please confirm updated input" in plan.rfi_items[0].question
     assert "AI" not in plan.rfi_items[0].question
+
+
+def test_incremental_recheck_plan_from_closed_rfis_builds_calculation_recheck_items() -> None:
+    plan = build_incremental_recheck_plan_from_closed_rfis(
+        [
+            RFIItem(
+                rfi_id="rfi-pile_length_m",
+                question="Please confirm updated input for Pile Length M.",
+                responsible_party="client",
+                trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                required_document_or_field="pile_length_m",
+                status="closed",
+                client_response="Confirmed Rev B pile length is 4.0 m.",
+                reopen_review_items=["calculation-recheck-pile_length_m"],
+                completed_recheck_items=["calculation-recheck-pile_length_m"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="run-001",
+                engine_name="foundation",
+                engine_version="phase1-human-gate",
+                input_field_ids=["pile_length_m"],
+                input_locked=True,
+                status="completed",
+            )
+        ],
+    )
+
+    assert plan.diffs == []
+    assert [item.rfi_id for item in plan.rfi_items] == ["rfi-pile_length_m"]
+    assert len(plan.affected_items) == 1
+    assert plan.affected_items[0].item_id == "calculation-recheck-pile_length_m"
+    assert plan.affected_items[0].item_type == "calculation_recheck"
+    assert plan.affected_items[0].field_ids == ["pile_length_m"]
+    assert plan.affected_items[0].calculation_run_ids == ["run-001"]
+
+
+def test_incremental_recheck_plan_from_closed_rfis_supports_raw_field_review_items() -> None:
+    plan = build_incremental_recheck_plan_from_closed_rfis(
+        [
+            RFIItem(
+                rfi_id="rfi-foundation-run-001",
+                question="请确认基础筛查级风险的处置意见。",
+                responsible_party="client / designer",
+                trigger_basis="确定性筛查计算 foundation-run-001: 控制利用率=1.21。",
+                required_document_or_field="uplift_force_kn, compression_force_kn",
+                status="closed",
+                client_response="设计院提交 Rev B 计算书并确认基础反力取值。",
+                reopen_review_items=["uplift_force_kn", "compression_force_kn"],
+                completed_recheck_items=["uplift_force_kn", "compression_force_kn"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-human-gate",
+                input_field_ids=["uplift_force_kn", "compression_force_kn"],
+                input_locked=True,
+                status="completed",
+            )
+        ],
+    )
+
+    assert [item.item_id for item in plan.affected_items] == [
+        "uplift_force_kn",
+        "compression_force_kn",
+    ]
+    assert [item.item_type for item in plan.affected_items] == [
+        "field_confirmation",
+        "field_confirmation",
+    ]
+    assert plan.affected_items[0].calculation_run_ids == ["foundation-run-001"]
+    assert plan.affected_items[1].calculation_run_ids == ["foundation-run-001"]
+
+
+def test_incremental_recheck_plan_from_closed_rfis_ignores_unclosed_or_incomplete_rfis() -> None:
+    plan = build_incremental_recheck_plan_from_closed_rfis(
+        [
+            RFIItem(
+                rfi_id="rfi-open",
+                question="Please confirm updated input.",
+                responsible_party="client",
+                trigger_basis="Field changed.",
+                required_document_or_field="pile_length_m",
+                status="open",
+                reopen_review_items=["calculation-recheck-pile_length_m"],
+                triggers_incremental_recheck=True,
+            ),
+            RFIItem(
+                rfi_id="rfi-closed-incomplete",
+                question="Please confirm updated input.",
+                responsible_party="client",
+                trigger_basis="Field changed.",
+                required_document_or_field="pile_length_m",
+                status="closed",
+                client_response="Confirmed.",
+                reopen_review_items=["calculation-recheck-pile_length_m"],
+                triggers_incremental_recheck=True,
+            ),
+        ]
+    )
+
+    assert plan.rfi_items == []
+    assert plan.affected_items == []

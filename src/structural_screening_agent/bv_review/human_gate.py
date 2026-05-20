@@ -2,6 +2,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from structural_screening_agent.bv_review.field_diff import (
+    rfi_incremental_recheck_is_complete,
+)
 from structural_screening_agent.bv_review.models import BVReviewResult
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
@@ -113,6 +116,7 @@ def close_rfi_after_engineer_review(
     *,
     rfi_id: str,
     closeout_note: str,
+    completed_recheck_item_ids: list[str] | None = None,
 ) -> ProjectReviewState:
     if not closeout_note.strip():
         raise ValueError("RFI closeout note must not be empty.")
@@ -120,12 +124,17 @@ def close_rfi_after_engineer_review(
     rfi = _find_unique_rfi(state, rfi_id)
     if rfi.status != "responded":
         raise ValueError("Only responded RFI items can be closed after engineer review.")
+    completed_items = _validate_completed_recheck_items(
+        rfi,
+        completed_recheck_item_ids,
+    )
 
     response_with_closeout = f"{rfi.client_response}\nCloseout: {closeout_note}"
     updated_rfi = rfi.model_copy(
         update={
             "status": "closed",
             "client_response": response_with_closeout,
+            "completed_recheck_items": completed_items,
         }
     )
     updated_items = _replace_rfi(state.rfi_items, updated_rfi)
@@ -218,10 +227,37 @@ def _replace_rfi(rfi_items: list[RFIItem], updated_rfi: RFIItem) -> list[RFIItem
 
 def _all_incremental_rfis_closed(rfi_items: list[RFIItem]) -> bool:
     return all(
-        item.status == "closed"
+        rfi_incremental_recheck_is_complete(item)
         for item in rfi_items
         if item.triggers_incremental_recheck
     )
+
+
+def _validate_completed_recheck_items(
+    rfi: RFIItem,
+    completed_recheck_item_ids: list[str] | None,
+) -> list[str]:
+    if not rfi.triggers_incremental_recheck:
+        return list(completed_recheck_item_ids or [])
+
+    if not completed_recheck_item_ids:
+        raise ValueError("Incremental RFI closeout requires completed recheck items.")
+
+    required_items = set(rfi.reopen_review_items)
+    completed_items = set(completed_recheck_item_ids)
+    missing_items = sorted(required_items - completed_items)
+    unknown_items = sorted(completed_items - required_items)
+    if missing_items:
+        raise ValueError(
+            "Incremental RFI closeout is missing completed recheck items: "
+            + ", ".join(missing_items)
+        )
+    if unknown_items:
+        raise ValueError(
+            "Incremental RFI closeout includes unknown completed recheck items: "
+            + ", ".join(unknown_items)
+        )
+    return list(completed_recheck_item_ids)
 
 
 class ReportDraftGateResult(BaseModel):
@@ -266,7 +302,8 @@ def build_report_draft_gate_result(
     incremental_rfi_ids = [
         item.rfi_id
         for item in state.rfi_items
-        if item.triggers_incremental_recheck and item.status != "closed"
+        if item.triggers_incremental_recheck
+        and not rfi_incremental_recheck_is_complete(item)
     ]
     if incremental_rfi_ids:
         reasons.append(

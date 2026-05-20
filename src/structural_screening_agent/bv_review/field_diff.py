@@ -236,3 +236,87 @@ def build_incremental_recheck_plan(
         affected_items=affected_items,
         rfi_items=rfi_items,
     )
+
+
+def build_incremental_recheck_plan_from_closed_rfis(
+    rfi_items: list[RFIItem],
+    *,
+    calculation_runs: list[CalculationRun] | None = None,
+) -> IncrementalRecheckPlan:
+    runs = calculation_runs or []
+    closed_rfis = [
+        item
+        for item in rfi_items
+        if rfi_incremental_recheck_is_complete(item)
+    ]
+    affected_items: list[AffectedReviewItem] = []
+    seen_item_ids: set[str] = set()
+
+    for rfi in closed_rfis:
+        for review_item_id in rfi.reopen_review_items:
+            if review_item_id in seen_item_ids:
+                continue
+            seen_item_ids.add(review_item_id)
+            field_ids = _field_ids_from_review_item(review_item_id)
+            affected_items.append(
+                AffectedReviewItem(
+                    item_id=review_item_id,
+                    item_type=_item_type_from_review_item(review_item_id),
+                    reason=f"Closed RFI {rfi.rfi_id} requires completed incremental recheck.",
+                    field_ids=field_ids,
+                    calculation_run_ids=_run_ids_for_fields(field_ids, runs),
+                )
+            )
+
+    return IncrementalRecheckPlan(
+        diffs=[],
+        affected_items=affected_items,
+        rfi_items=closed_rfis,
+    )
+
+
+def rfi_incremental_recheck_is_complete(rfi: RFIItem) -> bool:
+    required_items = set(rfi.reopen_review_items)
+    completed_items = set(rfi.completed_recheck_items)
+    return (
+        rfi.triggers_incremental_recheck
+        and rfi.status == "closed"
+        and bool(required_items)
+        and completed_items == required_items
+    )
+
+
+def _item_type_from_review_item(
+    review_item_id: str,
+) -> Literal["field_confirmation", "calculation_recheck", "risk_reopen", "rfi"]:
+    if review_item_id.startswith("calculation-recheck-"):
+        return "calculation_recheck"
+    if review_item_id.startswith("risk-reopen-"):
+        return "risk_reopen"
+    if review_item_id.startswith("rfi-"):
+        return "rfi"
+    return "field_confirmation"
+
+
+def _field_ids_from_review_item(review_item_id: str) -> list[str]:
+    for prefix in ("calculation-recheck-", "risk-reopen-"):
+        if review_item_id.startswith(prefix):
+            return [review_item_id.removeprefix(prefix)]
+    if review_item_id.startswith("rfi-"):
+        return []
+    return [review_item_id]
+
+
+def _run_ids_for_fields(
+    field_ids: list[str],
+    calculation_runs: list[CalculationRun],
+) -> list[str]:
+    if not field_ids:
+        return []
+    matched_run_ids: list[str] = []
+    for run in calculation_runs:
+        if not run.input_locked:
+            continue
+        if any(field_id in run.input_field_ids for field_id in field_ids):
+            matched_run_ids.append(run.run_id)
+    return matched_run_ids
