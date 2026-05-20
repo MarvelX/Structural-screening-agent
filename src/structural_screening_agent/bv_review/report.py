@@ -8,10 +8,18 @@ from structural_screening_agent.bv_review.models import (
     BVReviewResult,
     BVRiskItem,
 )
-from structural_screening_agent.bv_review.project_state import RFIItem
+from structural_screening_agent.bv_review.field_diff import (
+    build_incremental_recheck_plan_from_closed_rfis,
+)
+from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 
 
-def build_bv_report_preview(intake: BVReviewIntake, result: BVReviewResult) -> BVReportPreview:
+def build_bv_report_preview(
+    intake: BVReviewIntake,
+    result: BVReviewResult,
+    *,
+    project_state: ProjectReviewState | None = None,
+) -> BVReportPreview:
     blocking_items = [item for item in result.risks if item.blocks_report_issue]
     sections = [
         BVReportSection(
@@ -75,6 +83,9 @@ def build_bv_report_preview(intake: BVReviewIntake, result: BVReviewResult) -> B
             ],
         ),
     ]
+    rfi_closeout_section = build_bv_rfi_closeout_evidence_section(project_state)
+    if rfi_closeout_section is not None:
+        sections.insert(-1, rfi_closeout_section)
     return BVReportPreview(title="BV 光伏结构设计审查报告", sections=sections)
 
 
@@ -102,8 +113,50 @@ def build_bv_open_rfi_items(risks: list[BVRiskItem]) -> list[RFIItem]:
     return rfi_items
 
 
-def build_bv_markdown_report(intake: BVReviewIntake, result: BVReviewResult) -> str:
-    preview = result.report_preview or build_bv_report_preview(intake, result)
+def build_bv_rfi_closeout_evidence_section(
+    project_state: ProjectReviewState | None,
+) -> BVReportSection | None:
+    if project_state is None:
+        return None
+
+    plan = build_incremental_recheck_plan_from_closed_rfis(
+        project_state.rfi_items,
+        calculation_runs=project_state.calculation_runs,
+    )
+    if not plan.affected_items:
+        return None
+
+    item_to_rfi_id = {
+        review_item_id: rfi.rfi_id
+        for rfi in plan.rfi_items
+        for review_item_id in rfi.reopen_review_items
+    }
+    return BVReportSection(
+        heading="RFI 关闭与增量复核证据",
+        items=[
+            (
+                f"RFI {item_to_rfi_id.get(item.item_id, '')} | "
+                f"复核项: {item.item_id} | "
+                f"字段: {', '.join(item.field_ids) or 'N/A'} | "
+                f"计算运行: {', '.join(item.calculation_run_ids) or 'N/A'} | "
+                "关闭证据: 已完成增量复核"
+            )
+            for item in plan.affected_items
+        ],
+    )
+
+
+def build_bv_markdown_report(
+    intake: BVReviewIntake,
+    result: BVReviewResult,
+    *,
+    project_state: ProjectReviewState | None = None,
+) -> str:
+    preview = (
+        build_bv_report_preview(intake, result, project_state=project_state)
+        if project_state is not None
+        else result.report_preview or build_bv_report_preview(intake, result)
+    )
     lines = [f"# {preview.title}", ""]
     for section in preview.sections:
         lines.append(f"## {section.heading}")

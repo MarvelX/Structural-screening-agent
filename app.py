@@ -50,7 +50,11 @@ from structural_screening_agent.bv_review.human_gate import (
     record_agent_review_decision,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
-from structural_screening_agent.bv_review.report import build_bv_markdown_report, build_bv_report_filename
+from structural_screening_agent.bv_review.report import (
+    build_bv_markdown_report,
+    build_bv_report_filename,
+    build_bv_report_preview,
+)
 from structural_screening_agent.bv_review.ui import (
     build_bv_basis_items,
     build_bv_path_items,
@@ -1084,8 +1088,16 @@ with bv_review_tab:
         st.markdown("#### Design Review Report Preview" if ui_language == "en" else "设计审查报告预览")
         report_draft_ready = report_draft_gate.status == "ready"
         if report_draft_ready:
-            bv_report_preview = bv_result.report_preview
-            bv_markdown_payload = build_bv_markdown_report(bv_intake, bv_result)
+            bv_report_preview = build_bv_report_preview(
+                bv_intake,
+                bv_result,
+                project_state=reviewed_workflow_state,
+            )
+            bv_markdown_payload = build_bv_markdown_report(
+                bv_intake,
+                bv_result,
+                project_state=reviewed_workflow_state,
+            )
             bv_docx_payload = build_docx_report_bytes(bv_report_preview)
             bv_pdf_payload = build_pdf_report_bytes(bv_report_preview)
             bv_export_col_1, bv_export_col_2, bv_export_col_3 = st.columns(3)

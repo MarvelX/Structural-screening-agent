@@ -7,6 +7,11 @@ from structural_screening_agent.bv_review.report import (
     build_bv_report_filename,
     build_bv_report_preview,
 )
+from structural_screening_agent.bv_review.project_state import (
+    CalculationRun,
+    ProjectReviewState,
+    RFIItem,
+)
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
 
@@ -75,6 +80,78 @@ def test_bv_markdown_report_contains_required_sections_and_boundary_statement() 
     assert "## 审核边界声明" in report
     assert "不替代正式设计" in report
     assert "不代表 BV 官方签发流程" in report
+
+
+def test_bv_report_preview_includes_closed_rfi_recheck_evidence_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-rfi-closeout",
+        intake=intake,
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-human-gate",
+                input_field_ids=["pile_length_m"],
+                input_locked=True,
+                status="completed",
+            )
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-pile_length_m",
+                question="Please confirm updated input for Pile Length M.",
+                responsible_party="client",
+                trigger_basis="Field pile_length_m changed from '3.5' to '4.0'.",
+                required_document_or_field="pile_length_m",
+                status="closed",
+                client_response="Confirmed Rev B pile length is 4.0 m.",
+                reopen_review_items=["calculation-recheck-pile_length_m"],
+                completed_recheck_items=["calculation-recheck-pile_length_m"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "RFI 关闭与增量复核证据")
+
+    assert section.items == [
+        (
+            "RFI rfi-pile_length_m | 复核项: calculation-recheck-pile_length_m | "
+            "字段: pile_length_m | 计算运行: foundation-run-001 | 关闭证据: 已完成增量复核"
+        )
+    ]
+
+
+def test_bv_markdown_report_includes_closed_rfi_recheck_evidence_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-rfi-closeout",
+        intake=intake,
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-direct-field",
+                question="请确认基础反力。",
+                responsible_party="client",
+                trigger_basis="基础反力发生变化。",
+                required_document_or_field="uplift_force_kn",
+                status="closed",
+                client_response="设计院已提交 Rev B 反力表。",
+                reopen_review_items=["uplift_force_kn"],
+                completed_recheck_items=["uplift_force_kn"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "## RFI 关闭与增量复核证据" in report
+    assert "RFI rfi-direct-field" in report
+    assert "关闭证据: 已完成增量复核" in report
 
 
 def test_bv_report_filename_uses_date_and_scope_key() -> None:
