@@ -74,6 +74,7 @@ python -m streamlit run app.py --server.port 8503
 
 - [Demo Guide](docs/showcase/demo-guide.md)
 - [Project Brief](docs/showcase/project-brief.md)
+- [Portfolio Narrative](docs/showcase/portfolio-narrative.md)
 - [Job Application Microsite](docs/job-application/index.html)
 - [Public Demo](https://valley-recognized-roads-qualified.trycloudflare.com)
 

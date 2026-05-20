@@ -192,6 +192,7 @@ def test_showcase_docs_exist() -> None:
     root = project_root()
     assert (root / "docs" / "showcase" / "demo-guide.md").exists()
     assert (root / "docs" / "showcase" / "project-brief.md").exists()
+    assert (root / "docs" / "showcase" / "portfolio-narrative.md").exists()
     assert (root / "docs" / "showcase" / "assets").exists()
 
 
@@ -202,6 +203,7 @@ def test_readme_mentions_showcase_positioning() -> None:
     assert "BV 光伏结构设计审核工作台" in readme
     assert "门式刚架屋面光伏增载场景模块" in readme
     assert "docs/showcase/demo-guide.md" in readme
+    assert "docs/showcase/portfolio-narrative.md" in readme
     assert "门式刚架屋面光伏增载" in readme
     assert "不是聊天机器人" in readme
 
@@ -210,6 +212,7 @@ def test_showcase_docs_contain_expected_sections() -> None:
     root = project_root()
     demo_guide = (root / "docs" / "showcase" / "demo-guide.md").read_text()
     brief = (root / "docs" / "showcase" / "project-brief.md").read_text()
+    narrative = (root / "docs" / "showcase" / "portfolio-narrative.md").read_text()
     assert "3 分钟跑起来" in demo_guide
     assert "BV 审核总览" in demo_guide
     assert "评估结论" in demo_guide
@@ -220,6 +223,13 @@ def test_showcase_docs_contain_expected_sections() -> None:
     assert "门式刚架屋面光伏增载场景模块" in brief
     assert "项目一句话" in brief
     assert "不是一个通用 AI demo" in brief
+    assert "Portfolio Narrative" in narrative
+    assert "岗位职责映射" in narrative
+    assert "Project Review Intake" in narrative
+    assert "Human-in-the-loop" in narrative
+    assert "A+B 双计算引擎" in narrative
+    assert "screening-level / review-support" in narrative
+    assert "不替代 BV 官方签发" in narrative
 
 
 def test_showcase_docs_link_to_assets_and_each_other() -> None:
@@ -227,12 +237,15 @@ def test_showcase_docs_link_to_assets_and_each_other() -> None:
     readme = (root / "README.md").read_text()
     demo_guide = (root / "docs" / "showcase" / "demo-guide.md").read_text()
     brief = (root / "docs" / "showcase" / "project-brief.md").read_text()
+    narrative = (root / "docs" / "showcase" / "portfolio-narrative.md").read_text()
     assert "docs/showcase/assets/bv-review-overview.png" in readme
     assert "docs/showcase/assets/assessment-overview.png" in readme
     assert "docs/showcase/project-brief.md" in readme
     assert "docs/showcase/assets/bv-review-overview.png" in demo_guide
     assert "docs/showcase/assets/report-export.png" in demo_guide
     assert "docs/showcase/demo-guide.md" in brief
+    assert "docs/bv-jd-feature-mapping.md" in narrative
+    assert "docs/pv-design-review-multi-agent-goal.md" in narrative
 
 
 def test_showcase_screenshot_assets_exist() -> None:
