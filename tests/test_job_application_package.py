@@ -219,8 +219,9 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"授权并应用 Agent 响应"' in app_source
     assert '"Agent response applied to workflow state."' in app_source
     assert '"Agent 响应已应用到工作流状态。"' in app_source
-    assert "current_workflow_state_signature" in app_source
-    assert '"workflow_state_signature"' in app_source
+    assert "AgentResponseApplicationPacket" in app_source
+    assert "build_agent_response_application_packet" in app_source
+    assert "is_agent_response_application_packet_current" in app_source
     assert (
         "Revalidate the agent response before applying it to the updated workflow state."
         in app_source

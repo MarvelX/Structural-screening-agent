@@ -4,6 +4,9 @@ import pytest
 
 from structural_screening_agent.bv_review.agent_application import (
     apply_authorized_agent_response_to_state,
+    build_agent_response_application_packet,
+    is_agent_response_application_packet_current,
+    workflow_state_application_signature,
 )
 from structural_screening_agent.bv_review.agent_prompting import (
     AgentResponseApplicationAuthorization,
@@ -179,6 +182,37 @@ def test_apply_authorized_agent_response_recomputes_sandbox_response_digest() ->
             plan,
             authorization,
         )
+
+
+def test_agent_response_application_packet_tracks_current_workflow_state() -> None:
+    state, sandbox, plan = _ready_document_intake_application()
+
+    packet = build_agent_response_application_packet(
+        workflow_signature="form-v1",
+        state=state,
+        sandbox=sandbox,
+        plan=plan,
+    )
+
+    assert packet.workflow_signature == "form-v1"
+    assert packet.workflow_state_signature == workflow_state_application_signature(state)
+    assert packet.sandbox_result == sandbox
+    assert packet.application_plan == plan
+    assert is_agent_response_application_packet_current(
+        packet,
+        workflow_signature="form-v1",
+        state=state,
+    )
+    assert not is_agent_response_application_packet_current(
+        packet,
+        workflow_signature="form-v2",
+        state=state,
+    )
+    assert not is_agent_response_application_packet_current(
+        packet,
+        workflow_signature="form-v1",
+        state=state.model_copy(update={"current_phase": "document_check"}),
+    )
 
 
 def _ready_document_intake_application() -> tuple[

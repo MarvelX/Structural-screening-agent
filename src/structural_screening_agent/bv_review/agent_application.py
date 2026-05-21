@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pydantic import BaseModel, Field
+
 from structural_screening_agent.bv_review.agent_prompting import (
     AgentResponseApplicationAuthorization,
     AgentResponseApplicationPlan,
@@ -11,6 +13,44 @@ from structural_screening_agent.bv_review.agent_workflow import (
     apply_agent_output_to_state,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState
+
+
+class AgentResponseApplicationPacket(BaseModel):
+    workflow_signature: str = Field(min_length=1)
+    workflow_state_signature: str = Field(min_length=1)
+    sandbox_result: AgentResponseSandboxResult
+    application_plan: AgentResponseApplicationPlan
+
+
+def workflow_state_application_signature(state: ProjectReviewState) -> str:
+    return state.model_dump_json()
+
+
+def build_agent_response_application_packet(
+    *,
+    workflow_signature: str,
+    state: ProjectReviewState,
+    sandbox: AgentResponseSandboxResult,
+    plan: AgentResponseApplicationPlan,
+) -> AgentResponseApplicationPacket:
+    return AgentResponseApplicationPacket(
+        workflow_signature=workflow_signature,
+        workflow_state_signature=workflow_state_application_signature(state),
+        sandbox_result=sandbox,
+        application_plan=plan,
+    )
+
+
+def is_agent_response_application_packet_current(
+    packet: AgentResponseApplicationPacket,
+    *,
+    workflow_signature: str,
+    state: ProjectReviewState,
+) -> bool:
+    return (
+        packet.workflow_signature == workflow_signature
+        and packet.workflow_state_signature == workflow_state_application_signature(state)
+    )
 
 
 def apply_authorized_agent_response_to_state(
