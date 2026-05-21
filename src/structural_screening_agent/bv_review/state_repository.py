@@ -21,6 +21,7 @@ class ProjectReviewStateSummary(BaseModel):
     agent_event_count: int
     pending_agent_review_count: int
     active_rfi_count: int
+    open_finding_count: int = 0
     report_revision_count: int
 
 
@@ -96,6 +97,9 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
     active_rfi_count = sum(
         1 for item in state.rfi_items if item.status in {"open", "reopened", "responded"}
     )
+    open_finding_count = sum(
+        1 for item in state.risks if item.status in {"open", "under_review"}
+    )
     return ProjectReviewStateSummary(
         project_id=state.project_id,
         project_name=state.intake.project_name,
@@ -103,5 +107,6 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
         agent_event_count=len(state.agent_events),
         pending_agent_review_count=pending_agent_review_count,
         active_rfi_count=active_rfi_count,
+        open_finding_count=open_finding_count,
         report_revision_count=len(state.report_revisions),
     )

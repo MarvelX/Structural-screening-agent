@@ -3,6 +3,7 @@ from pathlib import Path
 import pytest
 
 from structural_screening_agent.bv_review import BVReviewIntake, ProjectReviewState
+from structural_screening_agent.bv_review.models import BVRiskItem
 from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
     CalculationRun,
@@ -94,6 +95,30 @@ def _sample_state() -> ProjectReviewState:
                 created_by="Engineer A",
             )
         ],
+        risks=[
+            BVRiskItem(
+                risk_id="foundation-bearing-capacity-open",
+                title="Foundation bearing capacity evidence remains open",
+                severity="critical",
+                trigger_basis="Missing geotechnical confirmation.",
+                impact_scope="Foundation review",
+                recommendation="Close after engineer review of geotechnical evidence.",
+                blocks_report_issue=True,
+                category="nonconformity",
+            ),
+            BVRiskItem(
+                risk_id="layout-optimization-closed",
+                title="Layout optimization comment closed",
+                severity="medium",
+                trigger_basis="Engineer accepted residual comment.",
+                impact_scope="PV layout review",
+                recommendation="Keep residual comment in workpaper.",
+                blocks_report_issue=True,
+                category="optimization",
+                status="closed",
+                closeout_note="Closed after engineer review.",
+            ),
+        ],
     )
 
 
@@ -133,6 +158,7 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
             "current_phase": "report_draft",
             "agent_events": [],
             "rfi_items": [],
+            "risks": [],
             "report_revisions": [],
         }
     )
@@ -147,11 +173,13 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[0].agent_event_count == 1
     assert summaries[0].pending_agent_review_count == 1
     assert summaries[0].active_rfi_count == 1
+    assert summaries[0].open_finding_count == 1
     assert summaries[0].report_revision_count == 1
     assert summaries[1].current_phase == "report_draft"
     assert summaries[1].agent_event_count == 0
     assert summaries[1].pending_agent_review_count == 0
     assert summaries[1].active_rfi_count == 0
+    assert summaries[1].open_finding_count == 0
     assert summaries[1].report_revision_count == 0
 
 

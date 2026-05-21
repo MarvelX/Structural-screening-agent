@@ -251,6 +251,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             agent_event_count=4,
             pending_agent_review_count=2,
             active_rfi_count=1,
+            open_finding_count=3,
             report_revision_count=1,
         )
     ]
@@ -266,6 +267,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "Agent 事件": 4,
             "待工程师复核": 2,
             "未关闭 RFI": 1,
+            "未关闭发现项": 3,
             "报告修订": 1,
         }
     ]
@@ -277,6 +279,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "Agent Events": 4,
             "Pending Engineer Reviews": 2,
             "Active RFIs": 1,
+            "Open Findings": 3,
             "Report Revisions": 1,
         }
     ]
