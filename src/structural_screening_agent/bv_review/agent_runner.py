@@ -16,6 +16,9 @@ from structural_screening_agent.bv_review.agent_contracts import (
 from structural_screening_agent.bv_review.agent_workflow import apply_agent_output_to_state
 from structural_screening_agent.bv_review.basis import build_review_basis
 from structural_screening_agent.bv_review.checklist import build_document_checklist
+from structural_screening_agent.bv_review.calculation_workflow import (
+    build_calculation_runs_from_locked_fields,
+)
 from structural_screening_agent.bv_review.human_gate import record_agent_review_decision
 from structural_screening_agent.bv_review.project_state import (
     DocumentVersion,
@@ -86,6 +89,12 @@ def run_local_agent_workflow_step(state: ProjectReviewState) -> ProjectReviewSta
         and state.phase_statuses.get(state.current_phase) != "approved"
     ):
         return None
+    if state.current_phase == "engineer_data_lock":
+        state_with_runs = _copy_with_missing_calculation_runs(state)
+        output = _build_local_agent_output_for_current_phase(state_with_runs)
+        if output is None:
+            return state_with_runs if state_with_runs != state else None
+        return apply_agent_output_to_state(state_with_runs, output)
     output = _build_local_agent_output_for_current_phase(state)
     if output is None:
         return None
@@ -118,6 +127,17 @@ def _next_pending_review_event_with_decision(
         ):
             return event
     return None
+
+
+def _copy_with_missing_calculation_runs(state: ProjectReviewState) -> ProjectReviewState:
+    if state.calculation_runs:
+        return state
+    generated_runs = build_calculation_runs_from_locked_fields(state)
+    if not generated_runs:
+        return state
+    return state.model_copy(
+        update={"calculation_runs": generated_runs}
+    )
 
 
 def run_persisted_local_agent_workflow_until_blocked(
@@ -219,6 +239,8 @@ def _build_local_agent_output_for_current_phase(
 
     if state.current_phase == "engineer_data_lock":
         if not state.is_gate_locked("calculation") or not state.calculation_runs:
+            return None
+        if any(run.status in {"blocked", "failed"} for run in state.calculation_runs):
             return None
         run_ids = [
             run.run_id

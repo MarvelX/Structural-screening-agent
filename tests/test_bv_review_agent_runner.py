@@ -8,7 +8,11 @@ from structural_screening_agent.bv_review import (
     run_local_agent_workflow_until_blocked,
 )
 from structural_screening_agent.bv_review.human_gate import record_agent_review_decision
-from structural_screening_agent.bv_review.project_state import CalculationRun, EngineerApproval
+from structural_screening_agent.bv_review.project_state import (
+    CalculationRun,
+    EngineerApproval,
+    ExtractedField,
+)
 from structural_screening_agent.bv_review.state_repository import JsonProjectReviewStateRepository
 
 
@@ -78,6 +82,121 @@ def test_local_agent_workflow_applies_calculation_risk_and_report_after_locked_g
     assert final_state.report_sections == []
     assert final_state.rfi_items == []
     assert [event.agent_role for event in final_state.agent_events] == ["calculation_check"]
+
+
+def test_local_agent_workflow_builds_calculation_runs_after_locked_gate() -> None:
+    state = ProjectReviewState(
+        project_id="pv-001",
+        intake=_sample_intake(),
+        current_phase="engineer_data_lock",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "engineer_data_lock": "approved",
+        },
+        extracted_fields=_locked_calculation_fields(),
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            )
+        ],
+    )
+
+    final_state = run_local_agent_workflow_until_blocked(state)
+
+    assert final_state.current_phase == "calculation_check"
+    assert final_state.phase_statuses["calculation_check"] == "waiting_for_engineer"
+    assert [run.run_id for run in final_state.calculation_runs] == [
+        "foundation-run-001",
+        "superstructure-run-post-P1-001",
+    ]
+    assert all(run.status == "completed" for run in final_state.calculation_runs)
+    assert final_state.agent_events[-1].agent_role == "calculation_check"
+    assert final_state.agent_events[-1].summary_counts == {"calculation_run_ids": 2}
+
+
+def test_local_agent_workflow_preserves_existing_calculation_runs() -> None:
+    state = ProjectReviewState(
+        project_id="pv-001",
+        intake=_sample_intake(),
+        current_phase="engineer_data_lock",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "engineer_data_lock": "approved",
+        },
+        extracted_fields=_locked_calculation_fields(),
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            )
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="manual-foundation-run",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["uplift_force_kn"],
+                input_locked=True,
+                status="completed",
+                result_summary={
+                    "screening_boundary": "screening-level review support only",
+                    "screening_status": "pass",
+                },
+            )
+        ],
+    )
+
+    final_state = run_local_agent_workflow_until_blocked(state)
+
+    assert [run.run_id for run in final_state.calculation_runs] == [
+        "manual-foundation-run"
+    ]
+    assert final_state.agent_events[-1].summary_counts == {"calculation_run_ids": 1}
+
+
+def test_local_agent_workflow_keeps_engineer_data_lock_when_any_generated_engine_run_is_blocked() -> None:
+    state = ProjectReviewState(
+        project_id="pv-001",
+        intake=_sample_intake(),
+        current_phase="engineer_data_lock",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "engineer_data_lock": "approved",
+        },
+        extracted_fields=[
+            field
+            for field in _locked_calculation_fields()
+            if field.field_id not in {"bending_moment_knm"}
+        ],
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            )
+        ],
+    )
+
+    final_state = run_local_agent_workflow_until_blocked(state)
+
+    assert final_state.current_phase == "engineer_data_lock"
+    assert final_state.agent_events == []
+    assert [run.run_id for run in final_state.calculation_runs] == [
+        "foundation-run-001",
+        "superstructure-run-post-P1-001",
+    ]
+    assert final_state.calculation_runs[0].status == "completed"
+    assert final_state.calculation_runs[1].status == "blocked"
+    assert "bending_moment_knm is required." in final_state.calculation_runs[1].structured_errors
 
 
 def test_local_agent_workflow_resumes_after_each_engineer_review_gate() -> None:
@@ -311,3 +430,39 @@ def _sample_intake() -> BVReviewIntake:
             "geotechnical_report": "missing",
         },
     )
+
+
+def _locked_field(field_id: str, value: str, unit: str) -> ExtractedField:
+    return ExtractedField(
+        field_id=field_id,
+        name=field_id.replace("_", " ").title(),
+        candidate_value=value,
+        unit=unit,
+        source_document_id="calculation-report-c001",
+        page_or_section="Calculation input table",
+        quote=f"{field_id} = {value}",
+        confidence=0.92,
+        is_confirmed=True,
+        confirmed_value=value,
+        confirmed_unit=unit,
+        include_in_calculation=True,
+    )
+
+
+def _locked_calculation_fields() -> list[ExtractedField]:
+    return [
+        _locked_field("pile_diameter_mm", "300", "mm"),
+        _locked_field("pile_length_m", "3.5", "m"),
+        _locked_field("side_resistance_standard_kpa", "35", "kPa"),
+        _locked_field("bearing_capacity_characteristic_kpa", "180", "kPa"),
+        _locked_field("uplift_force_kn", "140", "kN"),
+        _locked_field("compression_force_kn", "10", "kN"),
+        _locked_field("horizontal_force_kn", "12", "kN"),
+        _locked_field("section_area_mm2", "2400", "mm2"),
+        _locked_field("section_modulus_mm3", "180000", "mm3"),
+        _locked_field("radius_of_gyration_mm", "32", "mm"),
+        _locked_field("effective_length_m", "3.2", "m"),
+        _locked_field("steel_yield_strength_mpa", "235", "MPa"),
+        _locked_field("axial_force_kn", "60", "kN"),
+        _locked_field("bending_moment_knm", "18", "kN*m"),
+    ]
