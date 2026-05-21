@@ -13,6 +13,10 @@ from structural_screening_agent.bv_review.project_state import (
     EngineerApproval,
     ExtractedField,
 )
+from structural_screening_agent.bv_review.report import build_bv_active_rfi_register_section
+from structural_screening_agent.bv_review.blocked_calculation_draft import (
+    build_blocked_calculation_review_draft,
+)
 from structural_screening_agent.bv_review.state_repository import JsonProjectReviewStateRepository
 
 
@@ -190,6 +194,9 @@ def test_local_agent_workflow_keeps_engineer_data_lock_when_any_generated_engine
 
     assert final_state.current_phase == "engineer_data_lock"
     assert final_state.agent_events == []
+    assert final_state.risks == []
+    assert final_state.rfi_items == []
+    assert final_state.report_sections == []
     assert [run.run_id for run in final_state.calculation_runs] == [
         "foundation-run-001",
         "superstructure-run-post-P1-001",
@@ -197,6 +204,100 @@ def test_local_agent_workflow_keeps_engineer_data_lock_when_any_generated_engine
     assert final_state.calculation_runs[0].status == "completed"
     assert final_state.calculation_runs[1].status == "blocked"
     assert "bending_moment_knm is required." in final_state.calculation_runs[1].structured_errors
+
+
+def test_blocked_calculation_review_draft_builds_risk_and_rfi_without_mutating_state() -> None:
+    state = ProjectReviewState(
+        project_id="pv-001",
+        intake=_sample_intake(),
+        current_phase="engineer_data_lock",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "engineer_data_lock": "approved",
+        },
+        extracted_fields=[
+            field
+            for field in _locked_calculation_fields()
+            if field.field_id not in {"bending_moment_knm"}
+        ],
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            )
+        ],
+    )
+
+    final_state = run_local_agent_workflow_until_blocked(state)
+    draft = build_blocked_calculation_review_draft(final_state)
+
+    assert final_state.current_phase == "engineer_data_lock"
+    assert final_state.phase_statuses["calculation_check"] == "pending"
+    assert final_state.agent_events == []
+    assert final_state.risks == []
+    assert final_state.rfi_items == []
+    assert final_state.report_sections == []
+    blocked_risk = next(
+        risk
+        for risk in draft.risks
+        if risk.risk_id == "calculation_blocked_superstructure_run_post_p1_001"
+    )
+    assert blocked_risk.category == "nonconformity"
+    assert blocked_risk.blocks_report_issue is True
+    rfi = next(
+        item
+        for item in draft.rfi_items
+        if item.rfi_id == "rfi-calculation_blocked_superstructure_run_post_p1_001"
+    )
+    assert rfi.status == "open"
+    assert rfi.reopen_review_items == [
+        "section_area_mm2",
+        "section_modulus_mm3",
+        "radius_of_gyration_mm",
+        "effective_length_m",
+        "steel_yield_strength_mpa",
+        "axial_force_kn",
+        "bending_moment_knm",
+    ]
+    assert "重新运行筛查级计算" in rfi.question
+    display_state = final_state.model_copy(update={"rfi_items": draft.rfi_items})
+    active_rfi_section = build_bv_active_rfi_register_section(display_state)
+    assert active_rfi_section is not None
+    assert active_rfi_section.heading == "未关闭 RFI 与客户澄清项"
+    assert rfi.rfi_id in active_rfi_section.items[0]
+    rerun_state = run_local_agent_workflow_until_blocked(final_state)
+    assert rerun_state.risks == []
+    assert rerun_state.rfi_items == []
+
+
+def test_blocked_calculation_review_draft_includes_failed_runs() -> None:
+    blocked_run = CalculationRun(
+        run_id="foundation-failed-001",
+        engine_name="foundation",
+        engine_version="phase1-deterministic-screening",
+        input_field_ids=["pile_length_m"],
+        input_locked=False,
+        status="failed",
+        structured_errors=["foundation calculation failed."],
+    )
+    state = ProjectReviewState(
+        project_id="pv-001",
+        intake=_sample_intake(),
+        current_phase="engineer_data_lock",
+        calculation_runs=[blocked_run],
+    )
+
+    draft = build_blocked_calculation_review_draft(state)
+
+    assert [risk.risk_id for risk in draft.risks] == [
+        "calculation_blocked_foundation_failed_001"
+    ]
+    assert draft.risks[0].blocks_report_issue is True
+    assert draft.rfi_items[0].status == "open"
+    assert draft.rfi_items[0].trigger_basis == draft.risks[0].trigger_basis
 
 
 def test_local_agent_workflow_resumes_after_each_engineer_review_gate() -> None:

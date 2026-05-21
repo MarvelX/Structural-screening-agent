@@ -63,6 +63,10 @@ from structural_screening_agent.bv_review.agent_prompting import (
     validate_agent_json_response,
 )
 from structural_screening_agent.bv_review.basis import build_review_basis
+from structural_screening_agent.bv_review.blocked_calculation_draft import (
+    BlockedCalculationReviewDraft,
+    build_blocked_calculation_review_draft,
+)
 from structural_screening_agent.bv_review.calculation_engines import (
     FoundationEngineInput,
     SuperstructureEngineInput,
@@ -132,6 +136,7 @@ __all__ = [
     "AffectedReviewItem",
     "AgentWorkflowOutput",
     "BasisCodeAgentOutput",
+    "BlockedCalculationReviewDraft",
     "CalculationRun",
     "CalculationCheckAgentOutput",
     "DocumentVersion",
@@ -184,6 +189,7 @@ __all__ = [
     "default_agent_provider_model",
     "build_foundation_calculation_run_from_fields",
     "build_bv_open_rfi_items",
+    "build_blocked_calculation_review_draft",
     "build_incremental_recheck_plan",
     "build_incremental_recheck_plan_from_closed_rfis",
     "build_project_management_action_rows",

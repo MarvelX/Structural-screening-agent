@@ -74,8 +74,12 @@ def build_risk_register(
                 category="risk",
             )
         )
-    risks.extend(_calculation_risks(calculation_runs or []))
+    risks.extend(build_calculation_run_risks(calculation_runs or []))
     return risks
+
+
+def build_calculation_run_risks(calculation_runs: list[CalculationRun]) -> list[BVRiskItem]:
+    return _calculation_risks(calculation_runs)
 
 
 def _calculation_risks(calculation_runs: list[CalculationRun]) -> list[BVRiskItem]:
