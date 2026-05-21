@@ -207,12 +207,21 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[1].locked_gate_count == 1
     assert summaries[1].locked_quality_gate_ids == ["calculation"]
     assert summaries[1].open_quality_gate_ids == ["basis", "report"]
-    assert summaries[1].management_action_count == 0
-    assert summaries[1].blocking_action_count == 0
-    assert summaries[1].workflow_status == "action_required"
-    assert summaries[1].next_action_ids == []
-    assert summaries[1].next_action_categories == []
-    assert summaries[1].next_action_owner_roles == []
+    assert summaries[1].management_action_count == 2
+    assert summaries[1].blocking_action_count == 2
+    assert summaries[1].workflow_status == "blocked"
+    assert summaries[1].next_action_ids == [
+        "quality-gate-follow-up-basis",
+        "quality-gate-follow-up-report",
+    ]
+    assert summaries[1].next_action_categories == [
+        "quality_gate_follow_up",
+        "quality_gate_follow_up",
+    ]
+    assert summaries[1].next_action_owner_roles == [
+        "BV project review lead",
+        "BV project review lead",
+    ]
 
 
 def test_json_state_repository_inventory_reports_invalid_project_files(

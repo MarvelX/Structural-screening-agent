@@ -813,6 +813,10 @@ def _project_action_category_label(category: str, language: Language) -> str:
             "zh": "计算输入跟进",
             "en": "Calculation Follow-up",
         },
+        "quality_gate_follow_up": {
+            "zh": "质量门禁跟进",
+            "en": "Quality Gate Follow-up",
+        },
         "report_revision": {
             "zh": "报告修订记录",
             "en": "Report Revision Snapshot",

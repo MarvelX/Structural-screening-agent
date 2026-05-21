@@ -10,7 +10,11 @@ from structural_screening_agent.bv_review.project_state import (
     RFIItem,
     ReportRevision,
 )
-from structural_screening_agent.bv_review.models import BVRiskItem, BVReviewIntake
+from structural_screening_agent.bv_review.models import (
+    BVBasisReference,
+    BVRiskItem,
+    BVReviewIntake,
+)
 
 
 def test_project_management_actions_prioritize_rfi_agent_and_calculation_work() -> None:
@@ -261,35 +265,132 @@ def test_project_management_actions_cover_reopened_rfi_and_blocked_calculation()
     assert "calculation-follow-up-superstructure-run-001" in action_ids
 
 
-def test_project_management_action_rows_are_localized_for_dashboard() -> None:
-    actions = build_project_management_actions(
-        ProjectReviewState(
-            project_id="pv-localized-management",
-            intake=_sample_intake(),
-            rfi_items=[
-                RFIItem(
-                    rfi_id="rfi-load-001",
-                    question="Please confirm updated load table.",
-                    responsible_party="client / designer",
-                    trigger_basis="Client replied with Rev B load table.",
-                    required_document_or_field="uplift_force_kn",
-                    status="responded",
-                    client_response="Rev B load table submitted.",
-                    reopen_review_items=["uplift_force_kn"],
-                    triggers_incremental_recheck=True,
-                )
-            ],
-        )
+def test_project_management_actions_include_open_quality_gate_follow_up() -> None:
+    state = ProjectReviewState(
+        project_id="pv-quality-gate-follow-up",
+        intake=_sample_intake(),
+        current_phase="report_draft",
+        phase_statuses={
+            "intake": "approved",
+            "document_check": "approved",
+            "basis_build": "approved",
+            "review_plan": "approved",
+            "engineer_data_lock": "approved",
+            "calculation_check": "approved",
+            "risk_register": "approved",
+            "report_draft": "running",
+            "engineer_approval": "pending",
+            "issue_rfi_closeout": "pending",
+        },
     )
+
+    actions = build_project_management_actions(state)
+    action_ids = [item.action_id for item in actions]
+
+    assert action_ids == [
+        "quality-gate-follow-up-basis",
+        "quality-gate-follow-up-calculation",
+        "quality-gate-follow-up-report",
+    ]
+    assert [item.category for item in actions] == ["quality_gate_follow_up"] * 3
+    assert all(item.owner_role == "BV project review lead" for item in actions)
+    assert all(item.blocks_report_issue for item in actions)
+
+
+def test_project_management_action_rows_are_localized_for_dashboard() -> None:
+    actions = [
+        *build_project_management_actions(
+            ProjectReviewState(
+                project_id="pv-localized-management",
+                intake=_sample_intake(),
+                rfi_items=[
+                    RFIItem(
+                        rfi_id="rfi-load-001",
+                        question="Please confirm updated load table.",
+                        responsible_party="client / designer",
+                        trigger_basis="Client replied with Rev B load table.",
+                        required_document_or_field="uplift_force_kn",
+                        status="responded",
+                        client_response="Rev B load table submitted.",
+                        reopen_review_items=["uplift_force_kn"],
+                        triggers_incremental_recheck=True,
+                    )
+                ],
+            )
+        ),
+        build_project_management_actions(
+            ProjectReviewState(
+                project_id="pv-localized-quality-gates",
+                intake=_sample_intake(),
+                current_phase="report_draft",
+            )
+        )[0],
+    ]
 
     zh_rows = build_project_management_action_rows(actions, "zh")
     en_rows = build_project_management_action_rows(actions, "en")
 
     assert zh_rows[0]["行动类型"] == "RFI 工程师关闭"
     assert zh_rows[0]["优先级"] == "高"
+    assert zh_rows[-1]["行动类型"] == "质量门禁跟进"
+    assert zh_rows[-1]["建议动作"] == "跟进未通过的质量门禁，补齐证据并记录工程师判断后再进入报告签发。"
     assert en_rows[0]["Action Type"] == "RFI Engineer Closeout"
     assert en_rows[0]["Priority"] == "High"
-    assert "Close RFI" in en_rows[0]["Recommended Action"]
+    assert en_rows[-1]["Action Type"] == "Quality Gate Follow-up"
+    assert "Resolve the open quality gate" in en_rows[-1]["Recommended Action"]
+
+
+def test_project_management_actions_skip_quality_gate_follow_up_at_intake() -> None:
+    state = ProjectReviewState(
+        project_id="pv-intake-not-ready-for-gate-follow-up",
+        intake=_sample_intake(),
+    )
+
+    assert build_project_management_actions(state) == []
+
+
+def test_project_management_actions_ignore_locked_quality_gates() -> None:
+    state = ProjectReviewState(
+        project_id="pv-locked-quality-gates",
+        intake=_sample_intake(),
+        current_phase="report_draft",
+        basis_references=[
+            BVBasisReference(
+                basis_id="gb-50797",
+                title="PV station design basis",
+                source_type="code",
+                review_actions=["Use as review basis."],
+            )
+        ],
+        approvals=[
+            EngineerApproval(
+                approval_id="calculation-gate-approval",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            ),
+            EngineerApproval(
+                approval_id="report-gate-approval",
+                target_type="gate",
+                target_id="report",
+                status="approved",
+                locked=True,
+            ),
+        ],
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-001",
+                source_phase="report_draft",
+                report_title="BV 光伏结构设计审查报告",
+                section_count=9,
+                rfi_count=0,
+                created_by="Engineer A",
+            )
+        ],
+    )
+
+    assert build_project_management_actions(state) == []
 
 
 def _sample_intake() -> BVReviewIntake:

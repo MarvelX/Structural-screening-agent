@@ -266,7 +266,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             blocking_action_count=4,
             workflow_status="blocked",
             next_action_ids=["rfi-client-response-rfi-001", "agent-review-agent-event-001"],
-            next_action_categories=["rfi_client_response", "agent_engineer_review"],
+            next_action_categories=["rfi_client_response", "quality_gate_follow_up"],
             next_action_owner_roles=["client / designer", "BV structural review engineer"],
         )
     ]
@@ -292,7 +292,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "阻塞待办": 4,
             "工作流状态": "阻塞",
             "下一步行动": "rfi-client-response-rfi-001, agent-review-agent-event-001",
-            "下一步类型": "RFI 客户回复, Agent 产物复核",
+            "下一步类型": "RFI 客户回复, 质量门禁跟进",
             "下一步责任方": "客户 / 设计院, BV 结构审核工程师",
         }
     ]
@@ -314,7 +314,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "Blocking Actions": 4,
             "Workflow Status": "Blocked",
             "Next Actions": "rfi-client-response-rfi-001, agent-review-agent-event-001",
-            "Next Action Types": "RFI Client Response, Agent Output Review",
+            "Next Action Types": "RFI Client Response, Quality Gate Follow-up",
             "Next Action Owners": "Client / Designer, BV structural review engineer",
         }
     ]

@@ -8,6 +8,7 @@ from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
     CalculationRun,
     ProjectReviewState,
+    REVIEW_PHASES,
 )
 from structural_screening_agent.bv_review.models import BVRiskItem
 
@@ -18,6 +19,7 @@ ProjectActionCategory = Literal[
     "finding_closeout",
     "agent_engineer_review",
     "calculation_follow_up",
+    "quality_gate_follow_up",
     "report_revision",
 ]
 ProjectActionPriority = Literal["high", "medium", "low"]
@@ -42,6 +44,7 @@ def build_project_management_actions(
     actions.extend(_finding_actions(state))
     actions.extend(_agent_review_actions(state))
     actions.extend(_calculation_actions(state))
+    actions.extend(_quality_gate_actions(state))
     report_revision_action = _report_revision_action(state)
     if report_revision_action is not None:
         actions.append(report_revision_action)
@@ -196,6 +199,80 @@ def _report_revision_action(
     )
 
 
+def _quality_gate_actions(state: ProjectReviewState) -> list[ProjectManagementAction]:
+    actions: list[ProjectManagementAction] = []
+    if _workflow_has_reached(state, "document_check") and any(
+        status == "missing" for status in state.intake.documents.values()
+    ):
+        actions.append(
+            _quality_gate_action(
+                gate_id="document",
+                owner_role="client / designer",
+                recommended_action=(
+                    "Close the document gate by requesting missing required inputs or "
+                    "recording engineer acceptance of unavailable documents."
+                ),
+            )
+        )
+    if _workflow_has_reached(state, "basis_build") and not state.basis_references:
+        actions.append(
+            _quality_gate_action(
+                gate_id="basis",
+                owner_role="BV project review lead",
+                recommended_action=(
+                    "Resolve the open quality gate by adding traceable review basis "
+                    "references and recording engineer judgment."
+                ),
+            )
+        )
+    if _workflow_has_reached(state, "engineer_data_lock") and not state.is_gate_locked(
+        "calculation"
+    ):
+        actions.append(
+            _quality_gate_action(
+                gate_id="calculation",
+                owner_role="BV project review lead",
+                recommended_action=(
+                    "Resolve the open quality gate by locking calculation inputs or "
+                    "recording why deterministic checks remain blocked."
+                ),
+            )
+        )
+    if _workflow_has_reached(state, "report_draft") and not state.is_gate_locked("report"):
+        actions.append(
+            _quality_gate_action(
+                gate_id="report",
+                owner_role="BV project review lead",
+                recommended_action=(
+                    "Resolve the open quality gate by completing report gate evidence "
+                    "review and recording engineer approval."
+                ),
+            )
+        )
+    return actions
+
+
+def _quality_gate_action(
+    *,
+    gate_id: str,
+    owner_role: str,
+    recommended_action: str,
+) -> ProjectManagementAction:
+    return ProjectManagementAction(
+        action_id=f"quality-gate-follow-up-{gate_id}",
+        category="quality_gate_follow_up",
+        priority="medium",
+        owner_role=owner_role,
+        trigger_evidence_ids=[gate_id],
+        recommended_action=recommended_action,
+        blocks_report_issue=True,
+    )
+
+
+def _workflow_has_reached(state: ProjectReviewState, phase: str) -> bool:
+    return REVIEW_PHASES.index(state.current_phase) >= REVIEW_PHASES.index(phase)
+
+
 def _agent_event_waits_for_engineer(
     state: ProjectReviewState,
     event: AgentWorkflowEvent,
@@ -218,7 +295,8 @@ def _action_sort_key(action: ProjectManagementAction) -> tuple[int, int, str]:
         "finding_closeout": 2,
         "agent_engineer_review": 3,
         "calculation_follow_up": 4,
-        "report_revision": 5,
+        "quality_gate_follow_up": 5,
+        "report_revision": 6,
     }[action.category]
     return priority_rank, category_rank, action.action_id
 
@@ -247,6 +325,10 @@ def _category_label(
         "calculation_follow_up": {
             "zh": "计算输入跟进",
             "en": "Calculation Follow-up",
+        },
+        "quality_gate_follow_up": {
+            "zh": "质量门禁跟进",
+            "en": "Quality Gate Follow-up",
         },
         "report_revision": {
             "zh": "报告修订记录",
@@ -291,6 +373,7 @@ def _localized_recommended_action(
         "finding_closeout": "工程师复核证据后关闭发现项，或记录可接受的残余意见后再进入报告签发。",
         "agent_engineer_review": "复核 Agent 产物，记录批准或驳回决定及工程判断依据。",
         "calculation_follow_up": "补齐或修正确定性计算输入，避免将失败计算用于报告结论。",
+        "quality_gate_follow_up": "跟进未通过的质量门禁，补齐证据并记录工程师判断后再进入报告签发。",
         "report_revision": "报告门禁批准后记录可追踪的报告修订快照。",
     }
     return labels[action.category]
