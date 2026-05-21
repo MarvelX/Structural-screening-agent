@@ -703,6 +703,7 @@ def build_project_review_state_summary_rows(
             "blocking_action_count": "阻塞待办",
             "workflow_status": "工作流状态",
             "next_action_ids": "下一步行动",
+            "next_action_categories": "下一步类型",
         }
         if language == "zh"
         else {
@@ -720,6 +721,7 @@ def build_project_review_state_summary_rows(
             "blocking_action_count": "Blocking Actions",
             "workflow_status": "Workflow Status",
             "next_action_ids": "Next Actions",
+            "next_action_categories": "Next Action Types",
         }
     )
     return [
@@ -743,6 +745,10 @@ def build_project_review_state_summary_rows(
                 language,
             ),
             labels["next_action_ids"]: ", ".join(summary.next_action_ids),
+            labels["next_action_categories"]: ", ".join(
+                _project_action_category_label(category, language)
+                for category in summary.next_action_categories
+            ),
         }
         for summary in summaries
     ]
@@ -755,6 +761,36 @@ def _project_inventory_workflow_status_label(status: str, language: Language) ->
         "ready": {"zh": "可继续", "en": "Ready"},
     }
     return labels.get(status, {}).get(language, status)
+
+
+def _project_action_category_label(category: str, language: Language) -> str:
+    labels = {
+        "rfi_client_response": {
+            "zh": "RFI 客户回复",
+            "en": "RFI Client Response",
+        },
+        "rfi_engineer_closeout": {
+            "zh": "RFI 工程师关闭",
+            "en": "RFI Engineer Closeout",
+        },
+        "finding_closeout": {
+            "zh": "发现项关闭",
+            "en": "Finding Closeout",
+        },
+        "agent_engineer_review": {
+            "zh": "Agent 产物复核",
+            "en": "Agent Output Review",
+        },
+        "calculation_follow_up": {
+            "zh": "计算输入跟进",
+            "en": "Calculation Follow-up",
+        },
+        "report_revision": {
+            "zh": "报告修订记录",
+            "en": "Report Revision Snapshot",
+        },
+    }
+    return labels.get(category, {}).get(language, category)
 
 
 def build_report_revision_history_rows(

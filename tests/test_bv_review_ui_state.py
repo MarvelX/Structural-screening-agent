@@ -263,6 +263,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             blocking_action_count=4,
             workflow_status="blocked",
             next_action_ids=["rfi-client-response-rfi-001", "agent-review-agent-event-001"],
+            next_action_categories=["rfi_client_response", "agent_engineer_review"],
         )
     ]
 
@@ -285,6 +286,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "阻塞待办": 4,
             "工作流状态": "阻塞",
             "下一步行动": "rfi-client-response-rfi-001, agent-review-agent-event-001",
+            "下一步类型": "RFI 客户回复, Agent 产物复核",
         }
     ]
     assert en_rows == [
@@ -303,6 +305,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "Blocking Actions": 4,
             "Workflow Status": "Blocked",
             "Next Actions": "rfi-client-response-rfi-001, agent-review-agent-event-001",
+            "Next Action Types": "RFI Client Response, Agent Output Review",
         }
     ]
     assert "Document Check" not in str(zh_rows)
