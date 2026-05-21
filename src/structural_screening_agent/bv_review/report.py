@@ -86,6 +86,9 @@ def build_bv_report_preview(
             ],
         ),
     ]
+    active_rfi_section = build_bv_active_rfi_register_section(project_state)
+    if active_rfi_section is not None:
+        sections.insert(-1, active_rfi_section)
     rfi_closeout_section = build_bv_rfi_closeout_evidence_section(project_state)
     if rfi_closeout_section is not None:
         sections.insert(-1, rfi_closeout_section)
@@ -108,10 +111,7 @@ def build_bv_open_rfi_items(risks: list[BVRiskItem]) -> list[RFIItem]:
         rfi_items.append(
             RFIItem(
                 rfi_id=f"rfi-{risk.risk_id}",
-                question=(
-                    f"请针对筛查级发现“{risk.title}”提供澄清、补充资料或设计方处置意见；"
-                    "该问题需工程师复核后再进入报告结论。"
-                ),
+                question=_build_rfi_question_from_risk(risk),
                 responsible_party="client / designer",
                 trigger_basis=risk.trigger_basis,
                 required_document_or_field=", ".join(reopen_items),
@@ -121,6 +121,51 @@ def build_bv_open_rfi_items(risks: list[BVRiskItem]) -> list[RFIItem]:
             )
         )
     return rfi_items
+
+
+def _build_rfi_question_from_risk(risk: BVRiskItem) -> str:
+    if risk.risk_id.startswith("calculation_blocked_"):
+        return (
+            f"请针对筛查级发现“{risk.title}”关闭确定性计算输入缺口，"
+            "确认相关输入值、单位、资料版本和设计方处置意见；"
+            "工程师复核后需重新运行筛查级计算，再进入报告结论。"
+        )
+
+    return (
+        f"请针对筛查级发现“{risk.title}”提供澄清、补充资料或设计方处置意见；"
+        "该问题需工程师复核后再进入报告结论。"
+    )
+
+
+def build_bv_active_rfi_register_section(
+    project_state: ProjectReviewState | None,
+) -> BVReportSection | None:
+    if project_state is None:
+        return None
+
+    active_rfis = [
+        item
+        for item in project_state.rfi_items
+        if item.status in {"open", "responded", "reopened"}
+    ]
+    if not active_rfis:
+        return None
+
+    return BVReportSection(
+        heading="未关闭 RFI 与客户澄清项",
+        items=[
+            (
+                f"RFI {item.rfi_id} | "
+                f"状态: {item.status} | "
+                f"责任方: {item.responsible_party} | "
+                f"触发依据: {item.trigger_basis} | "
+                f"要求资料/字段: {item.required_document_or_field} | "
+                f"增量复核: {'是' if item.triggers_incremental_recheck else '否'} | "
+                f"问题: {item.question}"
+            )
+            for item in active_rfis
+        ],
+    )
 
 
 def build_bv_rfi_closeout_evidence_section(

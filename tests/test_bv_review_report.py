@@ -1,6 +1,6 @@
 from datetime import date
 
-from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.models import BVReviewIntake, BVRiskItem
 from structural_screening_agent.bv_review.report import (
     build_bv_open_rfi_items,
     build_bv_markdown_report,
@@ -179,6 +179,78 @@ def test_bv_markdown_report_includes_closed_rfi_recheck_evidence_when_state_is_p
     assert "关闭证据: 已完成增量复核" in report
 
 
+def test_bv_report_preview_includes_active_rfi_register_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-active-rfi",
+        intake=intake,
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-calculation-blocked-foundation",
+                question="请补充基础抗拔计算输入并确认单位。",
+                responsible_party="client / designer",
+                trigger_basis="基础确定性计算输入阻塞。",
+                required_document_or_field="pile_length_m, uplift_force_kn",
+                status="open",
+                reopen_review_items=["pile_length_m", "uplift_force_kn"],
+                triggers_incremental_recheck=True,
+            ),
+            RFIItem(
+                rfi_id="rfi-closed-reference",
+                question="已关闭 RFI 不应进入未关闭台账。",
+                responsible_party="client",
+                trigger_basis="已关闭。",
+                required_document_or_field="technical_specification",
+                status="closed",
+                client_response="Rev B 已补充。",
+            ),
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(
+        section
+        for section in preview.sections
+        if section.heading == "未关闭 RFI 与客户澄清项"
+    )
+    text = "\n".join(section.items)
+
+    assert "rfi-calculation-blocked-foundation" in text
+    assert "状态: open" in text
+    assert "触发依据: 基础确定性计算输入阻塞。" in text
+    assert "pile_length_m, uplift_force_kn" in text
+    assert "增量复核: 是" in text
+    assert "rfi-closed-reference" not in text
+
+
+def test_bv_markdown_report_includes_active_rfi_register_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-active-rfi",
+        intake=intake,
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-calculation-blocked-superstructure",
+                question="请确认支架立柱截面和最不利弯矩。",
+                responsible_party="client / designer",
+                trigger_basis="上部支架构件确定性计算输入阻塞。",
+                required_document_or_field="post_section, worst_bending_moment_knm",
+                status="reopened",
+                reopen_review_items=["post_section", "worst_bending_moment_knm"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "## 未关闭 RFI 与客户澄清项" in report
+    assert "rfi-calculation-blocked-superstructure" in report
+    assert "post_section, worst_bending_moment_knm" in report
+
+
 def test_bv_report_filename_uses_date_and_scope_key() -> None:
     filename = build_bv_report_filename("rooftop_pv_review", report_date=date(2026, 5, 9))
 
@@ -216,3 +288,26 @@ def test_bv_open_rfi_item_preserves_risk_traceability_and_screening_boundary() -
     assert rfi_item.trigger_basis == blocking_risk.trigger_basis
     assert rfi_item.required_document_or_field == ", ".join(blocking_risk.linked_field_ids)
     assert rfi_item.reopen_review_items == blocking_risk.linked_field_ids
+
+
+def test_bv_open_rfi_item_for_blocked_calculation_names_deterministic_input_closeout() -> None:
+    risk = BVRiskItem(
+        risk_id="calculation_blocked_superstructure_run_post_p1_001",
+        title="上部支架构件确定性计算输入阻塞",
+        severity="critical",
+        trigger_basis="确定性筛查计算 superstructure-run-post-P1-001: 状态=blocked。",
+        linked_field_ids=["post_section", "worst_bending_moment_knm"],
+        impact_scope="上部支架构件强度、稳定和相关 RFI/NCR 判断",
+        recommendation="先关闭确定性计算输入缺口。",
+        blocks_report_issue=True,
+        category="nonconformity",
+    )
+
+    rfi_item = build_bv_open_rfi_items([risk])[0]
+
+    assert "确定性计算输入缺口" in rfi_item.question
+    assert "单位" in rfi_item.question
+    assert "资料版本" in rfi_item.question
+    assert "重新运行筛查级计算" in rfi_item.question
+    assert "筛查级" in rfi_item.question
+    assert rfi_item.required_document_or_field == "post_section, worst_bending_moment_knm"
