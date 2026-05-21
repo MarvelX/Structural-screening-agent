@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Optional
+
 from structural_screening_agent.bv_review.project_state import (
     REVIEW_PHASES,
     ProjectReviewState,
@@ -7,7 +9,7 @@ from structural_screening_agent.bv_review.project_state import (
 )
 
 
-def _next_phase_after(current_phase: ReviewPhase) -> ReviewPhase | None:
+def _next_phase_after(current_phase: ReviewPhase) -> Optional[ReviewPhase]:
     current_index = REVIEW_PHASES.index(current_phase)
     next_index = current_index + 1
     if next_index >= len(REVIEW_PHASES):

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import MutableMapping
-from typing import Literal
+from typing import Literal, Optional
 
 from structural_screening_agent.bv_review.agent_runner import (
     PersistedWorkflowRunResult,
@@ -74,7 +74,7 @@ def clear_persisted_workflow_session(session_state: MutableMapping[str, object])
 
 def get_active_persisted_project_id(
     session_state: MutableMapping[str, object],
-) -> str | None:
+) -> Optional[str]:
     project_id = session_state.get(_PROJECT_ID_KEY)
     if isinstance(project_id, str) and project_id:
         return project_id
@@ -101,7 +101,7 @@ def _artifact_counts_for_state(state: ProjectReviewState) -> dict[str, int]:
 def get_active_persisted_workflow_state(
     session_state: MutableMapping[str, object],
     project_id: str,
-) -> ProjectReviewState | None:
+) -> Optional[ProjectReviewState]:
     if session_state.get(_PROJECT_ID_KEY) != project_id:
         return None
     state = session_state.get(_STATE_KEY)
@@ -113,7 +113,7 @@ def get_active_persisted_workflow_state(
 def get_active_persisted_workflow_summary(
     session_state: MutableMapping[str, object],
     project_id: str,
-) -> PersistedWorkflowRunSummary | None:
+) -> Optional[PersistedWorkflowRunSummary]:
     if session_state.get(_PROJECT_ID_KEY) != project_id:
         return None
     summary = session_state.get(_SUMMARY_KEY)
@@ -182,7 +182,7 @@ def record_persisted_report_revision(
     gate_result: ReportDraftGateResult,
     reviewer: str,
     note: str = "",
-    created_at: str | None = None,
+    created_at: Optional[str] = None,
 ) -> ProjectReviewState:
     state = get_active_persisted_workflow_state(session_state, project_id)
     if state is None:
@@ -231,7 +231,7 @@ def close_persisted_rfi_after_engineer_review(
     project_id: str,
     rfi_id: str,
     closeout_note: str,
-    completed_recheck_item_ids: list[str] | None = None,
+    completed_recheck_item_ids: Optional[list[str]] = None,
 ) -> ProjectReviewState:
     state = get_active_persisted_workflow_state(session_state, project_id)
     if state is None:
@@ -276,7 +276,7 @@ def issue_persisted_blocked_calculation_draft_rfi(
     rfi_id: str,
     reviewer: str,
     comment: str = "",
-    approved_at: str | None = None,
+    approved_at: Optional[str] = None,
 ) -> ProjectReviewState:
     state = get_active_persisted_workflow_state(session_state, project_id)
     if state is None:

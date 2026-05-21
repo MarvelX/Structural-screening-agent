@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -9,6 +9,7 @@ from structural_screening_agent.bv_review.blocked_calculation_draft import (
 )
 from structural_screening_agent.bv_review.field_diff import (
     rfi_incremental_recheck_is_complete,
+    select_latest_calculation_evidence_runs,
 )
 from structural_screening_agent.bv_review.models import BVReportPreview, BVReviewResult
 from structural_screening_agent.bv_review.project_state import (
@@ -122,7 +123,7 @@ def close_rfi_after_engineer_review(
     *,
     rfi_id: str,
     closeout_note: str,
-    completed_recheck_item_ids: list[str] | None = None,
+    completed_recheck_item_ids: Optional[list[str]] = None,
 ) -> ProjectReviewState:
     if not closeout_note.strip():
         raise ValueError("RFI closeout note must not be empty.")
@@ -162,7 +163,7 @@ def issue_blocked_calculation_draft_rfi(
     rfi_id: str,
     reviewer: str,
     comment: str = "",
-    approved_at: str | None = None,
+    approved_at: Optional[str] = None,
 ) -> ProjectReviewState:
     if not reviewer.strip():
         raise ValueError("RFI issue reviewer must not be empty.")
@@ -283,7 +284,7 @@ def _all_incremental_rfis_closed(rfi_items: list[RFIItem]) -> bool:
 
 def _validate_completed_recheck_items(
     rfi: RFIItem,
-    completed_recheck_item_ids: list[str] | None,
+    completed_recheck_item_ids: Optional[list[str]],
 ) -> list[str]:
     if not rfi.triggers_incremental_recheck:
         return list(completed_recheck_item_ids or [])
@@ -382,11 +383,13 @@ def build_report_draft_gate_result(
             + ", ".join(rejected_agent_review_event_ids)
         )
 
-    executable_runs = [
-        run
-        for run in state.calculation_runs
-        if run.input_locked and run.status in {"ready", "completed"}
-    ]
+    executable_runs = select_latest_calculation_evidence_runs(
+        [
+            run
+            for run in state.calculation_runs
+            if run.input_locked and run.status in {"ready", "completed"}
+        ]
+    )
     if not state.is_gate_locked("calculation"):
         reasons.append("Calculation gate is not locked by an engineer.")
     if not executable_runs:
@@ -418,7 +421,7 @@ def record_report_revision(
     gate_result: ReportDraftGateResult,
     reviewer: str,
     note: str = "",
-    created_at: str | None = None,
+    created_at: Optional[str] = None,
 ) -> ProjectReviewState:
     if gate_result.status != "ready":
         raise ValueError(

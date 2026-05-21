@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from typing import Optional
 
 from structural_screening_agent.bv_review.models import (
     BVChecklistItem,
@@ -16,7 +17,7 @@ def build_risk_register(
     checklist: list[BVChecklistItem],
     review_paths: list[BVReviewPathItem],
     *,
-    calculation_runs: list[CalculationRun] | None = None,
+    calculation_runs: Optional[list[CalculationRun]] = None,
 ) -> list[BVRiskItem]:
     risks: list[BVRiskItem] = []
     for item in checklist:

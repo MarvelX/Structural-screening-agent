@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import pi
-from typing import Literal, Optional
+from typing import Dict, Literal, Optional, Tuple
 
 from pydantic import BaseModel, Field
 
@@ -241,9 +241,9 @@ def _validate_positive_inputs(input_data: BaseModel, field_names: list[str]) -> 
 def _confirmed_numeric_values(
     fields: list[ExtractedField],
     field_ids: tuple[str, ...],
-) -> tuple[dict[str, float | None], list[str]]:
+) -> Tuple[Dict[str, Optional[float]], list[str]]:
     field_by_id = {field.field_id: field for field in fields}
-    values: dict[str, float | None] = {}
+    values: Dict[str, Optional[float]] = {}
     errors: list[str] = []
 
     for field_id in field_ids:
@@ -313,7 +313,7 @@ def _completed_run(
     )
 
 
-def _as_float(value: float | None) -> float:
+def _as_float(value: Optional[float]) -> float:
     if value is None:
         raise ValueError("Validated numeric input unexpectedly became None.")
     return float(value)

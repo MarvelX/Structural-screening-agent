@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -64,7 +65,7 @@ def apply_authorized_agent_response_to_state(
     plan: AgentResponseApplicationPlan,
     authorization: AgentResponseApplicationAuthorization,
     *,
-    approved_at: str | None = None,
+    approved_at: Optional[str] = None,
 ) -> ProjectReviewState:
     if plan.plan_status != "ready_for_controlled_application":
         raise ValueError("Application plan must be ready before applying agent output.")

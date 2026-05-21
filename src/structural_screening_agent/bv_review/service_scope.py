@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -40,7 +40,7 @@ def build_service_scope_recommendations(
     intake: BVReviewIntake,
     result: BVReviewResult,
     *,
-    project_state: ProjectReviewState | None = None,
+    project_state: Optional[ProjectReviewState] = None,
 ) -> list[ServiceScopeRecommendation]:
     recommendations: list[ServiceScopeRecommendation] = []
     document_evidence = _document_evidence(result)
@@ -221,7 +221,7 @@ def _document_evidence(result: BVReviewResult) -> list[str]:
     ]
 
 
-def _active_rfi_ids(project_state: ProjectReviewState | None) -> list[str]:
+def _active_rfi_ids(project_state: Optional[ProjectReviewState]) -> list[str]:
     if project_state is None:
         return []
     return [
@@ -233,7 +233,7 @@ def _active_rfi_ids(project_state: ProjectReviewState | None) -> list[str]:
 
 def _calculation_evidence(
     result: BVReviewResult,
-    project_state: ProjectReviewState | None,
+    project_state: Optional[ProjectReviewState],
 ) -> list[str]:
     evidence_ids = [
         risk.risk_id

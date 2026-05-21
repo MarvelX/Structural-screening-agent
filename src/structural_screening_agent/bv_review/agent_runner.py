@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Optional
 
 from pydantic import BaseModel, Field
 
@@ -83,7 +84,7 @@ def resume_local_agent_workflow_after_review_decisions(
     return run_local_agent_workflow_until_blocked(reviewed_state)
 
 
-def run_local_agent_workflow_step(state: ProjectReviewState) -> ProjectReviewState | None:
+def run_local_agent_workflow_step(state: ProjectReviewState) -> Optional[ProjectReviewState]:
     if (
         state.current_phase != "intake"
         and state.phase_statuses.get(state.current_phase) != "approved"

@@ -23,7 +23,7 @@ def build_bv_report_preview(
     intake: BVReviewIntake,
     result: BVReviewResult,
     *,
-    project_state: ProjectReviewState | None = None,
+    project_state: Optional[ProjectReviewState] = None,
 ) -> BVReportPreview:
     blocking_items = [item for item in result.risks if item.blocks_report_issue]
     sections = [
@@ -140,8 +140,8 @@ def _build_rfi_question_from_risk(risk: BVRiskItem) -> str:
 
 
 def build_bv_active_rfi_register_section(
-    project_state: ProjectReviewState | None,
-) -> BVReportSection | None:
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
     if project_state is None:
         return None
 
@@ -171,8 +171,8 @@ def build_bv_active_rfi_register_section(
 
 
 def build_bv_rfi_closeout_evidence_section(
-    project_state: ProjectReviewState | None,
-) -> BVReportSection | None:
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
     if project_state is None:
         return None
 
@@ -207,8 +207,8 @@ def build_bv_service_scope_section(
     intake: BVReviewIntake,
     result: BVReviewResult,
     *,
-    project_state: ProjectReviewState | None = None,
-) -> BVReportSection | None:
+    project_state: Optional[ProjectReviewState] = None,
+) -> Optional[BVReportSection]:
     recommendations = build_service_scope_recommendations(
         intake,
         result,
@@ -235,7 +235,7 @@ def build_bv_markdown_report(
     intake: BVReviewIntake,
     result: BVReviewResult,
     *,
-    project_state: ProjectReviewState | None = None,
+    project_state: Optional[ProjectReviewState] = None,
 ) -> str:
     preview = (
         build_bv_report_preview(intake, result, project_state=project_state)

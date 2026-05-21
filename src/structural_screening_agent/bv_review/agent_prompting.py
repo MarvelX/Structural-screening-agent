@@ -207,7 +207,7 @@ def build_agent_provider_invocation_request(
     package: AgentPromptPackage,
     *,
     provider_name: str = "minimax",
-    model_name: str | None = None,
+    model_name: Optional[str] = None,
 ) -> AgentProviderInvocationRequest:
     return AgentProviderInvocationRequest(
         agent_role=package.agent_role,
@@ -278,7 +278,7 @@ def build_agent_response_sandbox_result(
     *,
     state: ProjectReviewState,
     provider_name: str = "minimax",
-    model_name: str | None = None,
+    model_name: Optional[str] = None,
 ) -> AgentResponseSandboxResult:
     invocation_request = build_agent_provider_invocation_request(
         package,
@@ -556,7 +556,7 @@ def parse_agent_json_response(
     agent_role: AgentRole,
     response_text: str,
     *,
-    state: ProjectReviewState | None = None,
+    state: Optional[ProjectReviewState] = None,
 ) -> AgentParsedOutput:
     try:
         payload = json.loads(response_text)
@@ -587,7 +587,7 @@ def validate_agent_json_response(
     agent_role: AgentRole,
     response_text: str,
     *,
-    state: ProjectReviewState | None = None,
+    state: Optional[ProjectReviewState] = None,
 ) -> AgentResponseValidationResult:
     output_model_name = _output_model_for_role(agent_role).__name__
     try:

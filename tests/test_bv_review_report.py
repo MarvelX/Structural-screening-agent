@@ -150,6 +150,58 @@ def test_bv_report_preview_includes_closed_rfi_recheck_evidence_when_state_is_pr
     ]
 
 
+def test_bv_report_preview_prefers_latest_incremental_recheck_evidence() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-rfi-closeout",
+        intake=intake,
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["uplift_force_kn"],
+                input_locked=True,
+                status="completed",
+            ),
+            CalculationRun(
+                run_id="incremental-recheck-rfi-foundation-run-001-foundation-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["uplift_force_kn"],
+                input_locked=True,
+                status="completed",
+            ),
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-run-001",
+                question="Please confirm foundation reaction updates.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation run requires clarification.",
+                required_document_or_field="uplift_force_kn",
+                status="closed",
+                client_response="Designer submitted Rev B reaction table.",
+                reopen_review_items=["uplift_force_kn"],
+                completed_recheck_items=["uplift_force_kn"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(
+        section
+        for section in preview.sections
+        if section.heading == "RFI 关闭与增量复核证据"
+    )
+    text = "\n".join(section.items)
+
+    assert "incremental-recheck-rfi-foundation-run-001-foundation-001" in text
+    assert "计算运行: foundation-run-001" not in text
+
+
 def test_bv_markdown_report_includes_closed_rfi_recheck_evidence_when_state_is_provided() -> None:
     intake = _sample_intake()
     result = evaluate_bv_review(intake)

@@ -87,8 +87,8 @@ def _build_diff(
     field_id: str,
     field_name: str,
     diff_type: FieldDiffType,
-    old_field: ExtractedField | None = None,
-    new_field: ExtractedField | None = None,
+    old_field: Optional[ExtractedField] = None,
+    new_field: Optional[ExtractedField] = None,
     calculation_runs: list[CalculationRun],
     risks: list[BVRiskItem],
 ) -> FieldDiff:
@@ -122,8 +122,8 @@ def diff_extracted_fields(
     old_fields: list[ExtractedField],
     new_fields: list[ExtractedField],
     *,
-    calculation_runs: list[CalculationRun] | None = None,
-    risks: list[BVRiskItem] | None = None,
+    calculation_runs: Optional[list[CalculationRun]] = None,
+    risks: Optional[list[BVRiskItem]] = None,
 ) -> list[FieldDiff]:
     runs = calculation_runs or []
     risk_items = risks or []
@@ -241,9 +241,9 @@ def build_incremental_recheck_plan(
 def build_incremental_recheck_plan_from_closed_rfis(
     rfi_items: list[RFIItem],
     *,
-    calculation_runs: list[CalculationRun] | None = None,
+    calculation_runs: Optional[list[CalculationRun]] = None,
 ) -> IncrementalRecheckPlan:
-    runs = calculation_runs or []
+    runs = select_latest_calculation_evidence_runs(calculation_runs or [])
     closed_rfis = [
         item
         for item in rfi_items
@@ -284,6 +284,32 @@ def rfi_incremental_recheck_is_complete(rfi: RFIItem) -> bool:
         and bool(required_items)
         and completed_items == required_items
     )
+
+
+def select_latest_calculation_evidence_runs(
+    calculation_runs: list[CalculationRun],
+) -> list[CalculationRun]:
+    covered_incremental_fields_by_engine: dict[str, set[str]] = {}
+    selected_reversed: list[CalculationRun] = []
+
+    for run in reversed(calculation_runs):
+        covered_fields = covered_incremental_fields_by_engine.get(run.engine_name, set())
+        run_fields = set(run.input_field_ids)
+        if run_fields and covered_fields.intersection(run_fields):
+            continue
+
+        selected_reversed.append(run)
+        if _is_incremental_recheck_run(run):
+            covered_incremental_fields_by_engine.setdefault(
+                run.engine_name,
+                set(),
+            ).update(run_fields)
+
+    return list(reversed(selected_reversed))
+
+
+def _is_incremental_recheck_run(run: CalculationRun) -> bool:
+    return run.run_id.startswith("incremental-recheck-")
 
 
 def _item_type_from_review_item(

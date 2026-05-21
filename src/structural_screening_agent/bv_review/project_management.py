@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -152,7 +152,7 @@ def _calculation_actions(state: ProjectReviewState) -> list[ProjectManagementAct
 
 def _report_revision_action(
     state: ProjectReviewState,
-) -> ProjectManagementAction | None:
+) -> Optional[ProjectManagementAction]:
     if not state.is_gate_locked("report") or state.report_revisions:
         return None
     return ProjectManagementAction(

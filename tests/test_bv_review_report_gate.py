@@ -301,6 +301,54 @@ def test_report_draft_gate_allows_closed_incremental_recheck_rfi() -> None:
     assert gate.incremental_recheck_rfi_ids == []
 
 
+def test_report_draft_gate_prefers_latest_incremental_recheck_calculation_evidence() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = _sample_state(intake).model_copy(
+        update={
+            "calculation_runs": [
+                CalculationRun(
+                    run_id="foundation-run-001",
+                    engine_name="foundation",
+                    engine_version="phase1-deterministic-screening",
+                    input_field_ids=["pile_length_m", "uplift_force_kn"],
+                    input_locked=True,
+                    status="completed",
+                ),
+                CalculationRun(
+                    run_id="incremental-recheck-rfi-foundation-run-001-foundation-001",
+                    engine_name="foundation",
+                    engine_version="phase1-deterministic-screening",
+                    input_field_ids=["pile_length_m", "uplift_force_kn"],
+                    input_locked=True,
+                    status="completed",
+                ),
+            ],
+            "rfi_items": [
+                RFIItem(
+                    rfi_id="rfi-foundation-run-001",
+                    question="Please confirm foundation reaction updates.",
+                    responsible_party="client / designer",
+                    trigger_basis="Foundation run requires clarification.",
+                    required_document_or_field="uplift_force_kn",
+                    status="closed",
+                    client_response="Designer submitted Rev B reaction table.",
+                    reopen_review_items=["uplift_force_kn"],
+                    completed_recheck_items=["uplift_force_kn"],
+                    triggers_incremental_recheck=True,
+                )
+            ],
+        }
+    )
+
+    gate = build_report_draft_gate_result(state, result)
+
+    assert gate.status == "ready"
+    assert gate.calculation_run_ids == [
+        "incremental-recheck-rfi-foundation-run-001-foundation-001"
+    ]
+
+
 def test_report_draft_gate_blocks_closed_incremental_rfi_without_completed_recheck_items() -> None:
     intake = _sample_intake()
     result = evaluate_bv_review(intake)

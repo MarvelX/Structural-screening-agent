@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from re import fullmatch
+from typing import Union
 
 from pydantic import BaseModel, ValidationError
 
@@ -33,7 +34,7 @@ class ProjectReviewStateInventory(BaseModel):
 
 
 class JsonProjectReviewStateRepository:
-    def __init__(self, root: Path | str):
+    def __init__(self, root: Union[Path, str]):
         self.root = Path(root)
 
     def _path_for(self, project_id: str) -> Path:
