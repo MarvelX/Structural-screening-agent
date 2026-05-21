@@ -782,33 +782,42 @@ def build_project_timeline_rows(
 ) -> list[dict[str, object]]:
     labels = (
         {
+            "sort": "排序",
             "type": "类型",
             "item_id": "项目 ID",
             "status": "状态",
+            "owner": "责任方",
             "linked_object": "关联对象",
             "description": "说明",
             "evidence": "证据",
+            "suggested_action": "建议动作",
         }
         if language == "zh"
         else {
+            "sort": "Sort",
             "type": "Type",
             "item_id": "Item ID",
             "status": "Status",
+            "owner": "Owner",
             "linked_object": "Linked Object",
             "description": "Description",
             "evidence": "Evidence",
+            "suggested_action": "Suggested Action",
         }
     )
     rows: list[dict[str, object]] = []
     for rfi in state.rfi_items:
         rows.append(
             {
+                labels["sort"]: f"01-RFI-{rfi.rfi_id}",
                 labels["type"]: "RFI",
                 labels["item_id"]: rfi.rfi_id,
                 labels["status"]: _rfi_status_label(rfi.status, language),
+                labels["owner"]: rfi.responsible_party,
                 labels["linked_object"]: rfi.required_document_or_field,
                 labels["description"]: rfi.trigger_basis,
                 labels["evidence"]: rfi.client_response or "",
+                labels["suggested_action"]: _timeline_rfi_action(language),
             }
         )
     for risk in state.risks:
@@ -816,23 +825,29 @@ def build_project_timeline_rows(
             continue
         rows.append(
             {
+                labels["sort"]: f"02-FINDING-{risk.risk_id}",
                 labels["type"]: "发现项" if language == "zh" else "Finding",
                 labels["item_id"]: risk.risk_id,
                 labels["status"]: _finding_status_label(risk.status, language),
+                labels["owner"]: "工程师" if language == "zh" else "Engineer",
                 labels["linked_object"]: risk.impact_scope,
                 labels["description"]: risk.title,
                 labels["evidence"]: risk.closeout_note or "",
+                labels["suggested_action"]: _timeline_finding_action(language),
             }
         )
     for revision in state.report_revisions:
         rows.append(
             {
+                labels["sort"]: f"03-REPORT-{revision.revision_id}",
                 labels["type"]: "报告版本" if language == "zh" else "Report Revision",
                 labels["item_id"]: revision.revision_id,
                 labels["status"]: BV_REVIEW_PHASE_LABELS[revision.source_phase][language],
+                labels["owner"]: revision.created_by,
                 labels["linked_object"]: ", ".join(revision.calculation_run_ids),
                 labels["description"]: revision.report_title,
                 labels["evidence"]: revision.note or "",
+                labels["suggested_action"]: _timeline_report_revision_action(language),
             }
         )
     return rows
@@ -1070,6 +1085,24 @@ def _finding_status_label(status: str, language: Language) -> str:
         },
     }
     return labels.get(status, {}).get(language, status)
+
+
+def _timeline_rfi_action(language: Language) -> str:
+    if language == "zh":
+        return "工程师复核客户回复并保留关闭证据"
+    return "Engineer reviews client response and keeps closeout evidence"
+
+
+def _timeline_finding_action(language: Language) -> str:
+    if language == "zh":
+        return "保留发现项关闭证据并进入报告"
+    return "Keep finding closeout evidence in the report"
+
+
+def _timeline_report_revision_action(language: Language) -> str:
+    if language == "zh":
+        return "按报告版本记录继续内部复核"
+    return "Continue internal review from the recorded report revision"
 
 
 def _agent_review_todo_status(language: Language) -> str:
