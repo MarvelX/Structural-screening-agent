@@ -65,6 +65,7 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     record_persisted_agent_review_decision,
     record_persisted_report_revision,
     record_persisted_rfi_client_response,
+    run_persisted_rfi_incremental_calculation_recheck,
     store_persisted_workflow_state,
     store_persisted_workflow_result,
 )
@@ -232,6 +233,11 @@ def _split_calc_detail(detail: str) -> tuple[str, str, Optional[str]]:
         value, summary = main_line.split(" | ", 1)
         return value.strip(), summary.strip(), formula_line
     return main_line.strip(), "", formula_line
+
+
+def _label(labels: dict[str, dict[str, str]], value: str, language: Language) -> str:
+    localized = labels.get(value, {})
+    return localized.get(language) or localized.get("en") or value
 
 
 def _render_card(card: ContentCard) -> None:
@@ -1940,7 +1946,23 @@ with bv_review_tab:
                     key=persisted_rfi_closeout_note_key,
                     height=80,
                 )
-                response_col, closeout_col = st.columns(2)
+                recheck_required = selected_persisted_rfi.triggers_incremental_recheck
+                recheck_complete = (
+                    bool(selected_persisted_rfi.reopen_review_items)
+                    and set(selected_persisted_rfi.completed_recheck_items)
+                    == set(selected_persisted_rfi.reopen_review_items)
+                )
+                if (
+                    selected_persisted_rfi.status == "responded"
+                    and recheck_required
+                    and not recheck_complete
+                ):
+                    st.caption(
+                        "Run deterministic incremental recheck before closing this RFI."
+                        if ui_language == "en"
+                        else "关闭该 RFI 前，需要先运行确定性增量复核。"
+                    )
+                response_col, recheck_col, closeout_col = st.columns(3)
                 with response_col:
                     response_disabled = selected_persisted_rfi.status not in {
                         "open",
@@ -1971,8 +1993,55 @@ with bv_review_tab:
                                 else "已记录 RFI 客户回复。"
                             )
                             st.rerun()
+                with recheck_col:
+                    recheck_disabled = (
+                        selected_persisted_rfi.status != "responded"
+                        or not recheck_required
+                        or recheck_complete
+                    )
+                    if st.button(
+                        "Run Deterministic Recheck"
+                        if ui_language == "en"
+                        else "运行确定性增量复核",
+                        key="bv_run_persisted_rfi_incremental_recheck",
+                        use_container_width=True,
+                        disabled=recheck_disabled,
+                    ):
+                        try:
+                            rechecked_state = run_persisted_rfi_incremental_calculation_recheck(
+                                st.session_state,
+                                persisted_repository,
+                                project_id=active_persisted_project_id,
+                                rfi_id=selected_persisted_rfi_id,
+                            )
+                        except ValueError as exc:
+                            st.warning(str(exc))
+                        else:
+                            rechecked_rfi = next(
+                                item
+                                for item in rechecked_state.rfi_items
+                                if item.rfi_id == selected_persisted_rfi_id
+                            )
+                            rechecked_complete = set(
+                                rechecked_rfi.completed_recheck_items
+                            ) == set(rechecked_rfi.reopen_review_items)
+                            if rechecked_complete:
+                                st.success(
+                                    "Deterministic incremental recheck completed and saved."
+                                    if ui_language == "en"
+                                    else "确定性增量复核已完成并保存。"
+                                )
+                            else:
+                                st.warning(
+                                    "Deterministic recheck was saved but remains blocked; correct the inputs and rerun."
+                                    if ui_language == "en"
+                                    else "确定性复核已保存但仍处于阻塞状态；请修正输入后重新运行。"
+                                )
+                            st.rerun()
                 with closeout_col:
-                    closeout_disabled = selected_persisted_rfi.status != "responded"
+                    closeout_disabled = selected_persisted_rfi.status != "responded" or (
+                        recheck_required and not recheck_complete
+                    )
                     if st.button(
                         "Close RFI After Engineer Review"
                         if ui_language == "en"
@@ -1989,7 +2058,9 @@ with bv_review_tab:
                                 rfi_id=selected_persisted_rfi_id,
                                 closeout_note=persisted_rfi_closeout_note,
                                 completed_recheck_item_ids=(
-                                    selected_persisted_rfi.reopen_review_items
+                                    selected_persisted_rfi.completed_recheck_items
+                                    if recheck_required
+                                    else None
                                 ),
                             )
                         except ValueError as exc:

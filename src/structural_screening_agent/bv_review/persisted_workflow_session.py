@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from collections.abc import MutableMapping
 from typing import Literal
 
@@ -12,6 +14,9 @@ from structural_screening_agent.bv_review.agent_prompting import (
     AgentResponseApplicationAuthorization,
     AgentResponseApplicationPlan,
     AgentResponseSandboxResult,
+)
+from structural_screening_agent.bv_review.calculation_workflow import (
+    run_incremental_calculation_recheck_for_rfi,
 )
 from structural_screening_agent.bv_review.human_gate import (
     ReportDraftGateResult,
@@ -237,6 +242,26 @@ def close_persisted_rfi_after_engineer_review(
         rfi_id=rfi_id,
         closeout_note=closeout_note,
         completed_recheck_item_ids=completed_recheck_item_ids,
+    )
+    repository.save(updated_state)
+    store_persisted_workflow_state(session_state, updated_state)
+    return updated_state
+
+
+def run_persisted_rfi_incremental_calculation_recheck(
+    session_state: MutableMapping[str, object],
+    repository: JsonProjectReviewStateRepository,
+    *,
+    project_id: str,
+    rfi_id: str,
+) -> ProjectReviewState:
+    state = get_active_persisted_workflow_state(session_state, project_id)
+    if state is None:
+        raise ValueError("No active persisted workflow state is loaded for this project.")
+
+    updated_state = run_incremental_calculation_recheck_for_rfi(
+        state,
+        rfi_id=rfi_id,
     )
     repository.save(updated_state)
     store_persisted_workflow_state(session_state, updated_state)

@@ -133,6 +133,7 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     app_source = (root / "app.py").read_text()
     gitignore = (root / ".gitignore").read_text()
 
+    assert "def _label(" in app_source
     assert "JsonProjectReviewStateRepository" in app_source
     assert "run_persisted_local_agent_workflow_with_summary" in app_source
     assert "build_persisted_workflow_run_summary_rows" in app_source
@@ -158,6 +159,7 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "record_persisted_report_revision" in app_source
     assert "record_persisted_rfi_client_response" in app_source
     assert "close_persisted_rfi_after_engineer_review" in app_source
+    assert "run_persisted_rfi_incremental_calculation_recheck" in app_source
     assert "apply_persisted_authorized_agent_response" in app_source
     assert "store_persisted_workflow_state" in app_source
     assert "build_bv_review_result_from_project_state" in app_source
@@ -172,6 +174,16 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"持久化 RFI 台账"' in app_source
     assert '"Record RFI Client Response"' in app_source
     assert '"记录 RFI 客户回复"' in app_source
+    assert '"Run Deterministic Recheck"' in app_source
+    assert '"运行确定性增量复核"' in app_source
+    assert "Run deterministic incremental recheck before closing this RFI." in app_source
+    assert "关闭该 RFI 前，需要先运行确定性增量复核。" in app_source
+    assert "Deterministic incremental recheck completed and saved." in app_source
+    assert "确定性增量复核已完成并保存。" in app_source
+    assert "Deterministic recheck was saved but remains blocked" in app_source
+    assert "确定性复核已保存但仍处于阻塞状态" in app_source
+    assert "rechecked_complete" in app_source
+    assert "selected_persisted_rfi.completed_recheck_items" in app_source
     assert '"Close RFI After Engineer Review"' in app_source
     assert '"工程师复核后关闭 RFI"' in app_source
     assert 'f"bv_persisted_rfi_client_response_{selected_persisted_rfi_id}"' in app_source

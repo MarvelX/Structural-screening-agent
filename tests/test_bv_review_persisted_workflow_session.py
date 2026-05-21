@@ -17,6 +17,7 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     record_persisted_agent_review_decision,
     record_persisted_report_revision,
     record_persisted_rfi_client_response,
+    run_persisted_rfi_incremental_calculation_recheck,
     store_persisted_workflow_state,
     store_persisted_workflow_result,
 )
@@ -32,6 +33,7 @@ from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
     DocumentVersion,
     EngineerApproval,
+    ExtractedField,
     RFIItem,
 )
 from structural_screening_agent.bv_review.report import build_bv_report_preview
@@ -411,6 +413,86 @@ def test_persisted_workflow_blocked_calculation_draft_rfi_issue_saves_state_and_
     assert active_summary.artifact_counts["approvals"] == 1
 
 
+def test_persisted_workflow_incremental_rfi_recheck_saves_runs_and_session(
+    tmp_path,
+) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    state = ProjectReviewState(
+        project_id="pv-rfi-recheck",
+        intake=_report_ready_intake(),
+        current_phase="issue_rfi_closeout",
+        extracted_fields=_locked_calculation_fields(),
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                locked=True,
+            )
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["uplift_force_kn"],
+                input_locked=True,
+                status="completed",
+            )
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-run-001",
+                question="Please confirm foundation reaction updates.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation run requires clarification.",
+                required_document_or_field="uplift_force_kn",
+                status="responded",
+                client_response="Designer submitted Rev B reaction table.",
+                reopen_review_items=["uplift_force_kn"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+    repository.save(state)
+    session_state: dict[str, object] = {}
+    store_persisted_workflow_result(
+        session_state,
+        PersistedWorkflowRunResult(
+            state=state,
+            summary=PersistedWorkflowRunSummary(
+                project_id="pv-rfi-recheck",
+                start_phase="issue_rfi_closeout",
+                final_phase="issue_rfi_closeout",
+                artifact_counts={"calculation_runs": 1, "rfi_items": 1},
+                saved=True,
+            ),
+        ),
+    )
+
+    updated_state = run_persisted_rfi_incremental_calculation_recheck(
+        session_state,
+        repository,
+        project_id="pv-rfi-recheck",
+        rfi_id="rfi-foundation-run-001",
+    )
+
+    persisted_state = repository.load("pv-rfi-recheck")
+    active_state = get_active_persisted_workflow_state(session_state, "pv-rfi-recheck")
+    assert updated_state == persisted_state
+    assert active_state == updated_state
+    assert updated_state.rfi_items[0].completed_recheck_items == ["uplift_force_kn"]
+    assert updated_state.calculation_runs[-1].run_id == (
+        "incremental-recheck-rfi-foundation-run-001-foundation-001"
+    )
+    assert updated_state.calculation_runs[-1].status == "completed"
+    active_summary = get_active_persisted_workflow_summary(session_state, "pv-rfi-recheck")
+    assert active_summary is not None
+    assert active_summary.artifact_counts["calculation_runs"] == 2
+    assert active_summary.artifact_counts["rfi_items"] == 1
+
+
 def _sample_intake() -> BVReviewIntake:
     return BVReviewIntake(
         project_name="Ground PV design review",
@@ -425,6 +507,35 @@ def _sample_intake() -> BVReviewIntake:
             "geotechnical_report": "missing",
         },
     )
+
+
+def _locked_field(field_id: str, value: str, unit: str) -> ExtractedField:
+    return ExtractedField(
+        field_id=field_id,
+        name=field_id.replace("_", " ").title(),
+        candidate_value=value,
+        unit=unit,
+        source_document_id="calculation-report-c001",
+        page_or_section="Calculation input table",
+        quote=f"{field_id} = {value}",
+        confidence=0.92,
+        is_confirmed=True,
+        confirmed_value=value,
+        confirmed_unit=unit,
+        include_in_calculation=True,
+    )
+
+
+def _locked_calculation_fields() -> list[ExtractedField]:
+    return [
+        _locked_field("pile_diameter_mm", "300", "mm"),
+        _locked_field("pile_length_m", "3.5", "m"),
+        _locked_field("side_resistance_standard_kpa", "35", "kPa"),
+        _locked_field("bearing_capacity_characteristic_kpa", "180", "kPa"),
+        _locked_field("uplift_force_kn", "140", "kN"),
+        _locked_field("compression_force_kn", "10", "kN"),
+        _locked_field("horizontal_force_kn", "12", "kN"),
+    ]
 
 
 def _report_ready_intake() -> BVReviewIntake:

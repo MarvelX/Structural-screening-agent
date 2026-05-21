@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Literal, TypeAlias
+from typing import Literal, Optional, Type, Union
 
 from pydantic import BaseModel, Field, ValidationError
 
@@ -32,24 +32,24 @@ AGENT_PROVIDER_DEFAULT_MODELS = {
     "mock": "demo-mock",
 }
 
-AgentOutputModel: TypeAlias = (
-    type[DocumentIntakeAgentOutput]
-    | type[BasisCodeAgentOutput]
-    | type[ReviewPlanAgentOutput]
-    | type[StructuralReviewAgentOutput]
-    | type[CalculationCheckAgentOutput]
-    | type[RiskNCRAgentOutput]
-    | type[ReportComposerAgentOutput]
-)
-AgentParsedOutput: TypeAlias = (
-    DocumentIntakeAgentOutput
-    | BasisCodeAgentOutput
-    | ReviewPlanAgentOutput
-    | StructuralReviewAgentOutput
-    | CalculationCheckAgentOutput
-    | RiskNCRAgentOutput
-    | ReportComposerAgentOutput
-)
+AgentOutputModel = Union[
+    Type[DocumentIntakeAgentOutput],
+    Type[BasisCodeAgentOutput],
+    Type[ReviewPlanAgentOutput],
+    Type[StructuralReviewAgentOutput],
+    Type[CalculationCheckAgentOutput],
+    Type[RiskNCRAgentOutput],
+    Type[ReportComposerAgentOutput],
+]
+AgentParsedOutput = Union[
+    DocumentIntakeAgentOutput,
+    BasisCodeAgentOutput,
+    ReviewPlanAgentOutput,
+    StructuralReviewAgentOutput,
+    CalculationCheckAgentOutput,
+    RiskNCRAgentOutput,
+    ReportComposerAgentOutput,
+]
 AgentPromptLanguage = Literal["zh", "en"]
 
 
@@ -107,7 +107,7 @@ class AgentResponseSandboxResult(BaseModel):
     response_text: str
     response_digest: str = Field(min_length=1)
     validation_result: AgentResponseValidationResult
-    impact_preview: AgentResponseImpactPreview | None = None
+    impact_preview: Optional[AgentResponseImpactPreview] = None
     ready_for_engineer_review: bool = False
     network_request_sent: bool = False
     project_state_changed: bool = False
@@ -121,7 +121,7 @@ class AgentResponseEngineerHandoff(BaseModel):
     agent_role: AgentRole
     response_digest: str = Field(min_length=1)
     handoff_status: Literal["ready_for_engineer_review", "blocked"]
-    target_phase: ReviewPhase | None = None
+    target_phase: Optional[ReviewPhase] = None
     validation_ok: bool
     apply_prechecks_ok: bool
     requires_engineer_review: bool
@@ -139,10 +139,10 @@ class AgentResponseApplicationPlan(BaseModel):
     agent_role: AgentRole
     response_digest: str = Field(min_length=1)
     plan_status: Literal["ready_for_controlled_application", "blocked"]
-    target_phase: ReviewPhase | None = None
+    target_phase: Optional[ReviewPhase] = None
     requires_engineer_authorization: bool = True
     would_create_agent_event: bool = False
-    would_set_phase_status: Literal["waiting_for_engineer"] | None = None
+    would_set_phase_status: Optional[Literal["waiting_for_engineer"]] = None
     blockers: list[str] = Field(default_factory=list)
     project_state_changed: bool = False
     boundary_statement: str = (

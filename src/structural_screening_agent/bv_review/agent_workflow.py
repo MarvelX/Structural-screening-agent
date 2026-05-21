@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TypeAlias
+from typing import Union
 
 from structural_screening_agent.bv_review.agent_contracts import (
     BasisCodeAgentOutput,
@@ -21,15 +21,15 @@ from structural_screening_agent.bv_review.project_state import (
 )
 
 
-AgentWorkflowOutput: TypeAlias = (
-    DocumentIntakeAgentOutput
-    | BasisCodeAgentOutput
-    | ReviewPlanAgentOutput
-    | StructuralReviewAgentOutput
-    | CalculationCheckAgentOutput
-    | RiskNCRAgentOutput
-    | ReportComposerAgentOutput
-)
+AgentWorkflowOutput = Union[
+    DocumentIntakeAgentOutput,
+    BasisCodeAgentOutput,
+    ReviewPlanAgentOutput,
+    StructuralReviewAgentOutput,
+    CalculationCheckAgentOutput,
+    RiskNCRAgentOutput,
+    ReportComposerAgentOutput,
+]
 
 
 def apply_agent_output_to_state(

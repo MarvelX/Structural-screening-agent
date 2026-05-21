@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional
+from typing import Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -49,7 +49,7 @@ REVIEW_PHASES: tuple[ReviewPhase, ...] = (
     "issue_rfi_closeout",
 )
 
-FieldValue = str | float | int | bool
+FieldValue = Union[str, float, int, bool]
 
 
 class DocumentVersion(BaseModel):

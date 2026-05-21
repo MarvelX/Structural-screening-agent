@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import pi
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -17,25 +17,25 @@ SCREENING_BOUNDARY = "screening-level review support only"
 
 
 class FoundationEngineInput(BaseModel):
-    pile_diameter_mm: float | None = None
-    pile_length_m: float | None = None
-    side_resistance_standard_kpa: float | None = None
-    bearing_capacity_characteristic_kpa: float | None = None
-    uplift_force_kn: float | None = None
-    compression_force_kn: float | None = None
-    horizontal_force_kn: float | None = None
+    pile_diameter_mm: Optional[float] = None
+    pile_length_m: Optional[float] = None
+    side_resistance_standard_kpa: Optional[float] = None
+    bearing_capacity_characteristic_kpa: Optional[float] = None
+    uplift_force_kn: Optional[float] = None
+    compression_force_kn: Optional[float] = None
+    horizontal_force_kn: Optional[float] = None
 
 
 class SuperstructureEngineInput(BaseModel):
     member_id: str = Field(min_length=1)
     member_type: Literal["post", "beam", "purlin", "brace"]
-    section_area_mm2: float | None = None
-    section_modulus_mm3: float | None = None
-    radius_of_gyration_mm: float | None = None
-    effective_length_m: float | None = None
-    steel_yield_strength_mpa: float | None = None
-    axial_force_kn: float | None = None
-    bending_moment_knm: float | None = None
+    section_area_mm2: Optional[float] = None
+    section_modulus_mm3: Optional[float] = None
+    radius_of_gyration_mm: Optional[float] = None
+    effective_length_m: Optional[float] = None
+    steel_yield_strength_mpa: Optional[float] = None
+    axial_force_kn: Optional[float] = None
+    bending_moment_knm: Optional[float] = None
 
 
 FOUNDATION_FIELD_IDS: tuple[str, ...] = (

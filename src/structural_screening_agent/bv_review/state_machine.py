@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from structural_screening_agent.bv_review.project_state import (
     REVIEW_PHASES,
     ProjectReviewState,

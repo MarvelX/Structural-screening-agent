@@ -1,11 +1,15 @@
 from structural_screening_agent.bv_review.calculation_workflow import (
     build_calculation_runs_from_locked_fields,
+    build_incremental_calculation_recheck_runs_for_rfi,
+    run_incremental_calculation_recheck_for_rfi,
 )
 from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.project_state import (
+    CalculationRun,
     EngineerApproval,
     ExtractedField,
     ProjectReviewState,
+    RFIItem,
 )
 
 
@@ -51,6 +55,134 @@ def test_calculation_workflow_builds_foundation_and_superstructure_runs_from_loc
     assert state.calculation_runs == []
 
 
+def test_incremental_recheck_for_responded_rfi_runs_deterministic_engine_and_marks_recheck_complete() -> None:
+    state = ProjectReviewState(
+        project_id="pv-calculation-workflow",
+        intake=_sample_intake(),
+        current_phase="issue_rfi_closeout",
+        extracted_fields=_locked_calculation_fields(),
+        approvals=[_calculation_gate_approval()],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m", "uplift_force_kn"],
+                input_locked=True,
+                status="completed",
+            )
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-run-001",
+                question="Please confirm foundation reaction updates.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation screening run requires clarification.",
+                required_document_or_field="uplift_force_kn",
+                status="responded",
+                client_response="Designer submitted Rev B reaction table.",
+                reopen_review_items=["uplift_force_kn"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    updated = run_incremental_calculation_recheck_for_rfi(
+        state,
+        rfi_id="rfi-foundation-run-001",
+    )
+
+    assert updated.current_phase == "issue_rfi_closeout"
+    assert updated.phase_statuses["calculation_check"] == "waiting_for_engineer"
+    assert updated.phase_statuses["issue_rfi_closeout"] == "waiting_for_engineer"
+    assert updated.rfi_items[0].completed_recheck_items == ["uplift_force_kn"]
+    assert [run.run_id for run in updated.calculation_runs] == [
+        "foundation-run-001",
+        "incremental-recheck-rfi-foundation-run-001-foundation-001",
+    ]
+    recheck_run = updated.calculation_runs[-1]
+    assert recheck_run.engine_name == "foundation"
+    assert recheck_run.status == "completed"
+    assert recheck_run.input_locked is True
+    assert recheck_run.result_summary["screening_boundary"] == (
+        "screening-level review support only"
+    )
+    assert state.rfi_items[0].completed_recheck_items == []
+
+
+def test_incremental_recheck_keeps_rfi_incomplete_when_deterministic_engine_blocks() -> None:
+    state = ProjectReviewState(
+        project_id="pv-calculation-workflow",
+        intake=_sample_intake(),
+        current_phase="issue_rfi_closeout",
+        extracted_fields=[_locked_field("pile_length_m", "3.5", "m")],
+        approvals=[_calculation_gate_approval()],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m"],
+                input_locked=True,
+                status="completed",
+            )
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-run-001",
+                question="Please confirm foundation input updates.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation input changed.",
+                required_document_or_field="pile_length_m",
+                status="responded",
+                client_response="Designer confirmed Rev B pile length.",
+                reopen_review_items=["pile_length_m"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    updated = run_incremental_calculation_recheck_for_rfi(
+        state,
+        rfi_id="rfi-foundation-run-001",
+    )
+
+    assert updated.phase_statuses["calculation_check"] == "blocked"
+    assert updated.rfi_items[0].completed_recheck_items == []
+    recheck_run = updated.calculation_runs[-1]
+    assert recheck_run.status == "blocked"
+    assert "pile_diameter_mm is required." in recheck_run.structured_errors
+
+
+def test_incremental_recheck_preview_requires_locked_calculation_gate() -> None:
+    state = ProjectReviewState(
+        project_id="pv-calculation-workflow",
+        intake=_sample_intake(),
+        extracted_fields=_locked_calculation_fields(),
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-run-001",
+                question="Please confirm foundation reaction updates.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation input changed.",
+                required_document_or_field="uplift_force_kn",
+                status="responded",
+                client_response="Designer submitted Rev B reaction table.",
+                reopen_review_items=["uplift_force_kn"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    assert (
+        build_incremental_calculation_recheck_runs_for_rfi(
+            state,
+            rfi_id="rfi-foundation-run-001",
+        )
+        == []
+    )
+
+
 def _sample_intake() -> BVReviewIntake:
     return BVReviewIntake(
         project_name="Ground PV calculation workflow",
@@ -60,6 +192,16 @@ def _sample_intake() -> BVReviewIntake:
         standards_systems=["gb", "iec"],
         review_objects=["mounting_structure", "foundation", "load_calculation"],
         documents={"calculation_report": "available"},
+    )
+
+
+def _calculation_gate_approval() -> EngineerApproval:
+    return EngineerApproval(
+        approval_id="approval-calculation",
+        target_type="gate",
+        target_id="calculation",
+        status="approved",
+        locked=True,
     )
 
 

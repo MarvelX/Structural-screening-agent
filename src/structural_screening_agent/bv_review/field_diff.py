@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
@@ -20,12 +20,12 @@ class FieldDiff(BaseModel):
     field_id: str = Field(min_length=1)
     field_name: str = Field(min_length=1)
     diff_type: FieldDiffType
-    old_value: FieldValue | None = None
-    new_value: FieldValue | None = None
-    old_unit: str | None = None
-    new_unit: str | None = None
-    old_source_document_id: str | None = None
-    new_source_document_id: str | None = None
+    old_value: Optional[FieldValue] = None
+    new_value: Optional[FieldValue] = None
+    old_unit: Optional[str] = None
+    new_unit: Optional[str] = None
+    old_source_document_id: Optional[str] = None
+    new_source_document_id: Optional[str] = None
     affects_confirmed_calculation: bool = False
     should_reopen_risk_items: bool = False
     affected_calculation_run_ids: list[str] = Field(default_factory=list)

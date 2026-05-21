@@ -34,6 +34,7 @@ from structural_screening_agent.bv_review.agent_runner import (
 from structural_screening_agent.bv_review.persisted_workflow_session import (
     apply_persisted_authorized_agent_response,
     issue_persisted_blocked_calculation_draft_rfi,
+    run_persisted_rfi_incremental_calculation_recheck,
 )
 from structural_screening_agent.bv_review.agent_prompting import (
     AgentResponseApplicationAuthorization,
@@ -75,6 +76,10 @@ from structural_screening_agent.bv_review.calculation_engines import (
     build_foundation_calculation_run_from_fields,
     build_superstructure_calculation_run,
     build_superstructure_calculation_run_from_fields,
+)
+from structural_screening_agent.bv_review.calculation_workflow import (
+    build_incremental_calculation_recheck_runs_for_rfi,
+    run_incremental_calculation_recheck_for_rfi,
 )
 from structural_screening_agent.bv_review.field_diff import (
     AffectedReviewItem,
@@ -165,6 +170,7 @@ __all__ = [
     "run_local_agent_workflow_until_blocked",
     "run_persisted_local_agent_workflow_until_blocked",
     "run_persisted_local_agent_workflow_with_summary",
+    "run_persisted_rfi_incremental_calculation_recheck",
     "StructuralReviewAgentOutput",
     "SuperstructureEngineInput",
     "JsonProjectReviewStateRepository",
@@ -192,6 +198,7 @@ __all__ = [
     "build_foundation_calculation_run_from_fields",
     "build_bv_open_rfi_items",
     "build_blocked_calculation_review_draft",
+    "build_incremental_calculation_recheck_runs_for_rfi",
     "build_incremental_recheck_plan",
     "build_incremental_recheck_plan_from_closed_rfis",
     "build_project_management_action_rows",
@@ -209,6 +216,7 @@ __all__ = [
     "issue_persisted_blocked_calculation_draft_rfi",
     "record_rfi_client_response",
     "record_report_revision",
+    "run_incremental_calculation_recheck_for_rfi",
     "resolve_calculation_check_output_against_state",
     "record_agent_review_decision",
     "parse_agent_json_response",
