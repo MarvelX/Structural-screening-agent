@@ -594,6 +594,99 @@ def test_bv_markdown_report_includes_active_rfi_register_when_state_is_provided(
     assert "post_section, worst_bending_moment_knm" in report
 
 
+def test_bv_report_preview_includes_project_management_actions_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-management-actions",
+        intake=intake,
+        current_phase="issue_rfi_closeout",
+        phase_statuses={
+            "intake": "approved",
+            "document_check": "approved",
+            "basis_build": "approved",
+            "review_plan": "approved",
+            "engineer_data_lock": "approved",
+            "calculation_check": "waiting_for_engineer",
+            "risk_register": "approved",
+            "report_draft": "pending",
+            "engineer_approval": "pending",
+            "issue_rfi_closeout": "waiting_for_client",
+        },
+        agent_events=[
+            AgentWorkflowEvent(
+                event_id="calculation-check-agent-001",
+                agent_role="calculation_check",
+                target_phase="calculation_check",
+                status="applied",
+                output_schema_version="phase1.local",
+                requires_engineer_review=True,
+            )
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_locked=True,
+                status="failed",
+                structured_errors=["Missing geotechnical side resistance."],
+            )
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-001",
+                question="Please provide geotechnical side resistance.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation calculation missing side resistance.",
+                required_document_or_field="side_resistance_standard_kpa",
+                status="open",
+                reopen_review_items=["side_resistance_standard_kpa"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "项目管理待办")
+    text = "\n".join(section.items)
+
+    assert "rfi-client-response-rfi-foundation-001" in text
+    assert "行动类型: RFI 客户回复" in text
+    assert "责任角色: 客户 / 设计院" in text
+    assert "触发证据: rfi-foundation-001" in text
+    assert "阻塞报告: 是" in text
+    assert "agent-review-calculation-check-agent-001" in text
+    assert "calculation-follow-up-foundation-run-001" in text
+
+
+def test_bv_markdown_report_includes_project_management_actions_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-management-actions",
+        intake=intake,
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-001",
+                question="Please provide geotechnical side resistance.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation calculation missing side resistance.",
+                required_document_or_field="side_resistance_standard_kpa",
+                status="open",
+                reopen_review_items=["side_resistance_standard_kpa"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "## 项目管理待办" in report
+    assert "rfi-client-response-rfi-foundation-001" in report
+    assert "建议动作: 跟进客户 / 设计院回复" in report
+
+
 def test_bv_report_filename_uses_date_and_scope_key() -> None:
     filename = build_bv_report_filename("rooftop_pv_review", report_date=date(2026, 5, 9))
 

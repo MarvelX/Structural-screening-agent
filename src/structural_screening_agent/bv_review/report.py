@@ -15,6 +15,10 @@ from structural_screening_agent.bv_review.field_diff import (
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.project_timeline import build_project_timeline_events
+from structural_screening_agent.bv_review.project_management import (
+    build_project_management_action_rows,
+    build_project_management_actions,
+)
 from structural_screening_agent.bv_review.service_scope import (
     build_service_scope_recommendations,
 )
@@ -104,6 +108,9 @@ def build_bv_report_preview(
     project_timeline_section = build_bv_project_timeline_section(project_state)
     if project_timeline_section is not None:
         sections.insert(-1, project_timeline_section)
+    project_management_section = build_bv_project_management_actions_section(project_state)
+    if project_management_section is not None:
+        sections.insert(-1, project_management_section)
     service_scope_section = build_bv_service_scope_section(
         intake,
         result,
@@ -291,6 +298,34 @@ def build_bv_project_timeline_section(
     if not items:
         return None
     return BVReportSection(heading="项目时间线", items=items)
+
+
+def build_bv_project_management_actions_section(
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
+    if project_state is None:
+        return None
+
+    actions = build_project_management_actions(project_state)
+    if not actions:
+        return None
+
+    rows = build_project_management_action_rows(actions, "zh")
+    return BVReportSection(
+        heading="项目管理待办",
+        items=[
+            (
+                f"{row['行动 ID']} | "
+                f"行动类型: {row['行动类型']} | "
+                f"优先级: {row['优先级']} | "
+                f"责任角色: {row['责任角色']} | "
+                f"触发证据: {row['触发证据']} | "
+                f"建议动作: {row['建议动作']} | "
+                f"阻塞报告: {row['阻塞报告']}"
+            )
+            for row in rows
+        ],
+    )
 
 
 def _timeline_event_type_label(event_type: str) -> str:
