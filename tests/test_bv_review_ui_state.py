@@ -32,6 +32,7 @@ from structural_screening_agent.bv_review.field_diff import (
     diff_extracted_fields,
 )
 from structural_screening_agent.bv_review.project_state import (
+    AgentWorkflowEvent,
     CalculationRun,
     EngineerApproval,
     ProjectReviewState,
@@ -488,6 +489,59 @@ def test_project_timeline_rows_are_empty_without_project_events() -> None:
 
     assert build_project_timeline_rows(state, "zh") == []
     assert build_project_timeline_rows(state, "en") == []
+
+
+def test_project_timeline_rows_localize_agent_and_engineer_gate_events() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-project-agent-timeline",
+        intake=default_bv_review_intake(),
+        agent_events=[
+            AgentWorkflowEvent(
+                event_id="agent-event-001",
+                agent_role="document_intake",
+                target_phase="document_check",
+                status="applied",
+                output_schema_version="bv-agent-output/v1",
+                requires_engineer_review=True,
+                summary_counts={"document_versions": 2},
+            )
+        ],
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation-gate",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                reviewer="Engineer B",
+                approved_at="2026-05-21T11:30:00+08:00",
+                comment="Calculation inputs locked for deterministic screening.",
+                locked=True,
+            )
+        ],
+    )
+
+    zh_rows = build_project_timeline_rows(state, "zh")
+    en_rows = build_project_timeline_rows(state, "en")
+
+    assert zh_rows[0]["类型"] == "Agent 事件"
+    assert zh_rows[0]["状态"] == "已应用"
+    assert zh_rows[0]["责任方"] == "资料接收 Agent"
+    assert zh_rows[0]["关联对象"] == "资料检查"
+    assert zh_rows[0]["说明"] == "Agent 输出契约版本：bv-agent-output/v1"
+    assert zh_rows[0]["建议动作"] == "复核 Agent 产物并记录工程师判断"
+    assert zh_rows[1]["类型"] == "工程师审批"
+    assert zh_rows[1]["状态"] == "已批准"
+    assert zh_rows[1]["关联对象"] == "门禁: calculation"
+    assert zh_rows[1]["证据"] == "2026-05-21T11:30:00+08:00; 已锁定"
+    assert zh_rows[1]["建议动作"] == "保留工程师判断记录作为门禁证据"
+
+    assert en_rows[0]["Type"] == "Agent Event"
+    assert en_rows[0]["Status"] == "Applied"
+    assert en_rows[0]["Owner"] == "Document Intake Agent"
+    assert en_rows[0]["Linked Object"] == "Document Check"
+    assert en_rows[1]["Type"] == "Engineer Approval"
+    assert en_rows[1]["Status"] == "Approved"
+    assert en_rows[1]["Linked Object"] == "Gate: calculation"
 
 
 def test_closed_rfi_incremental_recheck_rows_show_completed_evidence_without_mixed_language() -> None:

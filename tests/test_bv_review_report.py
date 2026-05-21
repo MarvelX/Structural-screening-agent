@@ -8,7 +8,9 @@ from structural_screening_agent.bv_review.report import (
     build_bv_report_preview,
 )
 from structural_screening_agent.bv_review.project_state import (
+    AgentWorkflowEvent,
     CalculationRun,
+    EngineerApproval,
     ProjectReviewState,
     ReportRevision,
     RFIItem,
@@ -470,6 +472,54 @@ def test_bv_markdown_report_includes_project_timeline_when_state_is_provided() -
     assert "## 项目时间线" in report
     assert "03-REPORT-report-rev-001" in report
     assert "建议动作: 按报告版本记录继续内部复核" in report
+
+
+def test_bv_report_project_timeline_includes_agent_and_engineer_gate_events() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-agent-timeline",
+        intake=intake,
+        agent_events=[
+            AgentWorkflowEvent(
+                event_id="agent-event-001",
+                agent_role="document_intake",
+                target_phase="document_check",
+                status="applied",
+                output_schema_version="bv-agent-output/v1",
+                requires_engineer_review=True,
+                summary_counts={"document_versions": 2},
+            )
+        ],
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-calculation-gate",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                reviewer="Engineer B",
+                approved_at="2026-05-21T11:30:00+08:00",
+                comment="Calculation inputs locked for deterministic screening.",
+                locked=True,
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "项目时间线")
+    text = "\n".join(section.items)
+
+    assert "00-AGENT-agent-event-001" in text
+    assert "类型: Agent 事件" in text
+    assert "状态: 已应用" in text
+    assert "责任方: 资料接收 Agent" in text
+    assert "关联对象: 资料检查" in text
+    assert "建议动作: 复核 Agent 产物并记录工程师判断" in text
+    assert "04-APPROVAL-approval-calculation-gate" in text
+    assert "类型: 工程师审批" in text
+    assert "状态: 已批准" in text
+    assert "关联对象: 门禁: calculation" in text
+    assert "证据: 2026-05-21T11:30:00+08:00; 已锁定" in text
 
 
 def test_bv_report_preview_includes_active_rfi_register_when_state_is_provided() -> None:

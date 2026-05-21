@@ -813,9 +813,20 @@ def build_project_timeline_rows(
             labels["item_id"]: event.item_id,
             labels["status"]: _timeline_status_label(event.event_type, event.status, language),
             labels["owner"]: _timeline_owner_label(event.owner, language),
-            labels["linked_object"]: event.linked_object,
-            labels["description"]: event.description,
-            labels["evidence"]: event.evidence,
+            labels["linked_object"]: _timeline_linked_object_label(
+                event.linked_object,
+                language,
+            ),
+            labels["description"]: _timeline_description_label(
+                event.event_type,
+                event.description,
+                language,
+            ),
+            labels["evidence"]: _timeline_evidence_label(
+                event.event_type,
+                event.evidence,
+                language,
+            ),
             labels["suggested_action"]: _timeline_suggested_action_label(
                 event.suggested_action,
                 language,
@@ -1061,36 +1072,101 @@ def _finding_status_label(status: str, language: Language) -> str:
 
 def _timeline_event_type_label(event_type: str, language: Language) -> str:
     labels = {
+        "agent_event": {"zh": "Agent 事件", "en": "Agent Event"},
         "rfi": {"zh": "RFI", "en": "RFI"},
         "finding": {"zh": "发现项", "en": "Finding"},
         "report_revision": {"zh": "报告版本", "en": "Report Revision"},
+        "engineer_approval": {"zh": "工程师审批", "en": "Engineer Approval"},
     }
     return labels.get(event_type, {}).get(language, event_type)
 
 
 def _timeline_status_label(event_type: str, status: str, language: Language) -> str:
+    if event_type == "agent_event":
+        return BV_AGENT_EVENT_STATUS_LABELS.get(status, {}).get(language, status)
     if event_type == "rfi":
         return _rfi_status_label(status, language)
     if event_type == "finding":
         return _finding_status_label(status, language)
     if event_type == "report_revision":
         return BV_REVIEW_PHASE_LABELS.get(status, {}).get(language, status)
+    if event_type == "engineer_approval":
+        return _agent_review_decision_label(status, language)
     return status
 
 
 def _timeline_owner_label(owner: str, language: Language) -> str:
     if owner == "engineer":
         return "工程师" if language == "zh" else "Engineer"
+    if owner in BV_AGENT_ROLE_LABELS:
+        return BV_AGENT_ROLE_LABELS[owner][language]
     return owner
 
 
+def _timeline_linked_object_label(linked_object: str, language: Language) -> str:
+    if linked_object in BV_REVIEW_PHASE_LABELS:
+        return BV_REVIEW_PHASE_LABELS[linked_object][language]
+    if ":" not in linked_object:
+        return linked_object
+
+    target_type, target_id = linked_object.split(":", 1)
+    target_type_labels = {
+        "agent_event": {"zh": "Agent 事件", "en": "Agent Event"},
+        "agent_application": {"zh": "Agent 应用计划", "en": "Agent Application Plan"},
+        "gate": {"zh": "门禁", "en": "Gate"},
+        "field": {"zh": "字段", "en": "Field"},
+        "basis": {"zh": "审核依据", "en": "Review Basis"},
+        "calculation": {"zh": "计算", "en": "Calculation"},
+        "report": {"zh": "报告", "en": "Report"},
+        "rfi": {"zh": "RFI", "en": "RFI"},
+        "finding": {"zh": "发现项", "en": "Finding"},
+    }
+    localized_type = target_type_labels.get(target_type, {}).get(language, target_type)
+    return f"{localized_type}: {target_id}"
+
+
+def _timeline_description_label(
+    event_type: str, description: str, language: Language
+) -> str:
+    if event_type == "agent_event":
+        if language == "zh":
+            return f"Agent 输出契约版本：{description}"
+        return f"Agent output contract version: {description}"
+    if description == "engineer_decision_recorded":
+        if language == "zh":
+            return "已记录工程师判断"
+        return "Engineer decision recorded"
+    return description
+
+
+def _timeline_evidence_label(event_type: str, evidence: str, language: Language) -> str:
+    if event_type == "engineer_approval":
+        return evidence.replace("locked=True", _localized_locked_evidence(True, language)).replace(
+            "locked=False",
+            _localized_locked_evidence(False, language),
+        )
+    return evidence
+
+
+def _localized_locked_evidence(locked: bool, language: Language) -> str:
+    if language == "zh":
+        return "已锁定" if locked else "未锁定"
+    return "locked=True" if locked else "locked=False"
+
+
 def _timeline_suggested_action_label(suggested_action: str, language: Language) -> str:
+    if suggested_action == "agent_event_review":
+        return _agent_review_suggested_action(language)
     if suggested_action == "rfi_closeout_review":
         return _timeline_rfi_action(language)
     if suggested_action == "finding_closeout_record":
         return _timeline_finding_action(language)
     if suggested_action == "report_revision_review":
         return _timeline_report_revision_action(language)
+    if suggested_action == "engineer_approval_record":
+        if language == "zh":
+            return "保留工程师判断记录作为门禁证据"
+        return "Keep engineer decision as gate evidence"
     return suggested_action
 
 

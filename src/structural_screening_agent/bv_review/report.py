@@ -281,9 +281,9 @@ def build_bv_project_timeline_section(
             f"项目 ID: {event.item_id} | "
             f"状态: {_timeline_status_label(event.event_type, event.status)} | "
             f"责任方: {_timeline_owner_label(event.owner)} | "
-            f"关联对象: {event.linked_object or 'N/A'} | "
-            f"说明: {event.description} | "
-            f"证据: {event.evidence or 'N/A'} | "
+            f"关联对象: {_timeline_linked_object_label(event.linked_object) or 'N/A'} | "
+            f"说明: {_timeline_description_label(event.event_type, event.description)} | "
+            f"证据: {_timeline_evidence_label(event.event_type, event.evidence) or 'N/A'} | "
             f"建议动作: {_timeline_suggested_action_label(event.suggested_action)}"
         )
         for event in build_project_timeline_events(project_state)
@@ -295,36 +295,106 @@ def build_bv_project_timeline_section(
 
 def _timeline_event_type_label(event_type: str) -> str:
     labels = {
+        "agent_event": "Agent 事件",
         "rfi": "RFI",
         "finding": "发现项",
         "report_revision": "报告版本",
+        "engineer_approval": "工程师审批",
     }
     return labels.get(event_type, event_type)
 
 
 def _timeline_status_label(event_type: str, status: str) -> str:
+    if event_type == "agent_event":
+        return _agent_event_status_label(status)
     if event_type == "rfi":
         return _rfi_status_label(status)
     if event_type == "finding":
         return _finding_status_label(status)
     if event_type == "report_revision":
         return _review_phase_label(status)
+    if event_type == "engineer_approval":
+        return _engineer_approval_status_label(status)
     return status
 
 
 def _timeline_owner_label(owner: str) -> str:
     if owner == "engineer":
         return "工程师"
+    agent_role_labels = {
+        "document_intake": "资料接收 Agent",
+        "basis_code": "依据与标准 Agent",
+        "review_plan": "审核计划 Agent",
+        "structural_review": "结构审核路径 Agent",
+        "calculation_check": "计算校核 Agent",
+        "risk_ncr": "风险 / NCR Agent",
+        "report_composer": "报告编制 Agent",
+    }
+    if owner in agent_role_labels:
+        return agent_role_labels[owner]
     return owner
+
+
+def _timeline_linked_object_label(linked_object: str) -> str:
+    if linked_object in _REVIEW_PHASE_LABELS:
+        return _REVIEW_PHASE_LABELS[linked_object]
+    if ":" not in linked_object:
+        return linked_object
+
+    target_type, target_id = linked_object.split(":", 1)
+    target_type_labels = {
+        "agent_event": "Agent 事件",
+        "agent_application": "Agent 应用计划",
+        "gate": "门禁",
+        "field": "字段",
+        "basis": "审核依据",
+        "calculation": "计算",
+        "report": "报告",
+        "rfi": "RFI",
+        "finding": "发现项",
+    }
+    return f"{target_type_labels.get(target_type, target_type)}: {target_id}"
+
+
+def _timeline_description_label(event_type: str, description: str) -> str:
+    if event_type == "agent_event":
+        return f"Agent 输出契约版本: {description}"
+    if description == "engineer_decision_recorded":
+        return "已记录工程师判断"
+    return description
+
+
+def _timeline_evidence_label(event_type: str, evidence: str) -> str:
+    if event_type == "engineer_approval":
+        return evidence.replace("locked=True", "已锁定").replace("locked=False", "未锁定")
+    return evidence
 
 
 def _timeline_suggested_action_label(suggested_action: str) -> str:
     labels = {
+        "agent_event_review": "复核 Agent 产物并记录工程师判断",
         "rfi_closeout_review": "工程师复核客户回复并保留关闭证据",
         "finding_closeout_record": "保留发现项关闭证据并进入报告",
         "report_revision_review": "按报告版本记录继续内部复核",
+        "engineer_approval_record": "保留工程师判断记录作为门禁证据",
     }
     return labels.get(suggested_action, suggested_action)
+
+
+def _agent_event_status_label(status: str) -> str:
+    labels = {
+        "applied": "已应用",
+    }
+    return labels.get(status, status)
+
+
+def _engineer_approval_status_label(status: str) -> str:
+    labels = {
+        "approved": "已批准",
+        "rejected": "已驳回",
+        "pending": "待处理",
+    }
+    return labels.get(status, status)
 
 
 def _rfi_status_label(status: str) -> str:
@@ -348,19 +418,21 @@ def _finding_status_label(status: str) -> str:
 
 
 def _review_phase_label(phase: str) -> str:
-    labels = {
-        "intake": "项目录入",
-        "document_check": "资料检查",
-        "basis_build": "审核依据",
-        "review_plan": "审核计划",
-        "engineer_data_lock": "工程师数据锁定",
-        "calculation_check": "计算校核",
-        "risk_register": "风险登记",
-        "report_draft": "报告草稿",
-        "engineer_approval": "工程师批准",
-        "issue_rfi_closeout": "签发 / RFI 关闭",
-    }
-    return labels.get(phase, phase)
+    return _REVIEW_PHASE_LABELS.get(phase, phase)
+
+
+_REVIEW_PHASE_LABELS = {
+    "intake": "项目录入",
+    "document_check": "资料检查",
+    "basis_build": "审核依据",
+    "review_plan": "审核计划",
+    "engineer_data_lock": "工程师数据锁定",
+    "calculation_check": "计算校核",
+    "risk_register": "风险登记",
+    "report_draft": "报告草稿",
+    "engineer_approval": "工程师批准",
+    "issue_rfi_closeout": "签发 / RFI 关闭",
+}
 
 
 def build_bv_service_scope_section(

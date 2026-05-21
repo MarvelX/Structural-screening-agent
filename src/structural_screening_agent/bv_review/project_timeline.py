@@ -1,17 +1,25 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
 from structural_screening_agent.bv_review.project_state import ProjectReviewState
 
 
-TimelineEventType = Literal["rfi", "finding", "report_revision"]
+TimelineEventType = Literal[
+    "agent_event",
+    "rfi",
+    "finding",
+    "report_revision",
+    "engineer_approval",
+]
 TimelineSuggestedAction = Literal[
+    "agent_event_review",
     "rfi_closeout_review",
     "finding_closeout_record",
     "report_revision_review",
+    "engineer_approval_record",
 ]
 
 
@@ -31,6 +39,21 @@ def build_project_timeline_events(
     state: ProjectReviewState,
 ) -> list[ProjectTimelineEvent]:
     events: list[ProjectTimelineEvent] = []
+    for event in state.agent_events:
+        events.append(
+            ProjectTimelineEvent(
+                sort_key=f"00-AGENT-{event.event_id}",
+                event_type="agent_event",
+                item_id=event.event_id,
+                status=event.status,
+                owner=event.agent_role,
+                linked_object=event.target_phase,
+                description=event.output_schema_version,
+                evidence=_format_summary_counts(event.summary_counts),
+                suggested_action="agent_event_review",
+            )
+        )
+
     for rfi in state.rfi_items:
         events.append(
             ProjectTimelineEvent(
@@ -77,4 +100,34 @@ def build_project_timeline_events(
                 suggested_action="report_revision_review",
             )
         )
+
+    for approval in state.approvals:
+        events.append(
+            ProjectTimelineEvent(
+                sort_key=f"04-APPROVAL-{approval.approval_id}",
+                event_type="engineer_approval",
+                item_id=approval.approval_id,
+                status=approval.status,
+                owner=approval.reviewer or "engineer",
+                linked_object=f"{approval.target_type}:{approval.target_id}",
+                description=approval.comment or "engineer_decision_recorded",
+                evidence=_format_approval_evidence(
+                    approved_at=approval.approved_at,
+                    locked=approval.locked,
+                ),
+                suggested_action="engineer_approval_record",
+            )
+        )
     return events
+
+
+def _format_summary_counts(summary_counts: dict[str, int]) -> str:
+    return "; ".join(f"{key}={value}" for key, value in summary_counts.items())
+
+
+def _format_approval_evidence(*, approved_at: Optional[str], locked: bool) -> str:
+    parts: list[str] = []
+    if approved_at:
+        parts.append(approved_at)
+    parts.append(f"locked={locked}")
+    return "; ".join(parts)

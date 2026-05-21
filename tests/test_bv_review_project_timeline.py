@@ -1,5 +1,7 @@
 from structural_screening_agent.bv_review.models import BVRiskItem
 from structural_screening_agent.bv_review.project_state import (
+    AgentWorkflowEvent,
+    EngineerApproval,
     ProjectReviewState,
     RFIItem,
     ReportRevision,
@@ -109,3 +111,71 @@ def test_project_timeline_events_are_empty_without_milestones() -> None:
     )
 
     assert build_project_timeline_events(state) == []
+
+
+def test_project_timeline_events_include_agent_and_engineer_gate_records() -> None:
+    state = ProjectReviewState(
+        project_id="pv-project-agent-timeline",
+        intake=default_bv_review_intake(),
+        agent_events=[
+            AgentWorkflowEvent(
+                event_id="agent-event-001",
+                agent_role="document_intake",
+                target_phase="document_check",
+                status="applied",
+                output_schema_version="bv-agent-output/v1",
+                requires_engineer_review=True,
+                summary_counts={"document_versions": 2, "extracted_fields": 4},
+            )
+        ],
+        approvals=[
+            EngineerApproval(
+                approval_id="approval-agent-event-001",
+                target_type="agent_event",
+                target_id="agent-event-001",
+                status="approved",
+                reviewer="Engineer A",
+                approved_at="2026-05-21T11:00:00+08:00",
+                comment="Agent extraction checked against submitted package.",
+                locked=True,
+            ),
+            EngineerApproval(
+                approval_id="approval-calculation-gate",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                reviewer="Engineer B",
+                approved_at="2026-05-21T11:30:00+08:00",
+                comment="Calculation inputs locked for deterministic screening.",
+                locked=True,
+            ),
+        ],
+    )
+
+    events = build_project_timeline_events(state)
+
+    assert [event.sort_key for event in events] == [
+        "00-AGENT-agent-event-001",
+        "04-APPROVAL-approval-agent-event-001",
+        "04-APPROVAL-approval-calculation-gate",
+    ]
+    assert events[0].event_type == "agent_event"
+    assert events[0].item_id == "agent-event-001"
+    assert events[0].status == "applied"
+    assert events[0].owner == "document_intake"
+    assert events[0].linked_object == "document_check"
+    assert events[0].description == "bv-agent-output/v1"
+    assert events[0].evidence == "document_versions=2; extracted_fields=4"
+    assert events[0].suggested_action == "agent_event_review"
+
+    assert events[1].event_type == "engineer_approval"
+    assert events[1].item_id == "approval-agent-event-001"
+    assert events[1].status == "approved"
+    assert events[1].owner == "Engineer A"
+    assert events[1].linked_object == "agent_event:agent-event-001"
+    assert events[1].description == "Agent extraction checked against submitted package."
+    assert events[1].evidence == "2026-05-21T11:00:00+08:00; locked=True"
+    assert events[1].suggested_action == "engineer_approval_record"
+
+    assert events[2].event_type == "engineer_approval"
+    assert events[2].linked_object == "gate:calculation"
