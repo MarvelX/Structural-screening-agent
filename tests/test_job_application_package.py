@@ -223,6 +223,9 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "AgentResponseApplicationPacket" in app_source
     assert "build_agent_response_application_packet" in app_source
     assert "is_agent_response_application_packet_current" in app_source
+    assert "build_agent_application_authorization_rows" in app_source
+    assert "Agent Application Authorization Ledger" in app_source
+    assert "Agent 应用授权记录" in app_source
     assert (
         "Revalidate the agent response before applying it to the updated workflow state."
         in app_source

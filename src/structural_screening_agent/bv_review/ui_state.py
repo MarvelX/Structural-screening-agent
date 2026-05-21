@@ -871,10 +871,58 @@ def build_agent_engineer_review_decision_rows(
     return rows
 
 
+def build_agent_application_authorization_rows(
+    state: ProjectReviewState, language: Language
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "approval_id": "授权记录",
+            "plan_id": "应用计划",
+            "decision": "结论",
+            "locked": "锁定",
+            "reviewer": "授权人",
+            "comment": "意见",
+        }
+        if language == "zh"
+        else {
+            "approval_id": "Authorization Record",
+            "plan_id": "Application Plan",
+            "decision": "Decision",
+            "locked": "Locked",
+            "reviewer": "Authorizer",
+            "comment": "Comment",
+        }
+    )
+    return [
+        {
+            labels["approval_id"]: approval.approval_id,
+            labels["plan_id"]: approval.target_id,
+            labels["decision"]: _agent_application_decision_label(
+                approval.status,
+                language,
+            ),
+            labels["locked"]: _localized_bool(approval.locked, language),
+            labels["reviewer"]: approval.reviewer or "",
+            labels["comment"]: approval.comment or "",
+        }
+        for approval in state.approvals
+        if approval.target_type == "agent_application"
+    ]
+
+
 def _agent_review_decision_label(status: str, language: Language) -> str:
     labels = {
         "approved": {"zh": "已批准", "en": "Approved"},
         "rejected": {"zh": "已驳回", "en": "Rejected"},
+        "pending": {"zh": "待处理", "en": "Pending"},
+    }
+    return labels.get(status, {}).get(language, status)
+
+
+def _agent_application_decision_label(status: str, language: Language) -> str:
+    labels = {
+        "approved": {"zh": "已授权", "en": "Authorized"},
+        "rejected": {"zh": "已拒绝", "en": "Rejected"},
         "pending": {"zh": "待处理", "en": "Pending"},
     }
     return labels.get(status, {}).get(language, status)

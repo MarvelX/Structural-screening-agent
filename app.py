@@ -21,6 +21,7 @@ from structural_screening_agent.bv_review.ui_state import (
     BV_PROJECT_TYPE_LABELS,
     BV_REVIEW_OBJECT_LABELS,
     BV_STANDARD_LABELS,
+    build_agent_application_authorization_rows,
     build_agent_engineer_review_decision_rows,
     build_agent_workflow_artifact_rows,
     build_agent_engineer_review_queue_rows,
@@ -1642,6 +1643,29 @@ with bv_review_tab:
                 "No pending agent outputs require engineer review."
                 if ui_language == "en"
                 else "当前没有待工程师复核的 Agent 产物。"
+            )
+        st.markdown(
+            "##### Agent Application Authorization Ledger"
+            if ui_language == "en"
+            else "Agent 应用授权记录"
+        )
+        agent_application_authorization_rows = (
+            build_agent_application_authorization_rows(
+                reviewed_workflow_state,
+                ui_language,
+            )
+        )
+        if agent_application_authorization_rows:
+            st.dataframe(
+                agent_application_authorization_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No agent application authorizations have been recorded in this session."
+                if ui_language == "en"
+                else "当前会话尚未记录 Agent 应用授权。"
             )
         st.markdown(
             "##### Engineer Review Decision Ledger"

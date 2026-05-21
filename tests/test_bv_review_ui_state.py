@@ -5,6 +5,7 @@ from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
+    build_agent_application_authorization_rows,
     build_agent_engineer_review_decision_rows,
     build_agent_workflow_artifact_rows,
     build_agent_engineer_review_queue_rows,
@@ -29,6 +30,7 @@ from structural_screening_agent.bv_review.field_diff import (
 )
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
+    EngineerApproval,
     ProjectReviewState,
     RFIItem,
 )
@@ -595,3 +597,56 @@ def test_agent_engineer_review_decision_rows_localize_approval_ledger() -> None:
     ]
     assert "document_check" not in str(zh_rows)
     assert "已批准" not in str(en_rows)
+
+
+def test_agent_application_authorization_rows_localize_application_ledger() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-agent",
+        intake=default_bv_review_intake(),
+        approvals=[
+            EngineerApproval(
+                approval_id="agent-application-001",
+                target_type="agent_application",
+                target_id="application-plan-sandbox-review-document_intake",
+                status="approved",
+                reviewer="Engineer A",
+                comment="Validated intake output applied.",
+                locked=True,
+            ),
+            EngineerApproval(
+                approval_id="agent-review-agent-event-001",
+                target_type="agent_event",
+                target_id="agent-event-001",
+                status="approved",
+                reviewer="Engineer B",
+                comment="Document intake reviewed.",
+                locked=True,
+            ),
+        ],
+    )
+
+    zh_rows = build_agent_application_authorization_rows(state, "zh")
+    en_rows = build_agent_application_authorization_rows(state, "en")
+
+    assert zh_rows == [
+        {
+            "授权记录": "agent-application-001",
+            "应用计划": "application-plan-sandbox-review-document_intake",
+            "结论": "已授权",
+            "锁定": "是",
+            "授权人": "Engineer A",
+            "意见": "Validated intake output applied.",
+        }
+    ]
+    assert en_rows == [
+        {
+            "Authorization Record": "agent-application-001",
+            "Application Plan": "application-plan-sandbox-review-document_intake",
+            "Decision": "Authorized",
+            "Locked": "Yes",
+            "Authorizer": "Engineer A",
+            "Comment": "Validated intake output applied.",
+        }
+    ]
+    assert "agent-review-agent-event-001" not in str(zh_rows)
+    assert "已授权" not in str(en_rows)
