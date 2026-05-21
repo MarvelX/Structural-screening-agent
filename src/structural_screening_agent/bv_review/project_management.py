@@ -356,6 +356,8 @@ def _owner_label(owner_role: str, language: ProjectActionLanguage) -> str:
         }
         return labels.get(owner_role, owner_role)
     labels = {
+        "BV structural review engineer": "BV Structural Review Engineer",
+        "BV project review lead": "BV Project Review Lead",
         "client / designer": "Client / Designer",
     }
     return labels.get(owner_role, owner_role)

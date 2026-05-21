@@ -337,6 +337,7 @@ def test_project_management_action_rows_are_localized_for_dashboard() -> None:
     assert en_rows[0]["Action Type"] == "RFI Engineer Closeout"
     assert en_rows[0]["Priority"] == "High"
     assert en_rows[-1]["Action Type"] == "Quality Gate Follow-up"
+    assert en_rows[-1]["Owner Role"] == "BV Project Review Lead"
     assert "Resolve the open quality gate" in en_rows[-1]["Recommended Action"]
 
 

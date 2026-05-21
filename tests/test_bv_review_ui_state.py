@@ -267,7 +267,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             workflow_status="blocked",
             next_action_ids=["rfi-client-response-rfi-001", "agent-review-agent-event-001"],
             next_action_categories=["rfi_client_response", "quality_gate_follow_up"],
-            next_action_owner_roles=["client / designer", "BV structural review engineer"],
+            next_action_owner_roles=["client / designer", "BV project review lead"],
         )
     ]
 
@@ -293,7 +293,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "工作流状态": "阻塞",
             "下一步行动": "rfi-client-response-rfi-001, agent-review-agent-event-001",
             "下一步类型": "RFI 客户回复, 质量门禁跟进",
-            "下一步责任方": "客户 / 设计院, BV 结构审核工程师",
+            "下一步责任方": "客户 / 设计院, BV 项目审核负责人",
         }
     ]
     assert en_rows == [
@@ -315,7 +315,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "Workflow Status": "Blocked",
             "Next Actions": "rfi-client-response-rfi-001, agent-review-agent-event-001",
             "Next Action Types": "RFI Client Response, Quality Gate Follow-up",
-            "Next Action Owners": "Client / Designer, BV structural review engineer",
+            "Next Action Owners": "Client / Designer, BV Project Review Lead",
         }
     ]
     assert "Document Check" not in str(zh_rows)
