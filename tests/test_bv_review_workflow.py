@@ -321,6 +321,71 @@ def test_risk_register_skips_passed_and_non_completed_calculation_runs() -> None
     assert not any(item.risk_id.startswith("calculation_review_required_") for item in risks)
 
 
+def test_risk_register_creates_blocking_risk_from_blocked_calculation_run_errors() -> None:
+    risks = build_risk_register(
+        _sample_intake(),
+        [],
+        [],
+        calculation_runs=[
+            CalculationRun(
+                run_id="superstructure-run-post-P1-001",
+                engine_name="superstructure",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["bending_moment_knm", "section_area_mm2"],
+                input_locked=False,
+                status="blocked",
+                structured_errors=["bending_moment_knm is required."],
+            )
+        ],
+    )
+
+    blocked_risk = next(
+        item
+        for item in risks
+        if item.risk_id == "calculation_blocked_superstructure_run_post_p1_001"
+    )
+
+    assert blocked_risk.category == "nonconformity"
+    assert blocked_risk.severity == "critical"
+    assert blocked_risk.blocks_report_issue is True
+    assert blocked_risk.linked_field_ids == ["bending_moment_knm", "section_area_mm2"]
+    assert "superstructure-run-post-P1-001" in blocked_risk.trigger_basis
+    assert "blocked" in blocked_risk.trigger_basis
+    assert "bending_moment_knm is required." in blocked_risk.trigger_basis
+    assert "确定性计算输入" in blocked_risk.recommendation
+
+
+def test_risk_register_creates_blocking_risk_from_failed_calculation_run_errors() -> None:
+    risks = build_risk_register(
+        _sample_intake(),
+        [],
+        [],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-failed-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m"],
+                input_locked=False,
+                status="failed",
+                structured_errors=["calculation engine failed to converge."],
+            )
+        ],
+    )
+
+    failed_risk = next(
+        item
+        for item in risks
+        if item.risk_id == "calculation_blocked_foundation_failed_001"
+    )
+
+    assert failed_risk.category == "nonconformity"
+    assert failed_risk.severity == "critical"
+    assert failed_risk.blocks_report_issue is True
+    assert "failed" in failed_risk.trigger_basis
+    assert "calculation engine failed to converge." in failed_risk.trigger_basis
+
+
 def test_risk_register_creates_calculation_risk_when_ratio_exceeds_one_without_status() -> None:
     risks = build_risk_register(
         _sample_intake(),

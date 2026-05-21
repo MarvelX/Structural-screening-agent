@@ -81,6 +81,9 @@ def build_risk_register(
 def _calculation_risks(calculation_runs: list[CalculationRun]) -> list[BVRiskItem]:
     risks: list[BVRiskItem] = []
     for run in calculation_runs:
+        if run.status in {"blocked", "failed"}:
+            risks.append(_blocked_calculation_risk(run))
+            continue
         if run.status != "completed":
             continue
         ratio = run.result_summary.get("controlling_utilization_ratio")
@@ -109,6 +112,28 @@ def _calculation_risks(calculation_runs: list[CalculationRun]) -> list[BVRiskIte
             )
         )
     return risks
+
+
+def _blocked_calculation_risk(run: CalculationRun) -> BVRiskItem:
+    error_summary = "; ".join(run.structured_errors) if run.structured_errors else "无结构化错误说明"
+    return BVRiskItem(
+        risk_id=f"calculation_blocked_{_slug(run.run_id)}",
+        title=f"{_engine_title(run.engine_name)}确定性计算输入阻塞",
+        severity="critical",
+        trigger_basis=(
+            f"确定性筛查计算 {run.run_id}: 状态={run.status}; "
+            f"结构化错误={error_summary}; "
+            f"引擎版本={run.engine_version}。"
+        ),
+        linked_field_ids=list(run.input_field_ids),
+        impact_scope=_engine_impact_scope(run.engine_name),
+        recommendation=(
+            "先关闭确定性计算输入缺口，复核工程师确认字段、资料版本和单位，"
+            "再重新运行筛查级计算并进入报告草稿。"
+        ),
+        blocks_report_issue=True,
+        category="nonconformity",
+    )
 
 
 def _ratio_exceeds_one(value: object) -> bool:
