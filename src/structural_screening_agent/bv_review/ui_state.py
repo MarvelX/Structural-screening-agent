@@ -699,6 +699,8 @@ def build_project_review_state_summary_rows(
             "report_revision_count": "报告修订",
             "timeline_event_count": "时间线事件",
             "locked_gate_count": "已锁定门禁",
+            "locked_quality_gate_ids": "已锁定质量门禁",
+            "open_quality_gate_ids": "未通过质量门禁",
             "management_action_count": "项目待办",
             "blocking_action_count": "阻塞待办",
             "workflow_status": "工作流状态",
@@ -718,6 +720,8 @@ def build_project_review_state_summary_rows(
             "report_revision_count": "Report Revisions",
             "timeline_event_count": "Timeline Events",
             "locked_gate_count": "Locked Gates",
+            "locked_quality_gate_ids": "Locked Quality Gates",
+            "open_quality_gate_ids": "Open Quality Gates",
             "management_action_count": "Project Actions",
             "blocking_action_count": "Blocking Actions",
             "workflow_status": "Workflow Status",
@@ -740,6 +744,14 @@ def build_project_review_state_summary_rows(
             labels["report_revision_count"]: summary.report_revision_count,
             labels["timeline_event_count"]: summary.timeline_event_count,
             labels["locked_gate_count"]: summary.locked_gate_count,
+            labels["locked_quality_gate_ids"]: ", ".join(
+                _quality_gate_label(gate_id, language)
+                for gate_id in summary.locked_quality_gate_ids
+            ),
+            labels["open_quality_gate_ids"]: ", ".join(
+                _quality_gate_label(gate_id, language)
+                for gate_id in summary.open_quality_gate_ids
+            ),
             labels["management_action_count"]: summary.management_action_count,
             labels["blocking_action_count"]: summary.blocking_action_count,
             labels["workflow_status"]: _project_inventory_workflow_status_label(
@@ -767,6 +779,16 @@ def _project_inventory_workflow_status_label(status: str, language: Language) ->
         "ready": {"zh": "可继续", "en": "Ready"},
     }
     return labels.get(status, {}).get(language, status)
+
+
+def _quality_gate_label(gate_id: str, language: Language) -> str:
+    labels = {
+        "document": {"zh": "资料门禁", "en": "Document Gate"},
+        "basis": {"zh": "依据门禁", "en": "Review Basis Gate"},
+        "calculation": {"zh": "计算门禁", "en": "Calculation Gate"},
+        "report": {"zh": "签发门禁", "en": "Issue Gate"},
+    }
+    return labels.get(gate_id, {}).get(language, gate_id)
 
 
 def _project_action_category_label(category: str, language: Language) -> str:

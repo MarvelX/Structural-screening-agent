@@ -32,6 +32,8 @@ class ProjectReviewStateSummary(BaseModel):
     report_revision_count: int
     timeline_event_count: int = 0
     locked_gate_count: int = 0
+    locked_quality_gate_ids: list[str] = []
+    open_quality_gate_ids: list[str] = []
     management_action_count: int = 0
     blocking_action_count: int = 0
     workflow_status: ProjectInventoryWorkflowStatus = "ready"
@@ -119,6 +121,8 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
     blocking_action_count = sum(
         1 for action in management_actions if action.blocks_report_issue
     )
+    locked_quality_gate_ids = _locked_quality_gate_ids(state)
+    open_quality_gate_ids = _open_quality_gate_ids(state, locked_quality_gate_ids)
     return ProjectReviewStateSummary(
         project_id=state.project_id,
         project_name=state.intake.project_name,
@@ -136,11 +140,14 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
             and approval.status == "approved"
             and approval.locked
         ),
+        locked_quality_gate_ids=locked_quality_gate_ids,
+        open_quality_gate_ids=open_quality_gate_ids,
         management_action_count=len(management_actions),
         blocking_action_count=blocking_action_count,
         workflow_status=_project_inventory_workflow_status(
             management_action_count=len(management_actions),
             blocking_action_count=blocking_action_count,
+            open_quality_gate_count=len(open_quality_gate_ids),
         ),
         next_action_ids=[action.action_id for action in management_actions[:3]],
         next_action_categories=[action.category for action in management_actions[:3]],
@@ -154,9 +161,40 @@ def _project_inventory_workflow_status(
     *,
     management_action_count: int,
     blocking_action_count: int,
+    open_quality_gate_count: int,
 ) -> ProjectInventoryWorkflowStatus:
     if blocking_action_count:
         return "blocked"
-    if management_action_count:
+    if management_action_count or open_quality_gate_count:
         return "action_required"
     return "ready"
+
+
+def _locked_quality_gate_ids(state: ProjectReviewState) -> list[str]:
+    return [
+        approval.target_id
+        for approval in state.approvals
+        if approval.target_type == "gate"
+        and approval.status == "approved"
+        and approval.locked
+        and approval.target_id in _QUALITY_GATE_IDS
+    ]
+
+
+def _open_quality_gate_ids(
+    state: ProjectReviewState,
+    locked_quality_gate_ids: list[str],
+) -> list[str]:
+    open_gate_ids: list[str] = []
+    if any(status == "missing" for status in state.intake.documents.values()):
+        open_gate_ids.append("document")
+    if not state.basis_references:
+        open_gate_ids.append("basis")
+    if "calculation" not in locked_quality_gate_ids:
+        open_gate_ids.append("calculation")
+    if "report" not in locked_quality_gate_ids:
+        open_gate_ids.append("report")
+    return open_gate_ids
+
+
+_QUALITY_GATE_IDS = {"document", "basis", "calculation", "report"}

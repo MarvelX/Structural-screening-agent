@@ -177,6 +177,8 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[0].report_revision_count == 1
     assert summaries[0].timeline_event_count == 5
     assert summaries[0].locked_gate_count == 1
+    assert summaries[0].locked_quality_gate_ids == ["calculation"]
+    assert summaries[0].open_quality_gate_ids == ["basis", "report"]
     assert summaries[0].management_action_count == 3
     assert summaries[0].blocking_action_count == 3
     assert summaries[0].workflow_status == "blocked"
@@ -203,9 +205,11 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[1].report_revision_count == 0
     assert summaries[1].timeline_event_count == 1
     assert summaries[1].locked_gate_count == 1
+    assert summaries[1].locked_quality_gate_ids == ["calculation"]
+    assert summaries[1].open_quality_gate_ids == ["basis", "report"]
     assert summaries[1].management_action_count == 0
     assert summaries[1].blocking_action_count == 0
-    assert summaries[1].workflow_status == "ready"
+    assert summaries[1].workflow_status == "action_required"
     assert summaries[1].next_action_ids == []
     assert summaries[1].next_action_categories == []
     assert summaries[1].next_action_owner_roles == []
