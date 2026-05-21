@@ -185,6 +185,14 @@ def test_persisted_authorized_agent_response_application_saves_state_and_session
     assert updated_state.phase_statuses["document_check"] == "waiting_for_engineer"
     assert [document.document_id for document in updated_state.document_versions]
     assert updated_state.agent_events[0].agent_role == "document_intake"
+    application_approval = persisted_state.approvals[-1]
+    assert application_approval.target_type == "agent_application"
+    assert application_approval.target_id == plan.plan_id
+    assert application_approval.reviewer == "demo-review-engineer"
+    assert application_approval.comment == "Apply validated intake output."
+    assert application_approval.locked is True
+    assert active_state is not None
+    assert active_state.approvals[-1] == application_approval
 
 
 def test_persisted_workflow_report_revision_saves_state_and_session(tmp_path) -> None:

@@ -47,6 +47,16 @@ def test_apply_authorized_agent_response_requires_ready_plan_and_engineer_author
     assert len(updated.agent_events) == 1
     assert updated.agent_events[0].event_id == "agent-event-001"
     assert updated.agent_events[0].agent_role == "document_intake"
+    application_approval = updated.approvals[-1]
+    assert application_approval.approval_id == "agent-application-001"
+    assert application_approval.target_type == "agent_application"
+    assert application_approval.target_id == plan.plan_id
+    assert application_approval.status == "approved"
+    assert application_approval.reviewer == "Engineer A"
+    assert application_approval.comment == (
+        "Move validated intake output into controlled workflow."
+    )
+    assert application_approval.locked is True
 
 
 def test_apply_authorized_agent_response_rejects_blocked_plan_or_missing_authorization() -> None:
@@ -88,6 +98,30 @@ def test_apply_authorized_agent_response_rejects_blocked_plan_or_missing_authori
             ready_sandbox,
             ready_plan,
             rejected_authorization,
+        )
+
+
+def test_apply_authorized_agent_response_rejects_duplicate_plan_authorization() -> None:
+    state, sandbox, plan = _ready_document_intake_application()
+    authorization = AgentResponseApplicationAuthorization(
+        plan_id=plan.plan_id,
+        response_digest=plan.response_digest,
+        reviewer="Engineer A",
+        decision="authorized",
+    )
+    updated = apply_authorized_agent_response_to_state(
+        state,
+        sandbox,
+        plan,
+        authorization,
+    )
+
+    with pytest.raises(ValueError, match="already has an engineer authorization"):
+        apply_authorized_agent_response_to_state(
+            updated,
+            sandbox,
+            plan,
+            authorization,
         )
 
 
