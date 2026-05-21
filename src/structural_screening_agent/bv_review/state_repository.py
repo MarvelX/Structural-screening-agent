@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from re import fullmatch
-from typing import Union
+from typing import Literal, Union
 
 from pydantic import BaseModel, ValidationError
 
@@ -16,6 +16,9 @@ from structural_screening_agent.bv_review.project_management import (
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, ReviewPhase
 from structural_screening_agent.bv_review.project_timeline import build_project_timeline_events
+
+
+ProjectInventoryWorkflowStatus = Literal["blocked", "action_required", "ready"]
 
 
 class ProjectReviewStateSummary(BaseModel):
@@ -31,6 +34,7 @@ class ProjectReviewStateSummary(BaseModel):
     locked_gate_count: int = 0
     management_action_count: int = 0
     blocking_action_count: int = 0
+    workflow_status: ProjectInventoryWorkflowStatus = "ready"
 
 
 class ProjectReviewStateInventory(BaseModel):
@@ -109,6 +113,9 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
         1 for item in state.risks if item.status in {"open", "under_review"}
     )
     management_actions = build_project_management_actions(state)
+    blocking_action_count = sum(
+        1 for action in management_actions if action.blocks_report_issue
+    )
     return ProjectReviewStateSummary(
         project_id=state.project_id,
         project_name=state.intake.project_name,
@@ -127,7 +134,21 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
             and approval.locked
         ),
         management_action_count=len(management_actions),
-        blocking_action_count=sum(
-            1 for action in management_actions if action.blocks_report_issue
+        blocking_action_count=blocking_action_count,
+        workflow_status=_project_inventory_workflow_status(
+            management_action_count=len(management_actions),
+            blocking_action_count=blocking_action_count,
         ),
     )
+
+
+def _project_inventory_workflow_status(
+    *,
+    management_action_count: int,
+    blocking_action_count: int,
+) -> ProjectInventoryWorkflowStatus:
+    if blocking_action_count:
+        return "blocked"
+    if management_action_count:
+        return "action_required"
+    return "ready"

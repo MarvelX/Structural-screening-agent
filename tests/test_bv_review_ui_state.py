@@ -261,6 +261,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             locked_gate_count=2,
             management_action_count=5,
             blocking_action_count=4,
+            workflow_status="blocked",
         )
     ]
 
@@ -281,6 +282,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "已锁定门禁": 2,
             "项目待办": 5,
             "阻塞待办": 4,
+            "工作流状态": "阻塞",
         }
     ]
     assert en_rows == [
@@ -297,6 +299,7 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "Locked Gates": 2,
             "Project Actions": 5,
             "Blocking Actions": 4,
+            "Workflow Status": "Blocked",
         }
     ]
     assert "Document Check" not in str(zh_rows)

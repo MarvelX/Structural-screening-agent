@@ -701,6 +701,7 @@ def build_project_review_state_summary_rows(
             "locked_gate_count": "已锁定门禁",
             "management_action_count": "项目待办",
             "blocking_action_count": "阻塞待办",
+            "workflow_status": "工作流状态",
         }
         if language == "zh"
         else {
@@ -716,6 +717,7 @@ def build_project_review_state_summary_rows(
             "locked_gate_count": "Locked Gates",
             "management_action_count": "Project Actions",
             "blocking_action_count": "Blocking Actions",
+            "workflow_status": "Workflow Status",
         }
     )
     return [
@@ -734,9 +736,22 @@ def build_project_review_state_summary_rows(
             labels["locked_gate_count"]: summary.locked_gate_count,
             labels["management_action_count"]: summary.management_action_count,
             labels["blocking_action_count"]: summary.blocking_action_count,
+            labels["workflow_status"]: _project_inventory_workflow_status_label(
+                summary.workflow_status,
+                language,
+            ),
         }
         for summary in summaries
     ]
+
+
+def _project_inventory_workflow_status_label(status: str, language: Language) -> str:
+    labels = {
+        "blocked": {"zh": "阻塞", "en": "Blocked"},
+        "action_required": {"zh": "需处理", "en": "Action Required"},
+        "ready": {"zh": "可继续", "en": "Ready"},
+    }
+    return labels.get(status, {}).get(language, status)
 
 
 def build_report_revision_history_rows(
