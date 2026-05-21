@@ -35,6 +35,7 @@ class ProjectReviewStateSummary(BaseModel):
     management_action_count: int = 0
     blocking_action_count: int = 0
     workflow_status: ProjectInventoryWorkflowStatus = "ready"
+    next_action_ids: list[str] = []
 
 
 class ProjectReviewStateInventory(BaseModel):
@@ -139,6 +140,7 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
             management_action_count=len(management_actions),
             blocking_action_count=blocking_action_count,
         ),
+        next_action_ids=[action.action_id for action in management_actions[:3]],
     )
 
 

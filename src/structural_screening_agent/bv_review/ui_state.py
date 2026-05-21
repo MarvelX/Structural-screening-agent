@@ -702,6 +702,7 @@ def build_project_review_state_summary_rows(
             "management_action_count": "项目待办",
             "blocking_action_count": "阻塞待办",
             "workflow_status": "工作流状态",
+            "next_action_ids": "下一步行动",
         }
         if language == "zh"
         else {
@@ -718,6 +719,7 @@ def build_project_review_state_summary_rows(
             "management_action_count": "Project Actions",
             "blocking_action_count": "Blocking Actions",
             "workflow_status": "Workflow Status",
+            "next_action_ids": "Next Actions",
         }
     )
     return [
@@ -740,6 +742,7 @@ def build_project_review_state_summary_rows(
                 summary.workflow_status,
                 language,
             ),
+            labels["next_action_ids"]: ", ".join(summary.next_action_ids),
         }
         for summary in summaries
     ]
