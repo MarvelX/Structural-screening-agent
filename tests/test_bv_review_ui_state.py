@@ -601,6 +601,7 @@ def test_agent_application_authorization_rows_localize_application_ledger() -> N
                 target_id="application-plan-sandbox-review-document_intake",
                 status="approved",
                 reviewer="Engineer A",
+                approved_at="2026-05-21T12:00:00+08:00",
                 comment="Validated intake output applied.",
                 locked=True,
             ),
@@ -626,6 +627,7 @@ def test_agent_application_authorization_rows_localize_application_ledger() -> N
             "结论": "已授权",
             "锁定": "是",
             "授权人": "Engineer A",
+            "授权时间": "2026-05-21T12:00:00+08:00",
             "意见": "Validated intake output applied.",
         }
     ]
@@ -636,6 +638,7 @@ def test_agent_application_authorization_rows_localize_application_ledger() -> N
             "Decision": "Authorized",
             "Locked": "Yes",
             "Authorizer": "Engineer A",
+            "Authorized At": "2026-05-21T12:00:00+08:00",
             "Comment": "Validated intake output applied.",
         }
     ]

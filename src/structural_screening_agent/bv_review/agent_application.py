@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from pydantic import BaseModel, Field
 
 from structural_screening_agent.bv_review.agent_prompting import (
@@ -61,6 +63,8 @@ def apply_authorized_agent_response_to_state(
     sandbox: AgentResponseSandboxResult,
     plan: AgentResponseApplicationPlan,
     authorization: AgentResponseApplicationAuthorization,
+    *,
+    approved_at: str | None = None,
 ) -> ProjectReviewState:
     if plan.plan_status != "ready_for_controlled_application":
         raise ValueError("Application plan must be ready before applying agent output.")
@@ -103,6 +107,7 @@ def apply_authorized_agent_response_to_state(
                     updated_state,
                     plan,
                     authorization,
+                    approved_at or datetime.now(timezone.utc).isoformat(),
                 ),
             ]
         }
@@ -113,6 +118,7 @@ def _build_agent_application_approval(
     state: ProjectReviewState,
     plan: AgentResponseApplicationPlan,
     authorization: AgentResponseApplicationAuthorization,
+    approved_at: str,
 ) -> EngineerApproval:
     return EngineerApproval(
         approval_id=f"agent-application-{len(state.approvals) + 1:03d}",
@@ -120,6 +126,7 @@ def _build_agent_application_approval(
         target_id=plan.plan_id,
         status="approved",
         reviewer=authorization.reviewer,
+        approved_at=approved_at,
         comment=authorization.comment,
         locked=True,
     )

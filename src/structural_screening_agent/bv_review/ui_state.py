@@ -881,6 +881,7 @@ def build_agent_application_authorization_rows(
             "decision": "结论",
             "locked": "锁定",
             "reviewer": "授权人",
+            "approved_at": "授权时间",
             "comment": "意见",
         }
         if language == "zh"
@@ -890,6 +891,7 @@ def build_agent_application_authorization_rows(
             "decision": "Decision",
             "locked": "Locked",
             "reviewer": "Authorizer",
+            "approved_at": "Authorized At",
             "comment": "Comment",
         }
     )
@@ -903,6 +905,7 @@ def build_agent_application_authorization_rows(
             ),
             labels["locked"]: _localized_bool(approval.locked, language),
             labels["reviewer"]: approval.reviewer or "",
+            labels["approved_at"]: approval.approved_at or "",
             labels["comment"]: approval.comment or "",
         }
         for approval in state.approvals

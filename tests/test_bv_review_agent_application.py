@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import pytest
 
@@ -37,6 +38,7 @@ def test_apply_authorized_agent_response_requires_ready_plan_and_engineer_author
         sandbox,
         plan,
         authorization,
+        approved_at="2026-05-21T12:00:00+08:00",
     )
 
     assert updated is not state
@@ -53,6 +55,7 @@ def test_apply_authorized_agent_response_requires_ready_plan_and_engineer_author
     assert application_approval.target_id == plan.plan_id
     assert application_approval.status == "approved"
     assert application_approval.reviewer == "Engineer A"
+    assert application_approval.approved_at == "2026-05-21T12:00:00+08:00"
     assert application_approval.comment == (
         "Move validated intake output into controlled workflow."
     )
@@ -99,6 +102,28 @@ def test_apply_authorized_agent_response_rejects_blocked_plan_or_missing_authori
             ready_plan,
             rejected_authorization,
         )
+
+
+def test_apply_authorized_agent_response_records_default_authorization_time() -> None:
+    state, sandbox, plan = _ready_document_intake_application()
+    authorization = AgentResponseApplicationAuthorization(
+        plan_id=plan.plan_id,
+        response_digest=plan.response_digest,
+        reviewer="Engineer A",
+        decision="authorized",
+    )
+
+    updated = apply_authorized_agent_response_to_state(
+        state,
+        sandbox,
+        plan,
+        authorization,
+    )
+
+    approved_at = updated.approvals[-1].approved_at
+    assert approved_at is not None
+    parsed = datetime.fromisoformat(approved_at)
+    assert parsed.tzinfo is not None
 
 
 def test_apply_authorized_agent_response_rejects_duplicate_plan_authorization() -> None:
