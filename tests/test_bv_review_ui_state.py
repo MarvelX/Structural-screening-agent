@@ -11,6 +11,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_agent_engineer_review_queue_rows,
     build_agent_workflow_event_rows,
     build_agent_workflow_phase_rows,
+    build_blocked_calculation_review_draft_rows,
     build_calculation_result_summary_rows,
     build_closed_rfi_incremental_recheck_rows,
     build_extracted_fields_from_human_gate_rows,
@@ -338,6 +339,82 @@ def test_closed_rfi_incremental_recheck_rows_show_completed_evidence_without_mix
     ]
     assert "Calculation Recheck" not in str(zh_rows)
     assert "计算复核" not in str(en_rows)
+
+
+def test_blocked_calculation_review_draft_rows_localize_engineer_visible_rfi_draft() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-blocked-calculation",
+        intake=default_bv_review_intake(),
+        current_phase="engineer_data_lock",
+        calculation_runs=[
+            CalculationRun(
+                run_id="superstructure-run-post-P1-001",
+                engine_name="superstructure",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["post_section", "worst_bending_moment_knm"],
+                input_locked=False,
+                status="blocked",
+                structured_errors=["worst_bending_moment_knm is required."],
+            )
+        ],
+    )
+
+    zh_rows = build_blocked_calculation_review_draft_rows(state, "zh")
+    en_rows = build_blocked_calculation_review_draft_rows(state, "en")
+
+    assert zh_rows == [
+        {
+            "计算运行 ID": "superstructure-run-post-P1-001",
+            "计算引擎": "上部支架构件",
+            "状态": "阻塞",
+            "待补字段": "post_section, worst_bending_moment_knm",
+            "结构化错误": "worst_bending_moment_knm is required.",
+            "草稿风险 ID": "calculation_blocked_superstructure_run_post_p1_001",
+            "草稿 RFI ID": "rfi-calculation_blocked_superstructure_run_post_p1_001",
+            "建议动作": "补齐输入值、单位和资料版本，工程师复核后重新运行筛查级计算。",
+        }
+    ]
+    assert en_rows == [
+        {
+            "Calculation Run ID": "superstructure-run-post-P1-001",
+            "Calculation Engine": "Superstructure",
+            "Status": "Blocked",
+            "Required Fields": "post_section, worst_bending_moment_knm",
+            "Structured Errors": "worst_bending_moment_knm is required.",
+            "Draft Risk ID": "calculation_blocked_superstructure_run_post_p1_001",
+            "Draft RFI ID": "rfi-calculation_blocked_superstructure_run_post_p1_001",
+            "Suggested Action": (
+                "Complete input values, units, and document revision before engineer "
+                "review and rerun the screening-level calculation."
+            ),
+        }
+    ]
+    assert "Superstructure" not in str(zh_rows)
+    assert "上部支架" not in str(en_rows)
+    assert state.risks == []
+    assert state.rfi_items == []
+    assert state.agent_events == []
+
+
+def test_blocked_calculation_review_draft_rows_are_empty_without_blocked_runs() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-ready-calculation",
+        intake=default_bv_review_intake(),
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m"],
+                input_locked=True,
+                status="completed",
+                result_summary={"screening_status": "pass"},
+            )
+        ],
+    )
+
+    assert build_blocked_calculation_review_draft_rows(state, "zh") == []
+    assert build_blocked_calculation_review_draft_rows(state, "en") == []
 
 
 def test_bv_diff_and_recheck_summary_rows_are_localized_for_chinese_ui() -> None:

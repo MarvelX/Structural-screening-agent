@@ -242,6 +242,9 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "list_project_inventory" in app_source
     assert "invalid_project_ids" in app_source
     assert "build_project_review_state_summary_rows" in app_source
+    assert "build_blocked_calculation_review_draft_rows" in app_source
+    assert '"Blocked Calculation Draft RFI"' in app_source
+    assert '"计算阻塞草稿 RFI"' in app_source
     assert "Saved Project Inventory" in app_source
     assert '"已保存项目清单"' in app_source
     assert "Some saved project files could not be loaded" in app_source

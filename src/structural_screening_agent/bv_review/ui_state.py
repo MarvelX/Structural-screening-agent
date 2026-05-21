@@ -1,4 +1,7 @@
 from structural_screening_agent.bv_review.agent_runner import PersistedWorkflowRunSummary
+from structural_screening_agent.bv_review.blocked_calculation_draft import (
+    build_blocked_calculation_review_draft,
+)
 from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.field_diff import (
     FieldDiff,
@@ -1037,6 +1040,63 @@ def build_closed_rfi_incremental_recheck_rows(
     return rows
 
 
+def build_blocked_calculation_review_draft_rows(
+    state: ProjectReviewState,
+    language: Language,
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "run_id": "计算运行 ID",
+            "engine": "计算引擎",
+            "status": "状态",
+            "fields": "待补字段",
+            "errors": "结构化错误",
+            "risk_id": "草稿风险 ID",
+            "rfi_id": "草稿 RFI ID",
+            "action": "建议动作",
+        }
+        if language == "zh"
+        else {
+            "run_id": "Calculation Run ID",
+            "engine": "Calculation Engine",
+            "status": "Status",
+            "fields": "Required Fields",
+            "errors": "Structured Errors",
+            "risk_id": "Draft Risk ID",
+            "rfi_id": "Draft RFI ID",
+            "action": "Suggested Action",
+        }
+    )
+    draft = build_blocked_calculation_review_draft(state)
+    risk_by_run_id = {
+        _calculation_run_slug_from_draft_risk_id(risk.risk_id): risk
+        for risk in draft.risks
+    }
+    rfi_by_risk_id = {
+        item.rfi_id.removeprefix("rfi-"): item
+        for item in draft.rfi_items
+    }
+    rows: list[dict[str, object]] = []
+    for run in state.calculation_runs:
+        if run.status not in {"blocked", "failed"}:
+            continue
+        risk = risk_by_run_id.get(_slug_calculation_run_id(run.run_id))
+        rfi = rfi_by_risk_id.get(risk.risk_id) if risk is not None else None
+        rows.append(
+            {
+                labels["run_id"]: run.run_id,
+                labels["engine"]: _localized_calculation_engine(run.engine_name, language),
+                labels["status"]: _localized_calculation_run_status(run.status, language),
+                labels["fields"]: ", ".join(run.input_field_ids),
+                labels["errors"]: "; ".join(run.structured_errors),
+                labels["risk_id"]: risk.risk_id if risk is not None else "",
+                labels["rfi_id"]: rfi.rfi_id if rfi is not None else "",
+                labels["action"]: _blocked_calculation_draft_action(language),
+            }
+        )
+    return rows
+
+
 def build_field_diff_summary_rows(
     diffs: list[FieldDiff], language: Language
 ) -> list[dict[str, object]]:
@@ -1208,6 +1268,44 @@ def _localized_bool(value: bool, language: Language) -> str:
     if language == "zh":
         return "是" if value else "否"
     return "Yes" if value else "No"
+
+
+def _localized_calculation_engine(engine_name: str, language: Language) -> str:
+    labels = {
+        "foundation": {"zh": "基础", "en": "Foundation"},
+        "superstructure": {"zh": "上部支架构件", "en": "Superstructure"},
+    }
+    return labels.get(engine_name, {}).get(language, engine_name)
+
+
+def _localized_calculation_run_status(status: str, language: Language) -> str:
+    labels = {
+        "ready": {"zh": "就绪", "en": "Ready"},
+        "blocked": {"zh": "阻塞", "en": "Blocked"},
+        "completed": {"zh": "已完成", "en": "Completed"},
+        "failed": {"zh": "失败", "en": "Failed"},
+    }
+    return labels.get(status, {}).get(language, status)
+
+
+def _blocked_calculation_draft_action(language: Language) -> str:
+    if language == "zh":
+        return "补齐输入值、单位和资料版本，工程师复核后重新运行筛查级计算。"
+    return (
+        "Complete input values, units, and document revision before engineer "
+        "review and rerun the screening-level calculation."
+    )
+
+
+def _calculation_run_slug_from_draft_risk_id(risk_id: str) -> str:
+    prefix = "calculation_blocked_"
+    if not risk_id.startswith(prefix):
+        return risk_id
+    return risk_id.removeprefix(prefix)
+
+
+def _slug_calculation_run_id(run_id: str) -> str:
+    return run_id.lower().replace("-", "_")
 
 
 def _localized_calculation_result_key(key: str, language: Language) -> str:

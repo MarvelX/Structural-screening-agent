@@ -27,6 +27,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_agent_engineer_review_queue_rows,
     build_agent_workflow_event_rows,
     build_agent_workflow_phase_rows,
+    build_blocked_calculation_review_draft_rows,
     build_calculation_result_summary_rows,
     build_closed_rfi_incremental_recheck_rows,
     build_extracted_fields_from_human_gate_rows,
@@ -1209,6 +1210,27 @@ with bv_review_tab:
             if ui_language == "en"
             else "本地确定性 runner 会在工程师数据锁定阶段等待计算门禁批准。"
         )
+        blocked_calculation_draft_rows = build_blocked_calculation_review_draft_rows(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        if blocked_calculation_draft_rows:
+            blocked_calculation_draft_heading = (
+                "Blocked Calculation Draft RFI"
+                if ui_language == "en"
+                else "计算阻塞草稿 RFI"
+            )
+            st.markdown(f"##### {blocked_calculation_draft_heading}")
+            st.dataframe(
+                blocked_calculation_draft_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+            st.caption(
+                "Draft only; the workflow remains at engineer data lock until inputs are corrected and reviewed."
+                if ui_language == "en"
+                else "仅作为草稿展示；工作流仍停留在工程师数据锁定阶段，等待输入修正与复核。"
+            )
         agent_prompt_packages = build_agent_prompt_packages(reviewed_workflow_state)
         agent_contract_heading = (
             "Agent Contract Prompt Preview"
