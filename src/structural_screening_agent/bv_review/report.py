@@ -105,6 +105,12 @@ def build_bv_report_preview(
     report_revision_section = build_bv_report_revision_history_section(project_state)
     if report_revision_section is not None:
         sections.insert(-1, report_revision_section)
+    quality_gate_section = build_bv_quality_gate_status_section(
+        result,
+        project_state,
+    )
+    if quality_gate_section is not None:
+        sections.insert(-1, quality_gate_section)
     project_timeline_section = build_bv_project_timeline_section(project_state)
     if project_timeline_section is not None:
         sections.insert(-1, project_timeline_section)
@@ -273,6 +279,80 @@ def build_bv_report_revision_history_section(
             for revision in project_state.report_revisions
         ],
     )
+
+
+def build_bv_quality_gate_status_section(
+    result: BVReviewResult,
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
+    if project_state is None:
+        return None
+
+    from structural_screening_agent.bv_review.human_gate import (
+        build_report_draft_gate_result,
+    )
+
+    missing_document_labels = [
+        _document_key_label(item.document_key)
+        for item in result.checklist_items
+        if item.status == "missing"
+    ]
+    report_gate = build_report_draft_gate_result(project_state, result)
+    calculation_run_ids = ", ".join(report_gate.calculation_run_ids) or "N/A"
+    gate_reasons = "；".join(_report_gate_reason_label(reason) for reason in report_gate.reasons)
+
+    return BVReportSection(
+        heading="质量门禁状态",
+        items=[
+            (
+                f"资料门禁: {'阻塞' if missing_document_labels else '通过'} | "
+                f"缺失资料: {', '.join(missing_document_labels) or '无'}"
+            ),
+            f"依据门禁: {'通过' if result.basis_references else '阻塞'}",
+            (
+                f"计算门禁: {'已锁定' if project_state.is_gate_locked('calculation') else '未锁定'} | "
+                f"可用计算: {calculation_run_ids}"
+            ),
+            (
+                f"签发门禁: {'可进入报告草稿' if report_gate.status == 'ready' else '阻塞'} | "
+                f"原因: {gate_reasons or '无'}"
+            ),
+            "门禁边界: 自动摘要仅用于审核管理，最终签发前仍需合格工程师复核并批准。",
+        ],
+    )
+
+
+def _document_key_label(document_key: str) -> str:
+    labels = {
+        "structural_drawings": "结构图纸",
+        "calculation_report": "结构计算书",
+        "technical_specification": "技术规格书",
+        "geotechnical_report": "地勘报告",
+        "vendor_datasheets": "厂家资料",
+        "contract_requirements": "合同要求",
+    }
+    return labels.get(document_key, document_key)
+
+
+def _report_gate_reason_label(reason: str) -> str:
+    if reason.startswith("Review basis is missing"):
+        return "缺少审核依据"
+    if reason.startswith("Missing required document inputs block report draft input: "):
+        document_keys = reason.split(": ", 1)[1].split(", ")
+        return "缺失必要资料：" + "、".join(_document_key_label(key) for key in document_keys)
+    if reason.startswith("Blocking risks or nonconformities remain open: "):
+        return "仍有未关闭阻塞风险：" + reason.split(": ", 1)[1]
+    if reason.startswith("Open RFI items trigger incremental recheck: "):
+        return "RFI 触发增量复核：" + reason.split(": ", 1)[1]
+    if reason.startswith("Pending agent engineer review blocks report draft input: "):
+        return "仍有待工程师复核的 Agent 产物：" + reason.split(": ", 1)[1]
+    if reason.startswith("Rejected agent engineer review blocks report draft input: "):
+        return "存在已驳回的 Agent 产物：" + reason.split(": ", 1)[1]
+    if reason == "Calculation gate is not locked by an engineer.":
+        return "计算门禁尚未由工程师锁定"
+    if reason == "No locked calculation interface run is ready for report drafting.":
+        return "缺少可用于报告草稿的已锁定计算运行"
+    return reason
 
 
 def build_bv_project_timeline_section(

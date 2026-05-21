@@ -687,6 +687,77 @@ def test_bv_markdown_report_includes_project_management_actions_when_state_is_pr
     assert "建议动作: 跟进客户 / 设计院回复" in report
 
 
+def test_bv_report_preview_includes_quality_gate_status_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-quality-gates",
+        intake=intake,
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-001",
+                question="Please provide geotechnical side resistance.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation calculation missing side resistance.",
+                required_document_or_field="side_resistance_standard_kpa",
+                status="open",
+                reopen_review_items=["side_resistance_standard_kpa"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "质量门禁状态")
+    text = "\n".join(section.items)
+
+    assert "资料门禁: 阻塞" in text
+    assert "依据门禁: 通过" in text
+    assert "计算门禁: 未锁定" in text
+    assert "签发门禁: 阻塞" in text
+    assert "缺失必要资料" in text
+    assert "结构计算书" in text
+    assert "地勘报告" in text
+    assert "RFI 触发增量复核" in text
+    assert "rfi-foundation-001" in text
+    assert "Missing required document inputs" not in text
+
+
+def test_bv_markdown_report_includes_quality_gate_status_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-quality-gates",
+        intake=intake,
+        approvals=[
+            EngineerApproval(
+                approval_id="calculation-gate-approval",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                reviewer="Engineer A",
+                locked=True,
+            )
+        ],
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_locked=True,
+                status="ready",
+            )
+        ],
+    )
+
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "## 质量门禁状态" in report
+    assert "计算门禁: 已锁定" in report
+    assert "可用计算: foundation-run-001" in report
+    assert "签发门禁: 阻塞" in report
+
+
 def test_bv_report_filename_uses_date_and_scope_key() -> None:
     filename = build_bv_report_filename("rooftop_pv_review", report_date=date(2026, 5, 9))
 
