@@ -30,6 +30,9 @@ from structural_screening_agent.bv_review.agent_runner import (
     run_persisted_local_agent_workflow_until_blocked,
     run_persisted_local_agent_workflow_with_summary,
 )
+from structural_screening_agent.bv_review.persisted_workflow_session import (
+    apply_persisted_authorized_agent_response,
+)
 from structural_screening_agent.bv_review.agent_prompting import (
     AgentResponseApplicationAuthorization,
     AgentProviderInvocationRequest,
@@ -159,6 +162,7 @@ __all__ = [
     "advance_project_phase",
     "apply_agent_output_to_state",
     "apply_authorized_agent_response_to_state",
+    "apply_persisted_authorized_agent_response",
     "build_agent_response_application_packet",
     "build_foundation_calculation_run",
     "build_agent_provider_invocation_request",

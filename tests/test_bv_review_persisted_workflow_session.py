@@ -7,6 +7,7 @@ from structural_screening_agent.bv_review import (
 )
 from structural_screening_agent.bv_review.human_gate import build_report_draft_gate_result
 from structural_screening_agent.bv_review.persisted_workflow_session import (
+    apply_persisted_authorized_agent_response,
     clear_persisted_workflow_session,
     get_active_persisted_project_id,
     get_active_persisted_workflow_state,
@@ -17,6 +18,14 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     record_persisted_rfi_client_response,
     store_persisted_workflow_state,
     store_persisted_workflow_result,
+)
+from structural_screening_agent.bv_review.agent_prompting import (
+    AgentResponseApplicationAuthorization,
+    build_agent_prompt_package,
+    build_agent_response_application_plan,
+    build_agent_response_engineer_handoff,
+    build_agent_response_sandbox_result,
+    build_sample_agent_response_json,
 )
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
@@ -133,6 +142,49 @@ def test_persisted_workflow_agent_review_decision_saves_state_and_session(
     assert approval.locked is True
     assert approval.reviewer == "demo-review-engineer"
     assert approval.comment == "Approved after checking extracted evidence."
+
+
+def test_persisted_authorized_agent_response_application_saves_state_and_session(
+    tmp_path,
+) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    state = ProjectReviewState(project_id="pv-application", intake=_sample_intake())
+    repository.save(state)
+    session_state: dict[str, object] = {}
+    store_persisted_workflow_state(session_state, state)
+    sandbox = build_agent_response_sandbox_result(
+        build_agent_prompt_package("document_intake", state),
+        build_sample_agent_response_json("document_intake", state),
+        state=state,
+    )
+    plan = build_agent_response_application_plan(
+        build_agent_response_engineer_handoff(sandbox)
+    )
+    authorization = AgentResponseApplicationAuthorization(
+        plan_id=plan.plan_id,
+        response_digest=plan.response_digest,
+        reviewer="demo-review-engineer",
+        decision="authorized",
+        comment="Apply validated intake output.",
+    )
+
+    updated_state = apply_persisted_authorized_agent_response(
+        session_state,
+        repository,
+        project_id="pv-application",
+        sandbox=sandbox,
+        plan=plan,
+        authorization=authorization,
+    )
+
+    persisted_state = repository.load("pv-application")
+    active_state = get_active_persisted_workflow_state(session_state, "pv-application")
+    assert updated_state == persisted_state
+    assert active_state == updated_state
+    assert updated_state.current_phase == "document_check"
+    assert updated_state.phase_statuses["document_check"] == "waiting_for_engineer"
+    assert [document.document_id for document in updated_state.document_versions]
+    assert updated_state.agent_events[0].agent_role == "document_intake"
 
 
 def test_persisted_workflow_report_revision_saves_state_and_session(tmp_path) -> None:

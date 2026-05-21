@@ -59,6 +59,7 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     get_active_persisted_project_id,
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
+    apply_persisted_authorized_agent_response,
     record_persisted_agent_review_decision,
     record_persisted_report_revision,
     record_persisted_rfi_client_response,
@@ -1489,25 +1490,30 @@ with bv_review_tab:
                         comment=application_comment,
                     )
                     try:
-                        updated_workflow_state = apply_authorized_agent_response_to_state(
-                            reviewed_workflow_state,
-                            sandbox_for_application,
-                            application_plan,
-                            authorization,
-                        )
-                    except ValueError as exc:
-                        st.warning(str(exc))
-                    else:
                         if persisted_workflow_is_active:
-                            persisted_repository.save(updated_workflow_state)
-                            store_persisted_workflow_state(
+                            apply_persisted_authorized_agent_response(
                                 st.session_state,
-                                updated_workflow_state,
+                                persisted_repository,
+                                project_id=active_persisted_project_id,
+                                sandbox=sandbox_for_application,
+                                plan=application_plan,
+                                authorization=authorization,
                             )
                         else:
+                            updated_workflow_state = (
+                                apply_authorized_agent_response_to_state(
+                                    reviewed_workflow_state,
+                                    sandbox_for_application,
+                                    application_plan,
+                                    authorization,
+                                )
+                            )
                             st.session_state["bv_agent_application_state"] = (
                                 updated_workflow_state
                             )
+                    except ValueError as exc:
+                        st.warning(str(exc))
+                    else:
                         st.session_state.pop(
                             "bv_agent_response_application_packet",
                             None,

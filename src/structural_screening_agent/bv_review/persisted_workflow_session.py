@@ -5,6 +5,14 @@ from structural_screening_agent.bv_review.agent_runner import (
     PersistedWorkflowRunResult,
     PersistedWorkflowRunSummary,
 )
+from structural_screening_agent.bv_review.agent_application import (
+    apply_authorized_agent_response_to_state,
+)
+from structural_screening_agent.bv_review.agent_prompting import (
+    AgentResponseApplicationAuthorization,
+    AgentResponseApplicationPlan,
+    AgentResponseSandboxResult,
+)
 from structural_screening_agent.bv_review.human_gate import (
     ReportDraftGateResult,
     close_rfi_after_engineer_review,
@@ -100,6 +108,30 @@ def record_persisted_agent_review_decision(
         decision=decision,
         reviewer=reviewer,
         comment=comment,
+    )
+    repository.save(updated_state)
+    store_persisted_workflow_state(session_state, updated_state)
+    return updated_state
+
+
+def apply_persisted_authorized_agent_response(
+    session_state: MutableMapping[str, object],
+    repository: JsonProjectReviewStateRepository,
+    *,
+    project_id: str,
+    sandbox: AgentResponseSandboxResult,
+    plan: AgentResponseApplicationPlan,
+    authorization: AgentResponseApplicationAuthorization,
+) -> ProjectReviewState:
+    state = get_active_persisted_workflow_state(session_state, project_id)
+    if state is None:
+        raise ValueError("No active persisted workflow state is loaded for this project.")
+
+    updated_state = apply_authorized_agent_response_to_state(
+        state,
+        sandbox,
+        plan,
+        authorization,
     )
     repository.save(updated_state)
     store_persisted_workflow_state(session_state, updated_state)

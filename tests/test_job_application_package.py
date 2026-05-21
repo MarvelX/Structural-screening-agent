@@ -158,6 +158,7 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "record_persisted_report_revision" in app_source
     assert "record_persisted_rfi_client_response" in app_source
     assert "close_persisted_rfi_after_engineer_review" in app_source
+    assert "apply_persisted_authorized_agent_response" in app_source
     assert "store_persisted_workflow_state" in app_source
     assert "build_bv_review_result_from_project_state" in app_source
     assert "record_report_revision" in app_source
