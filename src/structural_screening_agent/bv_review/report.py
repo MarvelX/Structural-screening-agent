@@ -94,6 +94,9 @@ def build_bv_report_preview(
     rfi_closeout_section = build_bv_rfi_closeout_evidence_section(project_state)
     if rfi_closeout_section is not None:
         sections.insert(-1, rfi_closeout_section)
+    finding_closeout_section = build_bv_finding_closeout_evidence_section(project_state)
+    if finding_closeout_section is not None:
+        sections.insert(-1, finding_closeout_section)
     service_scope_section = build_bv_service_scope_section(
         intake,
         result,
@@ -199,6 +202,35 @@ def build_bv_rfi_closeout_evidence_section(
                 "关闭证据: 已完成增量复核"
             )
             for item in plan.affected_items
+        ],
+    )
+
+
+def build_bv_finding_closeout_evidence_section(
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
+    if project_state is None:
+        return None
+
+    closed_findings = [
+        item
+        for item in project_state.risks
+        if item.status in {"closed", "accepted_with_comment"}
+    ]
+    if not closed_findings:
+        return None
+
+    return BVReportSection(
+        heading="发现项关闭证据",
+        items=[
+            (
+                f"发现项 {item.risk_id} | "
+                f"标题: {item.title} | "
+                f"状态: {item.status} | "
+                f"影响范围: {item.impact_scope} | "
+                f"关闭说明: {item.closeout_note or 'N/A'}"
+            )
+            for item in closed_findings
         ],
     )
 

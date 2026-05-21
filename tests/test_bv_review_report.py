@@ -231,6 +231,91 @@ def test_bv_markdown_report_includes_closed_rfi_recheck_evidence_when_state_is_p
     assert "关闭证据: 已完成增量复核" in report
 
 
+def test_bv_report_preview_includes_finding_closeout_evidence_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-finding-closeout",
+        intake=intake,
+        risks=[
+            BVRiskItem(
+                risk_id="foundation-bearing-capacity-closed",
+                title="基础承载力澄清已关闭",
+                severity="high",
+                trigger_basis="工程师复核 Rev B 地勘资料。",
+                impact_scope="基础审核",
+                recommendation="保留关闭证据。",
+                blocks_report_issue=True,
+                category="nonconformity",
+                status="closed",
+                closeout_note="工程师确认 Rev B 地勘承载力参数可用于筛查级报告。",
+            ),
+            BVRiskItem(
+                risk_id="layout-residual-accepted",
+                title="支架排布残余优化意见",
+                severity="medium",
+                trigger_basis="工程师接受残余优化意见。",
+                impact_scope="支架布置",
+                recommendation="在报告中保留残余意见。",
+                blocks_report_issue=True,
+                category="optimization",
+                status="accepted_with_comment",
+                closeout_note="工程师接受该项作为残余优化建议，不阻塞报告草稿。",
+            ),
+            BVRiskItem(
+                risk_id="open-finding-not-closeout-evidence",
+                title="未关闭发现项",
+                severity="critical",
+                trigger_basis="仍缺少资料。",
+                impact_scope="基础审核",
+                recommendation="继续跟进。",
+                blocks_report_issue=True,
+                category="nonconformity",
+            ),
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "发现项关闭证据")
+    text = "\n".join(section.items)
+
+    assert "foundation-bearing-capacity-closed" in text
+    assert "状态: closed" in text
+    assert "工程师确认 Rev B 地勘承载力参数可用于筛查级报告。" in text
+    assert "layout-residual-accepted" in text
+    assert "状态: accepted_with_comment" in text
+    assert "open-finding-not-closeout-evidence" not in text
+
+
+def test_bv_markdown_report_includes_finding_closeout_evidence_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-finding-closeout",
+        intake=intake,
+        risks=[
+            BVRiskItem(
+                risk_id="foundation-bearing-capacity-closed",
+                title="基础承载力澄清已关闭",
+                severity="high",
+                trigger_basis="工程师复核 Rev B 地勘资料。",
+                impact_scope="基础审核",
+                recommendation="保留关闭证据。",
+                blocks_report_issue=True,
+                category="nonconformity",
+                status="closed",
+                closeout_note="工程师确认 Rev B 地勘承载力参数可用于筛查级报告。",
+            )
+        ],
+    )
+
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "## 发现项关闭证据" in report
+    assert "foundation-bearing-capacity-closed" in report
+    assert "关闭说明: 工程师确认 Rev B 地勘承载力参数可用于筛查级报告。" in report
+
+
 def test_bv_report_preview_includes_active_rfi_register_when_state_is_provided() -> None:
     intake = _sample_intake()
     result = evaluate_bv_review(intake)
