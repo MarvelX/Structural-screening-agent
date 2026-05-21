@@ -697,6 +697,8 @@ def build_project_review_state_summary_rows(
             "active_rfi_count": "未关闭 RFI",
             "open_finding_count": "未关闭发现项",
             "report_revision_count": "报告修订",
+            "timeline_event_count": "时间线事件",
+            "locked_gate_count": "已锁定门禁",
         }
         if language == "zh"
         else {
@@ -708,6 +710,8 @@ def build_project_review_state_summary_rows(
             "active_rfi_count": "Active RFIs",
             "open_finding_count": "Open Findings",
             "report_revision_count": "Report Revisions",
+            "timeline_event_count": "Timeline Events",
+            "locked_gate_count": "Locked Gates",
         }
     )
     return [
@@ -722,6 +726,8 @@ def build_project_review_state_summary_rows(
             labels["active_rfi_count"]: summary.active_rfi_count,
             labels["open_finding_count"]: summary.open_finding_count,
             labels["report_revision_count"]: summary.report_revision_count,
+            labels["timeline_event_count"]: summary.timeline_event_count,
+            labels["locked_gate_count"]: summary.locked_gate_count,
         }
         for summary in summaries
     ]

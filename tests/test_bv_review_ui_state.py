@@ -257,6 +257,8 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             active_rfi_count=1,
             open_finding_count=3,
             report_revision_count=1,
+            timeline_event_count=8,
+            locked_gate_count=2,
         )
     ]
 
@@ -273,6 +275,8 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "未关闭 RFI": 1,
             "未关闭发现项": 3,
             "报告修订": 1,
+            "时间线事件": 8,
+            "已锁定门禁": 2,
         }
     ]
     assert en_rows == [
@@ -285,6 +289,8 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
             "Active RFIs": 1,
             "Open Findings": 3,
             "Report Revisions": 1,
+            "Timeline Events": 8,
+            "Locked Gates": 2,
         }
     ]
     assert "Document Check" not in str(zh_rows)
