@@ -70,7 +70,11 @@ from structural_screening_agent.bv_review.project_management import (
     build_project_management_action_rows,
     build_project_management_actions,
 )
+from structural_screening_agent.bv_review.agent_application import (
+    apply_authorized_agent_response_to_state,
+)
 from structural_screening_agent.bv_review.agent_prompting import (
+    AgentResponseApplicationAuthorization,
     build_agent_provider_invocation_request,
     build_agent_provider_invocation_rows,
     build_agent_response_application_plan,
@@ -1089,19 +1093,26 @@ with bv_review_tab:
             active_persisted_project_id,
         )
         persisted_workflow_is_active = persisted_session_state is not None
-        workflow_state = (
-            persisted_workflow_result.state
-            if persisted_workflow_result is not None
-            else persisted_session_state
-            if persisted_session_state is not None
-            else run_local_agent_workflow_until_blocked(phase1_state)
-        )
         workflow_signature = f"{bv_intake.model_dump_json()}|{human_gate_signature}"
         if st.session_state.get("bv_agent_review_signature") != workflow_signature:
             st.session_state["bv_agent_review_signature"] = workflow_signature
             st.session_state["bv_agent_review_decisions"] = {}
             st.session_state["bv_report_gate_approved"] = False
             st.session_state["bv_report_revisions"] = []
+            st.session_state.pop("bv_agent_application_state", None)
+            st.session_state.pop("bv_agent_response_application_packet", None)
+        session_agent_application_state = st.session_state.get(
+            "bv_agent_application_state"
+        )
+        workflow_state = (
+            persisted_workflow_result.state
+            if persisted_workflow_result is not None
+            else persisted_session_state
+            if persisted_session_state is not None
+            else session_agent_application_state
+            if isinstance(session_agent_application_state, ProjectReviewState)
+            else run_local_agent_workflow_until_blocked(phase1_state)
+        )
         stored_agent_review_decisions = (
             {}
             if persisted_workflow_is_active
@@ -1150,6 +1161,7 @@ with bv_review_tab:
                 reviewed_workflow_state = reviewed_workflow_state.model_copy(
                     update={"report_revisions": session_report_revisions}
                 )
+        current_workflow_state_signature = reviewed_workflow_state.model_dump_json()
         effective_bv_intake = (
             reviewed_workflow_state.intake
             if persisted_workflow_is_active
@@ -1226,6 +1238,12 @@ with bv_review_tab:
             for package in agent_prompt_packages
             if package.agent_role == selected_agent_contract
         )
+        agent_application_notice = st.session_state.pop(
+            "bv_agent_application_notice",
+            None,
+        )
+        if isinstance(agent_application_notice, str):
+            st.success(agent_application_notice)
         with st.expander(
             "System and User Prompt"
             if ui_language == "en"
@@ -1360,6 +1378,12 @@ with bv_review_tab:
                 if ui_language == "en"
                 else "仅应用计划；工程师授权前不应用 Agent 输出。"
             )
+            st.session_state["bv_agent_response_application_packet"] = {
+                "workflow_signature": workflow_signature,
+                "workflow_state_signature": current_workflow_state_signature,
+                "sandbox_result": sandbox_result,
+                "application_plan": application_plan,
+            }
             if validation_result.ok:
                 st.success(
                     validation_result.summary
@@ -1390,6 +1414,112 @@ with bv_review_tab:
                     if ui_language == "en"
                     else f"Agent JSON 响应未通过校验：{validation_result.error}"
                 )
+        agent_application_packet = st.session_state.get(
+            "bv_agent_response_application_packet"
+        )
+        if (
+            isinstance(agent_application_packet, dict)
+            and agent_application_packet.get("workflow_signature") == workflow_signature
+        ):
+            packet_state_signature = agent_application_packet.get(
+                "workflow_state_signature"
+            )
+            if packet_state_signature != current_workflow_state_signature:
+                st.session_state.pop("bv_agent_response_application_packet", None)
+                st.info(
+                    "Revalidate the agent response before applying it to the updated workflow state."
+                    if ui_language == "en"
+                    else "工作流状态已更新，请重新校验 Agent 响应后再应用。"
+                )
+            else:
+                sandbox_for_application = agent_application_packet.get("sandbox_result")
+                application_plan = agent_application_packet.get("application_plan")
+                if sandbox_for_application is not None and application_plan is not None:
+                    st.markdown(
+                        "##### Engineer Authorization for Controlled Application"
+                        if ui_language == "en"
+                        else "##### 工程师授权受控应用"
+                    )
+                    application_reviewer = st.text_input(
+                        "Authorizing Engineer"
+                        if ui_language == "en"
+                        else "授权工程师",
+                        value=(
+                            "demo-review-engineer"
+                            if ui_language == "en"
+                            else "演示审核工程师"
+                        ),
+                        key="bv_agent_application_reviewer",
+                    )
+                    application_comment = st.text_area(
+                        "Authorization Comment"
+                        if ui_language == "en"
+                        else "授权意见",
+                        value=(
+                            "Engineer authorized controlled application of validated agent output."
+                            if ui_language == "en"
+                            else "工程师已授权受控应用已校验的 Agent 产物。"
+                        ),
+                        height=80,
+                        key="bv_agent_application_comment",
+                    )
+                    application_is_ready = (
+                        application_plan.plan_status
+                        == "ready_for_controlled_application"
+                    )
+                    if not application_is_ready:
+                        st.warning(
+                            "Resolve application plan blockers before authorizing application."
+                            if ui_language == "en"
+                            else "请先处理应用计划阻断项，再授权应用。"
+                        )
+                    if st.button(
+                        "Authorize and Apply Agent Response"
+                        if ui_language == "en"
+                        else "授权并应用 Agent 响应",
+                        key="bv_authorize_apply_agent_response",
+                        disabled=not application_is_ready,
+                        use_container_width=True,
+                    ):
+                        authorization = AgentResponseApplicationAuthorization(
+                            plan_id=application_plan.plan_id,
+                            response_digest=application_plan.response_digest,
+                            reviewer=application_reviewer,
+                            decision="authorized",
+                            comment=application_comment,
+                        )
+                        try:
+                            updated_workflow_state = (
+                                apply_authorized_agent_response_to_state(
+                                    reviewed_workflow_state,
+                                    sandbox_for_application,
+                                    application_plan,
+                                    authorization,
+                                )
+                            )
+                        except ValueError as exc:
+                            st.warning(str(exc))
+                        else:
+                            if persisted_workflow_is_active:
+                                persisted_repository.save(updated_workflow_state)
+                                store_persisted_workflow_state(
+                                    st.session_state,
+                                    updated_workflow_state,
+                                )
+                            else:
+                                st.session_state["bv_agent_application_state"] = (
+                                    updated_workflow_state
+                                )
+                            st.session_state.pop(
+                                "bv_agent_response_application_packet",
+                                None,
+                            )
+                            st.session_state["bv_agent_application_notice"] = (
+                                "Agent response applied to workflow state."
+                                if ui_language == "en"
+                                else "Agent 响应已应用到工作流状态。"
+                            )
+                            st.rerun()
         project_management_actions = build_project_management_actions(
             reviewed_workflow_state
         )

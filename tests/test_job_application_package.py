@@ -204,6 +204,8 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "build_agent_response_engineer_handoff_rows" in app_source
     assert "build_agent_response_application_plan" in app_source
     assert "build_agent_response_application_plan_rows" in app_source
+    assert "AgentResponseApplicationAuthorization" in app_source
+    assert "apply_authorized_agent_response_to_state" in app_source
     assert "build_sample_agent_response_json" in app_source
     assert '"Agent JSON Response Validation Sandbox"' in app_source
     assert '"Agent JSON 响应验证沙盒"' in app_source
@@ -213,8 +215,19 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"Agent 工程师复核移交"' in app_source
     assert '"Agent Controlled Application Plan"' in app_source
     assert '"Agent 受控应用计划"' in app_source
+    assert '"Authorize and Apply Agent Response"' in app_source
+    assert '"授权并应用 Agent 响应"' in app_source
+    assert '"Agent response applied to workflow state."' in app_source
+    assert '"Agent 响应已应用到工作流状态。"' in app_source
+    assert "current_workflow_state_signature" in app_source
+    assert '"workflow_state_signature"' in app_source
+    assert (
+        "Revalidate the agent response before applying it to the updated workflow state."
+        in app_source
+    )
     assert "Sandbox result only; no network request is sent" in app_source
     assert "Application plan only; no agent output is applied" in app_source
+    assert "response_digest=application_plan.response_digest" in app_source
     assert '"Agent Response Impact Preview"' in app_source
     assert '"Agent 响应影响预览"' in app_source
     assert "Preview only; engineer approval is still required" in app_source
