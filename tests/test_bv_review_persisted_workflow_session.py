@@ -29,6 +29,7 @@ from structural_screening_agent.bv_review.agent_prompting import (
 )
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
+    DocumentVersion,
     EngineerApproval,
     RFIItem,
 )
@@ -73,20 +74,47 @@ def test_persisted_workflow_session_keeps_resumed_state_for_matching_project() -
 
 def test_store_persisted_workflow_state_replaces_active_state_without_losing_project_anchor() -> None:
     session_state: dict[str, object] = {}
-    store_persisted_workflow_state(
-        session_state,
-        ProjectReviewState(project_id="pv-001", intake=_sample_intake()),
+    result = PersistedWorkflowRunResult(
+        state=ProjectReviewState(project_id="pv-001", intake=_sample_intake()),
+        summary=PersistedWorkflowRunSummary(
+            project_id="pv-001",
+            start_phase="intake",
+            final_phase="intake",
+            applied_agent_event_ids=["agent-event-001"],
+            applied_agent_roles=["document_intake"],
+            artifact_counts={"document_versions": 0},
+            saved=True,
+        ),
     )
+    store_persisted_workflow_result(session_state, result)
 
     updated_state = ProjectReviewState(
         project_id="pv-001",
         intake=_sample_intake(),
         current_phase="report_draft",
+        document_versions=[
+            DocumentVersion(
+                document_id="structural-drawing-s101",
+                document_type="structural_drawing",
+                revision="A",
+                source_name="S-101 Rev A.pdf",
+                status="available",
+            )
+        ],
     )
     store_persisted_workflow_state(session_state, updated_state)
 
+    active_summary = get_active_persisted_workflow_summary(session_state, "pv-001")
+
     assert get_active_persisted_project_id(session_state) == "pv-001"
     assert get_active_persisted_workflow_state(session_state, "pv-001") == updated_state
+    assert active_summary is not None
+    assert active_summary.start_phase == "intake"
+    assert active_summary.final_phase == "report_draft"
+    assert active_summary.applied_agent_event_ids == ["agent-event-001"]
+    assert active_summary.applied_agent_roles == ["document_intake"]
+    assert active_summary.artifact_counts["document_versions"] == 1
+    assert active_summary.saved is True
 
 
 def test_clear_persisted_workflow_session_removes_resumed_state_and_summary() -> None:

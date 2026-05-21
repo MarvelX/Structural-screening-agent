@@ -47,6 +47,17 @@ def store_persisted_workflow_state(
 ) -> None:
     session_state[_PROJECT_ID_KEY] = state.project_id
     session_state[_STATE_KEY] = state
+    existing_summary = session_state.get(_SUMMARY_KEY)
+    if (
+        isinstance(existing_summary, PersistedWorkflowRunSummary)
+        and existing_summary.project_id == state.project_id
+    ):
+        session_state[_SUMMARY_KEY] = existing_summary.model_copy(
+            update={
+                "final_phase": state.current_phase,
+                "artifact_counts": _artifact_counts_for_state(state),
+            }
+        )
 
 
 def clear_persisted_workflow_session(session_state: MutableMapping[str, object]) -> None:
@@ -62,6 +73,23 @@ def get_active_persisted_project_id(
     if isinstance(project_id, str) and project_id:
         return project_id
     return None
+
+
+def _artifact_counts_for_state(state: ProjectReviewState) -> dict[str, int]:
+    return {
+        "document_versions": len(state.document_versions),
+        "extracted_fields": len(state.extracted_fields),
+        "basis_references": len(state.basis_references),
+        "review_plan": len(state.review_plan),
+        "review_paths": len(state.review_paths),
+        "calculation_runs": len(state.calculation_runs),
+        "risks": len(state.risks),
+        "rfi_items": len(state.rfi_items),
+        "report_sections": len(state.report_sections),
+        "report_revisions": len(state.report_revisions),
+        "agent_events": len(state.agent_events),
+        "approvals": len(state.approvals),
+    }
 
 
 def get_active_persisted_workflow_state(
