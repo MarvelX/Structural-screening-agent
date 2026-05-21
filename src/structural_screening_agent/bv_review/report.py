@@ -14,6 +14,7 @@ from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan_from_closed_rfis,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
+from structural_screening_agent.bv_review.project_timeline import build_project_timeline_events
 from structural_screening_agent.bv_review.service_scope import (
     build_service_scope_recommendations,
 )
@@ -273,54 +274,57 @@ def build_bv_project_timeline_section(
     if project_state is None:
         return None
 
-    items: list[str] = []
-    for rfi in project_state.rfi_items:
-        items.append(
-            (
-                f"排序: 01-RFI-{rfi.rfi_id} | "
-                f"类型: RFI | "
-                f"项目 ID: {rfi.rfi_id} | "
-                f"状态: {_rfi_status_label(rfi.status)} | "
-                f"责任方: {rfi.responsible_party} | "
-                f"关联对象: {rfi.required_document_or_field} | "
-                f"说明: {rfi.trigger_basis} | "
-                f"证据: {rfi.client_response or 'N/A'} | "
-                "建议动作: 工程师复核客户回复并保留关闭证据"
-            )
+    items = [
+        (
+            f"排序: {event.sort_key} | "
+            f"类型: {_timeline_event_type_label(event.event_type)} | "
+            f"项目 ID: {event.item_id} | "
+            f"状态: {_timeline_status_label(event.event_type, event.status)} | "
+            f"责任方: {_timeline_owner_label(event.owner)} | "
+            f"关联对象: {event.linked_object or 'N/A'} | "
+            f"说明: {event.description} | "
+            f"证据: {event.evidence or 'N/A'} | "
+            f"建议动作: {_timeline_suggested_action_label(event.suggested_action)}"
         )
-    for risk in project_state.risks:
-        if risk.status not in {"closed", "accepted_with_comment"}:
-            continue
-        items.append(
-            (
-                f"排序: 02-FINDING-{risk.risk_id} | "
-                f"类型: 发现项 | "
-                f"项目 ID: {risk.risk_id} | "
-                f"状态: {_finding_status_label(risk.status)} | "
-                f"责任方: 工程师 | "
-                f"关联对象: {risk.impact_scope} | "
-                f"说明: {risk.title} | "
-                f"证据: {risk.closeout_note or 'N/A'} | "
-                "建议动作: 保留发现项关闭证据并进入报告"
-            )
-        )
-    for revision in project_state.report_revisions:
-        items.append(
-            (
-                f"排序: 03-REPORT-{revision.revision_id} | "
-                f"类型: 报告版本 | "
-                f"项目 ID: {revision.revision_id} | "
-                f"状态: {_review_phase_label(revision.source_phase)} | "
-                f"责任方: {revision.created_by} | "
-                f"关联对象: {', '.join(revision.calculation_run_ids) or 'N/A'} | "
-                f"说明: {revision.report_title} | "
-                f"证据: {revision.note or 'N/A'} | "
-                "建议动作: 按报告版本记录继续内部复核"
-            )
-        )
+        for event in build_project_timeline_events(project_state)
+    ]
     if not items:
         return None
     return BVReportSection(heading="项目时间线", items=items)
+
+
+def _timeline_event_type_label(event_type: str) -> str:
+    labels = {
+        "rfi": "RFI",
+        "finding": "发现项",
+        "report_revision": "报告版本",
+    }
+    return labels.get(event_type, event_type)
+
+
+def _timeline_status_label(event_type: str, status: str) -> str:
+    if event_type == "rfi":
+        return _rfi_status_label(status)
+    if event_type == "finding":
+        return _finding_status_label(status)
+    if event_type == "report_revision":
+        return _review_phase_label(status)
+    return status
+
+
+def _timeline_owner_label(owner: str) -> str:
+    if owner == "engineer":
+        return "工程师"
+    return owner
+
+
+def _timeline_suggested_action_label(suggested_action: str) -> str:
+    labels = {
+        "rfi_closeout_review": "工程师复核客户回复并保留关闭证据",
+        "finding_closeout_record": "保留发现项关闭证据并进入报告",
+        "report_revision_review": "按报告版本记录继续内部复核",
+    }
+    return labels.get(suggested_action, suggested_action)
 
 
 def _rfi_status_label(status: str) -> str:

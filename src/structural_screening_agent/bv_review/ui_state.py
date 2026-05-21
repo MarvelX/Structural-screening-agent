@@ -9,6 +9,7 @@ from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan_from_closed_rfis,
 )
 from structural_screening_agent.bv_review.project_state import ExtractedField, ProjectReviewState
+from structural_screening_agent.bv_review.project_timeline import build_project_timeline_events
 from structural_screening_agent.bv_review.state_repository import ProjectReviewStateSummary
 from structural_screening_agent.localization import Language
 
@@ -805,52 +806,23 @@ def build_project_timeline_rows(
             "suggested_action": "Suggested Action",
         }
     )
-    rows: list[dict[str, object]] = []
-    for rfi in state.rfi_items:
-        rows.append(
-            {
-                labels["sort"]: f"01-RFI-{rfi.rfi_id}",
-                labels["type"]: "RFI",
-                labels["item_id"]: rfi.rfi_id,
-                labels["status"]: _rfi_status_label(rfi.status, language),
-                labels["owner"]: rfi.responsible_party,
-                labels["linked_object"]: rfi.required_document_or_field,
-                labels["description"]: rfi.trigger_basis,
-                labels["evidence"]: rfi.client_response or "",
-                labels["suggested_action"]: _timeline_rfi_action(language),
-            }
-        )
-    for risk in state.risks:
-        if risk.status not in {"closed", "accepted_with_comment"}:
-            continue
-        rows.append(
-            {
-                labels["sort"]: f"02-FINDING-{risk.risk_id}",
-                labels["type"]: "发现项" if language == "zh" else "Finding",
-                labels["item_id"]: risk.risk_id,
-                labels["status"]: _finding_status_label(risk.status, language),
-                labels["owner"]: "工程师" if language == "zh" else "Engineer",
-                labels["linked_object"]: risk.impact_scope,
-                labels["description"]: risk.title,
-                labels["evidence"]: risk.closeout_note or "",
-                labels["suggested_action"]: _timeline_finding_action(language),
-            }
-        )
-    for revision in state.report_revisions:
-        rows.append(
-            {
-                labels["sort"]: f"03-REPORT-{revision.revision_id}",
-                labels["type"]: "报告版本" if language == "zh" else "Report Revision",
-                labels["item_id"]: revision.revision_id,
-                labels["status"]: BV_REVIEW_PHASE_LABELS[revision.source_phase][language],
-                labels["owner"]: revision.created_by,
-                labels["linked_object"]: ", ".join(revision.calculation_run_ids),
-                labels["description"]: revision.report_title,
-                labels["evidence"]: revision.note or "",
-                labels["suggested_action"]: _timeline_report_revision_action(language),
-            }
-        )
-    return rows
+    return [
+        {
+            labels["sort"]: event.sort_key,
+            labels["type"]: _timeline_event_type_label(event.event_type, language),
+            labels["item_id"]: event.item_id,
+            labels["status"]: _timeline_status_label(event.event_type, event.status, language),
+            labels["owner"]: _timeline_owner_label(event.owner, language),
+            labels["linked_object"]: event.linked_object,
+            labels["description"]: event.description,
+            labels["evidence"]: event.evidence,
+            labels["suggested_action"]: _timeline_suggested_action_label(
+                event.suggested_action,
+                language,
+            ),
+        }
+        for event in build_project_timeline_events(state)
+    ]
 
 
 def build_agent_workflow_event_rows(
@@ -1085,6 +1057,41 @@ def _finding_status_label(status: str, language: Language) -> str:
         },
     }
     return labels.get(status, {}).get(language, status)
+
+
+def _timeline_event_type_label(event_type: str, language: Language) -> str:
+    labels = {
+        "rfi": {"zh": "RFI", "en": "RFI"},
+        "finding": {"zh": "发现项", "en": "Finding"},
+        "report_revision": {"zh": "报告版本", "en": "Report Revision"},
+    }
+    return labels.get(event_type, {}).get(language, event_type)
+
+
+def _timeline_status_label(event_type: str, status: str, language: Language) -> str:
+    if event_type == "rfi":
+        return _rfi_status_label(status, language)
+    if event_type == "finding":
+        return _finding_status_label(status, language)
+    if event_type == "report_revision":
+        return BV_REVIEW_PHASE_LABELS.get(status, {}).get(language, status)
+    return status
+
+
+def _timeline_owner_label(owner: str, language: Language) -> str:
+    if owner == "engineer":
+        return "工程师" if language == "zh" else "Engineer"
+    return owner
+
+
+def _timeline_suggested_action_label(suggested_action: str, language: Language) -> str:
+    if suggested_action == "rfi_closeout_review":
+        return _timeline_rfi_action(language)
+    if suggested_action == "finding_closeout_record":
+        return _timeline_finding_action(language)
+    if suggested_action == "report_revision_review":
+        return _timeline_report_revision_action(language)
+    return suggested_action
 
 
 def _timeline_rfi_action(language: Language) -> str:
