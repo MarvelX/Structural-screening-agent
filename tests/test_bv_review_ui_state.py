@@ -22,6 +22,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
     build_report_gate_evidence_rows,
+    build_report_revision_history_rows,
     default_bv_review_intake,
     localize_report_gate_reason,
 )
@@ -33,6 +34,7 @@ from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
     EngineerApproval,
     ProjectReviewState,
+    ReportRevision,
     RFIItem,
 )
 from structural_screening_agent.bv_review.human_gate import (
@@ -285,6 +287,71 @@ def test_project_review_state_summary_rows_localize_project_inventory() -> None:
     ]
     assert "Document Check" not in str(zh_rows)
     assert "资料检查" not in str(en_rows)
+
+
+def test_report_revision_history_rows_are_localized_and_traceable() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-report-revisions",
+        intake=default_bv_review_intake(),
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-001",
+                source_phase="report_draft",
+                report_title="BV 光伏结构设计审查报告",
+                section_count=12,
+                rfi_count=2,
+                blocking_risk_ids=["risk-foundation-input"],
+                calculation_run_ids=["foundation-run-001", "superstructure-run-001"],
+                created_by="Engineer A",
+                created_at="2026-05-21T10:00:00+08:00",
+                note="Ready for internal review.",
+            )
+        ],
+    )
+
+    zh_rows = build_report_revision_history_rows(state, "zh")
+    en_rows = build_report_revision_history_rows(state, "en")
+
+    assert zh_rows == [
+        {
+            "修订 ID": "report-rev-001",
+            "来源阶段": "报告草稿",
+            "报告标题": "BV 光伏结构设计审查报告",
+            "章节数": 12,
+            "RFI 数量": 2,
+            "阻塞发现项": "risk-foundation-input",
+            "计算运行": "foundation-run-001, superstructure-run-001",
+            "记录人": "Engineer A",
+            "记录时间": "2026-05-21T10:00:00+08:00",
+            "备注": "Ready for internal review.",
+        }
+    ]
+    assert en_rows == [
+        {
+            "Revision ID": "report-rev-001",
+            "Source Phase": "Report Draft",
+            "Report Title": "BV 光伏结构设计审查报告",
+            "Sections": 12,
+            "RFIs": 2,
+            "Blocking Findings": "risk-foundation-input",
+            "Calculation Runs": "foundation-run-001, superstructure-run-001",
+            "Created By": "Engineer A",
+            "Created At": "2026-05-21T10:00:00+08:00",
+            "Note": "Ready for internal review.",
+        }
+    ]
+    assert "Report Draft" not in str(zh_rows)
+    assert "报告草稿" not in str(en_rows)
+
+
+def test_report_revision_history_rows_are_empty_without_revisions() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-report-revisions-empty",
+        intake=default_bv_review_intake(),
+    )
+
+    assert build_report_revision_history_rows(state, "zh") == []
+    assert build_report_revision_history_rows(state, "en") == []
 
 
 def test_closed_rfi_incremental_recheck_rows_show_completed_evidence_without_mixed_language() -> None:

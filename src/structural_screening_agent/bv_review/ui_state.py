@@ -726,6 +726,56 @@ def build_project_review_state_summary_rows(
     ]
 
 
+def build_report_revision_history_rows(
+    state: ProjectReviewState,
+    language: Language,
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "revision_id": "修订 ID",
+            "source_phase": "来源阶段",
+            "report_title": "报告标题",
+            "section_count": "章节数",
+            "rfi_count": "RFI 数量",
+            "blocking_risk_ids": "阻塞发现项",
+            "calculation_run_ids": "计算运行",
+            "created_by": "记录人",
+            "created_at": "记录时间",
+            "note": "备注",
+        }
+        if language == "zh"
+        else {
+            "revision_id": "Revision ID",
+            "source_phase": "Source Phase",
+            "report_title": "Report Title",
+            "section_count": "Sections",
+            "rfi_count": "RFIs",
+            "blocking_risk_ids": "Blocking Findings",
+            "calculation_run_ids": "Calculation Runs",
+            "created_by": "Created By",
+            "created_at": "Created At",
+            "note": "Note",
+        }
+    )
+    return [
+        {
+            labels["revision_id"]: revision.revision_id,
+            labels["source_phase"]: BV_REVIEW_PHASE_LABELS[revision.source_phase][
+                language
+            ],
+            labels["report_title"]: revision.report_title,
+            labels["section_count"]: revision.section_count,
+            labels["rfi_count"]: revision.rfi_count,
+            labels["blocking_risk_ids"]: ", ".join(revision.blocking_risk_ids),
+            labels["calculation_run_ids"]: ", ".join(revision.calculation_run_ids),
+            labels["created_by"]: revision.created_by,
+            labels["created_at"]: revision.created_at or "",
+            labels["note"]: revision.note or "",
+        }
+        for revision in state.report_revisions
+    ]
+
+
 def build_agent_workflow_event_rows(
     state: ProjectReviewState, language: Language
 ) -> list[dict[str, object]]:

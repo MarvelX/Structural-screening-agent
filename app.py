@@ -38,6 +38,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
     build_report_gate_evidence_rows,
+    build_report_revision_history_rows,
     localize_report_gate_reason,
     default_bv_review_intake,
 )
@@ -2127,40 +2128,10 @@ with bv_review_tab:
             )
             if reviewed_workflow_state.report_revisions:
                 st.dataframe(
-                    [
-                        (
-                            {
-                                "修订 ID": revision.revision_id,
-                                "来源阶段": BV_REVIEW_PHASE_LABELS[
-                                    revision.source_phase
-                                ][ui_language],
-                                "报告标题": revision.report_title,
-                                "章节数": revision.section_count,
-                                "RFI 数量": revision.rfi_count,
-                                "计算运行": ", ".join(revision.calculation_run_ids),
-                                "记录人": revision.created_by,
-                                "记录时间": revision.created_at or "",
-                                "备注": revision.note or "",
-                            }
-                            if ui_language == "zh"
-                            else {
-                                "Revision ID": revision.revision_id,
-                                "Source Phase": BV_REVIEW_PHASE_LABELS[
-                                    revision.source_phase
-                                ][ui_language],
-                                "Report Title": revision.report_title,
-                                "Sections": revision.section_count,
-                                "RFIs": revision.rfi_count,
-                                "Calculation Runs": ", ".join(
-                                    revision.calculation_run_ids
-                                ),
-                                "Created By": revision.created_by,
-                                "Created At": revision.created_at or "",
-                                "Note": revision.note or "",
-                            }
-                        )
-                        for revision in reviewed_workflow_state.report_revisions
-                    ],
+                    build_report_revision_history_rows(
+                        reviewed_workflow_state,
+                        ui_language,
+                    ),
                     hide_index=True,
                     use_container_width=True,
                 )
