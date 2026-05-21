@@ -1,7 +1,7 @@
 import pytest
 from pydantic import ValidationError
 
-from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.models import BVReviewIntake, BVRiskItem
 from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
@@ -21,6 +21,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_incremental_recheck_summary_rows,
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
+    build_project_timeline_rows,
     build_report_gate_evidence_rows,
     build_report_revision_history_rows,
     default_bv_review_intake,
@@ -352,6 +353,123 @@ def test_report_revision_history_rows_are_empty_without_revisions() -> None:
 
     assert build_report_revision_history_rows(state, "zh") == []
     assert build_report_revision_history_rows(state, "en") == []
+
+
+def test_project_timeline_rows_combine_rfi_finding_and_report_revision_events() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-project-timeline",
+        intake=default_bv_review_intake(),
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-input",
+                question="Please confirm foundation input.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation input changed in Rev B.",
+                required_document_or_field="pile_length_m",
+                status="closed",
+                client_response="Designer confirmed Rev B pile length.",
+                reopen_review_items=["pile_length_m"],
+                completed_recheck_items=["pile_length_m"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+        risks=[
+            BVRiskItem(
+                risk_id="risk-foundation-input",
+                title="Foundation input closed",
+                severity="high",
+                trigger_basis="Engineer reviewed Rev B input.",
+                impact_scope="Foundation review",
+                recommendation="Keep closeout evidence.",
+                blocks_report_issue=True,
+                category="nonconformity",
+                status="closed",
+                closeout_note="Engineer accepted Rev B input for screening report.",
+            )
+        ],
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-001",
+                source_phase="report_draft",
+                report_title="BV 光伏结构设计审查报告",
+                section_count=12,
+                rfi_count=1,
+                blocking_risk_ids=[],
+                calculation_run_ids=["foundation-run-001"],
+                created_by="Engineer A",
+                created_at="2026-05-21T10:00:00+08:00",
+                note="Ready for internal review.",
+            )
+        ],
+    )
+
+    zh_rows = build_project_timeline_rows(state, "zh")
+    en_rows = build_project_timeline_rows(state, "en")
+
+    assert zh_rows == [
+        {
+            "类型": "RFI",
+            "项目 ID": "rfi-foundation-input",
+            "状态": "已关闭",
+            "关联对象": "pile_length_m",
+            "说明": "Foundation input changed in Rev B.",
+            "证据": "Designer confirmed Rev B pile length.",
+        },
+        {
+            "类型": "发现项",
+            "项目 ID": "risk-foundation-input",
+            "状态": "已关闭",
+            "关联对象": "Foundation review",
+            "说明": "Foundation input closed",
+            "证据": "Engineer accepted Rev B input for screening report.",
+        },
+        {
+            "类型": "报告版本",
+            "项目 ID": "report-rev-001",
+            "状态": "报告草稿",
+            "关联对象": "foundation-run-001",
+            "说明": "BV 光伏结构设计审查报告",
+            "证据": "Ready for internal review.",
+        },
+    ]
+    assert en_rows == [
+        {
+            "Type": "RFI",
+            "Item ID": "rfi-foundation-input",
+            "Status": "Closed",
+            "Linked Object": "pile_length_m",
+            "Description": "Foundation input changed in Rev B.",
+            "Evidence": "Designer confirmed Rev B pile length.",
+        },
+        {
+            "Type": "Finding",
+            "Item ID": "risk-foundation-input",
+            "Status": "Closed",
+            "Linked Object": "Foundation review",
+            "Description": "Foundation input closed",
+            "Evidence": "Engineer accepted Rev B input for screening report.",
+        },
+        {
+            "Type": "Report Revision",
+            "Item ID": "report-rev-001",
+            "Status": "Report Draft",
+            "Linked Object": "foundation-run-001",
+            "Description": "BV 光伏结构设计审查报告",
+            "Evidence": "Ready for internal review.",
+        },
+    ]
+    assert "Closed" not in str(zh_rows)
+    assert "已关闭" not in str(en_rows)
+
+
+def test_project_timeline_rows_are_empty_without_project_events() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-project-timeline-empty",
+        intake=default_bv_review_intake(),
+    )
+
+    assert build_project_timeline_rows(state, "zh") == []
+    assert build_project_timeline_rows(state, "en") == []
 
 
 def test_closed_rfi_incremental_recheck_rows_show_completed_evidence_without_mixed_language() -> None:

@@ -776,6 +776,68 @@ def build_report_revision_history_rows(
     ]
 
 
+def build_project_timeline_rows(
+    state: ProjectReviewState,
+    language: Language,
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "type": "类型",
+            "item_id": "项目 ID",
+            "status": "状态",
+            "linked_object": "关联对象",
+            "description": "说明",
+            "evidence": "证据",
+        }
+        if language == "zh"
+        else {
+            "type": "Type",
+            "item_id": "Item ID",
+            "status": "Status",
+            "linked_object": "Linked Object",
+            "description": "Description",
+            "evidence": "Evidence",
+        }
+    )
+    rows: list[dict[str, object]] = []
+    for rfi in state.rfi_items:
+        rows.append(
+            {
+                labels["type"]: "RFI",
+                labels["item_id"]: rfi.rfi_id,
+                labels["status"]: _rfi_status_label(rfi.status, language),
+                labels["linked_object"]: rfi.required_document_or_field,
+                labels["description"]: rfi.trigger_basis,
+                labels["evidence"]: rfi.client_response or "",
+            }
+        )
+    for risk in state.risks:
+        if risk.status not in {"closed", "accepted_with_comment"}:
+            continue
+        rows.append(
+            {
+                labels["type"]: "发现项" if language == "zh" else "Finding",
+                labels["item_id"]: risk.risk_id,
+                labels["status"]: _finding_status_label(risk.status, language),
+                labels["linked_object"]: risk.impact_scope,
+                labels["description"]: risk.title,
+                labels["evidence"]: risk.closeout_note or "",
+            }
+        )
+    for revision in state.report_revisions:
+        rows.append(
+            {
+                labels["type"]: "报告版本" if language == "zh" else "Report Revision",
+                labels["item_id"]: revision.revision_id,
+                labels["status"]: BV_REVIEW_PHASE_LABELS[revision.source_phase][language],
+                labels["linked_object"]: ", ".join(revision.calculation_run_ids),
+                labels["description"]: revision.report_title,
+                labels["evidence"]: revision.note or "",
+            }
+        )
+    return rows
+
+
 def build_agent_workflow_event_rows(
     state: ProjectReviewState, language: Language
 ) -> list[dict[str, object]]:
@@ -983,6 +1045,29 @@ def _agent_application_decision_label(status: str, language: Language) -> str:
         "approved": {"zh": "已授权", "en": "Authorized"},
         "rejected": {"zh": "已拒绝", "en": "Rejected"},
         "pending": {"zh": "待处理", "en": "Pending"},
+    }
+    return labels.get(status, {}).get(language, status)
+
+
+def _rfi_status_label(status: str, language: Language) -> str:
+    labels = {
+        "open": {"zh": "待回复", "en": "Open"},
+        "responded": {"zh": "已回复", "en": "Responded"},
+        "closed": {"zh": "已关闭", "en": "Closed"},
+        "reopened": {"zh": "重新打开", "en": "Reopened"},
+    }
+    return labels.get(status, {}).get(language, status)
+
+
+def _finding_status_label(status: str, language: Language) -> str:
+    labels = {
+        "open": {"zh": "未关闭", "en": "Open"},
+        "under_review": {"zh": "复核中", "en": "Under Review"},
+        "closed": {"zh": "已关闭", "en": "Closed"},
+        "accepted_with_comment": {
+            "zh": "带意见接受",
+            "en": "Accepted with Comment",
+        },
     }
     return labels.get(status, {}).get(language, status)
 

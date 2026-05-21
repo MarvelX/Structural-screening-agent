@@ -37,6 +37,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_incremental_recheck_summary_rows,
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
+    build_project_timeline_rows,
     build_report_gate_evidence_rows,
     build_report_revision_history_rows,
     localize_report_gate_reason,
@@ -1638,6 +1639,27 @@ with bv_review_tab:
                 "No project management actions are currently open."
                 if ui_language == "en"
                 else "当前没有待处理的项目管理行动。"
+            )
+        project_timeline_rows = build_project_timeline_rows(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown(
+            "##### Project Timeline"
+            if ui_language == "en"
+            else "项目时间线"
+        )
+        if project_timeline_rows:
+            st.dataframe(
+                project_timeline_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No RFI, finding closeout, or report revision timeline events are available."
+                if ui_language == "en"
+                else "当前没有 RFI、发现项关闭或报告修订时间线记录。"
             )
         st.markdown("##### Engineer Review Queue" if ui_language == "en" else "工程师复核队列")
         engineer_review_queue_rows = build_agent_engineer_review_queue_rows(
