@@ -23,6 +23,7 @@ from structural_screening_agent.bv_review.human_gate import (
     close_rfi_after_engineer_review,
     issue_blocked_calculation_draft_rfi,
     record_agent_review_decision,
+    record_finding_closeout_decision,
     record_report_revision,
     record_rfi_client_response,
 )
@@ -242,6 +243,34 @@ def close_persisted_rfi_after_engineer_review(
         rfi_id=rfi_id,
         closeout_note=closeout_note,
         completed_recheck_item_ids=completed_recheck_item_ids,
+    )
+    repository.save(updated_state)
+    store_persisted_workflow_state(session_state, updated_state)
+    return updated_state
+
+
+def record_persisted_finding_closeout_decision(
+    session_state: MutableMapping[str, object],
+    repository: JsonProjectReviewStateRepository,
+    *,
+    project_id: str,
+    risk_id: str,
+    decision: Literal["closed", "accepted_with_comment"],
+    reviewer: str,
+    closeout_note: str,
+    approved_at: Optional[str] = None,
+) -> ProjectReviewState:
+    state = get_active_persisted_workflow_state(session_state, project_id)
+    if state is None:
+        raise ValueError("No active persisted workflow state is loaded for this project.")
+
+    updated_state = record_finding_closeout_decision(
+        state,
+        risk_id=risk_id,
+        decision=decision,
+        reviewer=reviewer,
+        closeout_note=closeout_note,
+        approved_at=approved_at,
     )
     repository.save(updated_state)
     store_persisted_workflow_state(session_state, updated_state)

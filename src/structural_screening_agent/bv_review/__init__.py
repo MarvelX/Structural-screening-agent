@@ -34,6 +34,7 @@ from structural_screening_agent.bv_review.agent_runner import (
 from structural_screening_agent.bv_review.persisted_workflow_session import (
     apply_persisted_authorized_agent_response,
     issue_persisted_blocked_calculation_draft_rfi,
+    record_persisted_finding_closeout_decision,
     run_persisted_rfi_incremental_calculation_recheck,
 )
 from structural_screening_agent.bv_review.agent_prompting import (
@@ -121,6 +122,7 @@ from structural_screening_agent.bv_review.human_gate import (
     close_rfi_after_engineer_review,
     issue_blocked_calculation_draft_rfi,
     record_agent_review_decision,
+    record_finding_closeout_decision,
     record_report_revision,
     record_rfi_client_response,
 )
@@ -215,6 +217,8 @@ __all__ = [
     "issue_blocked_calculation_draft_rfi",
     "issue_persisted_blocked_calculation_draft_rfi",
     "record_rfi_client_response",
+    "record_finding_closeout_decision",
+    "record_persisted_finding_closeout_decision",
     "record_report_revision",
     "run_incremental_calculation_recheck_for_rfi",
     "resolve_calculation_check_output_against_state",

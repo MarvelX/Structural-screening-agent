@@ -11,7 +11,12 @@ from structural_screening_agent.bv_review.field_diff import (
     rfi_incremental_recheck_is_complete,
     select_latest_calculation_evidence_runs,
 )
-from structural_screening_agent.bv_review.models import BVReportPreview, BVReviewResult
+from structural_screening_agent.bv_review.models import (
+    BVRiskItem,
+    BVFindingStatus,
+    BVReportPreview,
+    BVReviewResult,
+)
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
     EngineerApproval,
@@ -199,6 +204,48 @@ def issue_blocked_calculation_draft_rfi(
     )
 
 
+def record_finding_closeout_decision(
+    state: ProjectReviewState,
+    *,
+    risk_id: str,
+    decision: Literal["closed", "accepted_with_comment"],
+    reviewer: str,
+    closeout_note: str,
+    approved_at: Optional[str] = None,
+) -> ProjectReviewState:
+    if not reviewer.strip():
+        raise ValueError("Finding closeout reviewer must not be empty.")
+    if not closeout_note.strip():
+        raise ValueError("Finding closeout note must not be empty.")
+
+    risk = _find_unique_risk(state, risk_id)
+    if risk.status in _CLOSED_FINDING_STATUSES:
+        raise ValueError(f"Finding {risk_id!r} is already closed or accepted.")
+
+    updated_risk = risk.model_copy(
+        update={
+            "status": decision,
+            "closeout_note": closeout_note,
+        }
+    )
+    approval = EngineerApproval(
+        approval_id=f"finding-closeout-{risk_id}",
+        target_type="finding",
+        target_id=risk_id,
+        status="approved",
+        reviewer=reviewer,
+        approved_at=approved_at,
+        comment=closeout_note,
+        locked=True,
+    )
+    return state.model_copy(
+        update={
+            "risks": _replace_risk(state.risks, updated_risk),
+            "approvals": [*state.approvals, approval],
+        }
+    )
+
+
 def build_calculation_gate_run(
     run_id: str,
     engine_name: str,
@@ -226,6 +273,22 @@ def build_calculation_gate_run(
         input_locked=True,
         status="ready",
     )
+
+
+def _find_unique_risk(state: ProjectReviewState, risk_id: str) -> BVRiskItem:
+    matches = [item for item in state.risks if item.risk_id == risk_id]
+    if not matches:
+        raise ValueError(f"Finding {risk_id!r} does not exist.")
+    if len(matches) > 1:
+        raise ValueError(f"Finding {risk_id!r} is duplicated in project state.")
+    return matches[0]
+
+
+def _replace_risk(risks: list[BVRiskItem], updated_risk: BVRiskItem) -> list[BVRiskItem]:
+    return [
+        updated_risk if item.risk_id == updated_risk.risk_id else item
+        for item in risks
+    ]
 
 
 def _find_unique_rfi(state: ProjectReviewState, rfi_id: str) -> RFIItem:
@@ -415,7 +478,7 @@ def build_report_draft_gate_result(
     )
 
 
-_CLOSED_FINDING_STATUSES = {"closed", "accepted_with_comment"}
+_CLOSED_FINDING_STATUSES: set[BVFindingStatus] = {"closed", "accepted_with_comment"}
 
 
 def record_report_revision(

@@ -123,6 +123,7 @@ class EngineerApproval(BaseModel):
         "report",
         "gate",
         "rfi",
+        "finding",
         "agent_event",
         "agent_application",
     ]

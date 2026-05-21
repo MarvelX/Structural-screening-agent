@@ -4,11 +4,12 @@ from structural_screening_agent.bv_review.human_gate import (
     build_calculation_gate_run,
     build_engineer_approval,
     build_report_draft_gate_result,
+    record_finding_closeout_decision,
     record_report_revision,
     record_agent_review_decision,
     fields_ready_for_calculation,
 )
-from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.models import BVRiskItem, BVReviewIntake
 from structural_screening_agent.bv_review.report import build_bv_report_preview
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.bv_review.project_state import (
@@ -222,6 +223,131 @@ def test_record_agent_review_decision_rejects_duplicate_or_non_pending_event() -
             event_id="agent-event-001",
             decision="approved",
             reviewer="Engineer A",
+        )
+
+
+def test_record_finding_closeout_decision_closes_finding_with_engineer_approval() -> None:
+    state = ProjectReviewState(
+        project_id="pv-finding-closeout",
+        intake=_report_ready_intake(),
+        risks=[
+            BVRiskItem(
+                risk_id="foundation-bearing-capacity-open",
+                title="Foundation bearing capacity evidence remains open",
+                severity="critical",
+                trigger_basis="Missing geotechnical confirmation.",
+                impact_scope="Foundation review",
+                recommendation="Close after engineer review of geotechnical evidence.",
+                blocks_report_issue=True,
+                category="nonconformity",
+            )
+        ],
+    )
+
+    updated = record_finding_closeout_decision(
+        state,
+        risk_id="foundation-bearing-capacity-open",
+        decision="closed",
+        reviewer="Engineer A",
+        closeout_note="Reviewed Rev B geotechnical evidence and closed the finding.",
+        approved_at="2026-05-21T14:00:00+08:00",
+    )
+
+    closed_risk = updated.risks[0]
+    approval = updated.approvals[-1]
+    assert closed_risk.status == "closed"
+    assert (
+        closed_risk.closeout_note
+        == "Reviewed Rev B geotechnical evidence and closed the finding."
+    )
+    assert approval.target_type == "finding"
+    assert approval.target_id == "foundation-bearing-capacity-open"
+    assert approval.status == "approved"
+    assert approval.reviewer == "Engineer A"
+    assert approval.approved_at == "2026-05-21T14:00:00+08:00"
+    assert approval.comment == "Reviewed Rev B geotechnical evidence and closed the finding."
+    assert approval.locked is True
+    assert state.risks[0].status == "open"
+    assert state.approvals == []
+
+
+def test_record_finding_closeout_decision_accepts_residual_comment() -> None:
+    state = ProjectReviewState(
+        project_id="pv-finding-accepted",
+        intake=_report_ready_intake(),
+        risks=[
+            BVRiskItem(
+                risk_id="layout-optimization-open",
+                title="Residual layout optimization remains",
+                severity="medium",
+                trigger_basis="Engineer judged residual optimization acceptable.",
+                impact_scope="PV layout review",
+                recommendation="Record residual comment in report.",
+                blocks_report_issue=True,
+                category="optimization",
+                status="under_review",
+            )
+        ],
+    )
+
+    updated = record_finding_closeout_decision(
+        state,
+        risk_id="layout-optimization-open",
+        decision="accepted_with_comment",
+        reviewer="Engineer B",
+        closeout_note="Accepted as residual optimization comment for report wording.",
+    )
+
+    assert updated.risks[0].status == "accepted_with_comment"
+    assert updated.risks[0].closeout_note == (
+        "Accepted as residual optimization comment for report wording."
+    )
+    assert updated.approvals[-1].target_type == "finding"
+
+
+def test_record_finding_closeout_decision_rejects_invalid_or_duplicate_closeout() -> None:
+    state = ProjectReviewState(
+        project_id="pv-finding-invalid",
+        intake=_report_ready_intake(),
+        risks=[
+            BVRiskItem(
+                risk_id="closed-finding",
+                title="Already closed finding",
+                severity="high",
+                trigger_basis="Engineer already closed it.",
+                impact_scope="Foundation review",
+                recommendation="No action.",
+                blocks_report_issue=True,
+                category="nonconformity",
+                status="closed",
+                closeout_note="Already closed.",
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="does not exist"):
+        record_finding_closeout_decision(
+            state,
+            risk_id="missing-finding",
+            decision="closed",
+            reviewer="Engineer A",
+            closeout_note="Reviewed.",
+        )
+    with pytest.raises(ValueError, match="closeout note"):
+        record_finding_closeout_decision(
+            state,
+            risk_id="closed-finding",
+            decision="closed",
+            reviewer="Engineer A",
+            closeout_note=" ",
+        )
+    with pytest.raises(ValueError, match="already closed"):
+        record_finding_closeout_decision(
+            state,
+            risk_id="closed-finding",
+            decision="closed",
+            reviewer="Engineer A",
+            closeout_note="Reviewed again.",
         )
 
 

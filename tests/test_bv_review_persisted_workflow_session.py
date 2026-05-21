@@ -14,6 +14,7 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     get_active_persisted_workflow_summary,
     close_persisted_rfi_after_engineer_review,
     issue_persisted_blocked_calculation_draft_rfi,
+    record_persisted_finding_closeout_decision,
     record_persisted_agent_review_decision,
     record_persisted_report_revision,
     record_persisted_rfi_client_response,
@@ -36,6 +37,7 @@ from structural_screening_agent.bv_review.project_state import (
     ExtractedField,
     RFIItem,
 )
+from structural_screening_agent.bv_review.models import BVRiskItem
 from structural_screening_agent.bv_review.report import build_bv_report_preview
 from structural_screening_agent.bv_review.state_repository import (
     JsonProjectReviewStateRepository,
@@ -347,6 +349,54 @@ def test_persisted_workflow_rfi_response_and_closeout_save_state_and_session(tmp
     assert closed_rfi.status == "closed"
     assert closed_rfi.completed_recheck_items == ["uplift_force_kn"]
     assert closed_state.phase_statuses["issue_rfi_closeout"] == "approved"
+
+
+def test_persisted_workflow_finding_closeout_saves_state_and_session(tmp_path) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    state = ProjectReviewState(
+        project_id="pv-finding-closeout",
+        intake=_report_ready_intake(),
+        risks=[
+            BVRiskItem(
+                risk_id="foundation-bearing-capacity-open",
+                title="Foundation bearing capacity evidence remains open",
+                severity="critical",
+                trigger_basis="Missing geotechnical confirmation.",
+                impact_scope="Foundation review",
+                recommendation="Close after engineer review of geotechnical evidence.",
+                blocks_report_issue=True,
+                category="nonconformity",
+            )
+        ],
+    )
+    repository.save(state)
+    session_state: dict[str, object] = {}
+    store_persisted_workflow_state(session_state, state)
+
+    updated_state = record_persisted_finding_closeout_decision(
+        session_state,
+        repository,
+        project_id="pv-finding-closeout",
+        risk_id="foundation-bearing-capacity-open",
+        decision="closed",
+        reviewer="demo-review-engineer",
+        closeout_note="Reviewed Rev B geotechnical evidence and closed the finding.",
+        approved_at="2026-05-21T14:30:00+08:00",
+    )
+
+    persisted_state = repository.load("pv-finding-closeout")
+    active_state = get_active_persisted_workflow_state(session_state, "pv-finding-closeout")
+    assert updated_state == persisted_state
+    assert active_state == updated_state
+    assert updated_state.risks[0].status == "closed"
+    assert updated_state.risks[0].closeout_note == (
+        "Reviewed Rev B geotechnical evidence and closed the finding."
+    )
+    approval = updated_state.approvals[-1]
+    assert approval.target_type == "finding"
+    assert approval.target_id == "foundation-bearing-capacity-open"
+    assert approval.reviewer == "demo-review-engineer"
+    assert approval.approved_at == "2026-05-21T14:30:00+08:00"
 
 
 def test_persisted_workflow_blocked_calculation_draft_rfi_issue_saves_state_and_session(
