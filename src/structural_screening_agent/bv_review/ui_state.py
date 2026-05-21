@@ -699,6 +699,8 @@ def build_project_review_state_summary_rows(
             "report_revision_count": "报告修订",
             "timeline_event_count": "时间线事件",
             "locked_gate_count": "已锁定门禁",
+            "management_action_count": "项目待办",
+            "blocking_action_count": "阻塞待办",
         }
         if language == "zh"
         else {
@@ -712,6 +714,8 @@ def build_project_review_state_summary_rows(
             "report_revision_count": "Report Revisions",
             "timeline_event_count": "Timeline Events",
             "locked_gate_count": "Locked Gates",
+            "management_action_count": "Project Actions",
+            "blocking_action_count": "Blocking Actions",
         }
     )
     return [
@@ -728,6 +732,8 @@ def build_project_review_state_summary_rows(
             labels["report_revision_count"]: summary.report_revision_count,
             labels["timeline_event_count"]: summary.timeline_event_count,
             labels["locked_gate_count"]: summary.locked_gate_count,
+            labels["management_action_count"]: summary.management_action_count,
+            labels["blocking_action_count"]: summary.blocking_action_count,
         }
         for summary in summaries
     ]

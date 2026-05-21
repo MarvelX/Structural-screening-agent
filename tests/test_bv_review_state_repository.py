@@ -177,6 +177,8 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[0].report_revision_count == 1
     assert summaries[0].timeline_event_count == 5
     assert summaries[0].locked_gate_count == 1
+    assert summaries[0].management_action_count == 3
+    assert summaries[0].blocking_action_count == 3
     assert summaries[1].current_phase == "report_draft"
     assert summaries[1].agent_event_count == 0
     assert summaries[1].pending_agent_review_count == 0
@@ -185,6 +187,8 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[1].report_revision_count == 0
     assert summaries[1].timeline_event_count == 1
     assert summaries[1].locked_gate_count == 1
+    assert summaries[1].management_action_count == 0
+    assert summaries[1].blocking_action_count == 0
 
 
 def test_json_state_repository_inventory_reports_invalid_project_files(

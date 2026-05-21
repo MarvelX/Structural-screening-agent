@@ -11,6 +11,9 @@ from structural_screening_agent.bv_review.field_diff import (
     IncrementalRecheckPlan,
     build_incremental_recheck_plan_from_closed_rfis,
 )
+from structural_screening_agent.bv_review.project_management import (
+    build_project_management_actions,
+)
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, ReviewPhase
 from structural_screening_agent.bv_review.project_timeline import build_project_timeline_events
 
@@ -26,6 +29,8 @@ class ProjectReviewStateSummary(BaseModel):
     report_revision_count: int
     timeline_event_count: int = 0
     locked_gate_count: int = 0
+    management_action_count: int = 0
+    blocking_action_count: int = 0
 
 
 class ProjectReviewStateInventory(BaseModel):
@@ -103,6 +108,7 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
     open_finding_count = sum(
         1 for item in state.risks if item.status in {"open", "under_review"}
     )
+    management_actions = build_project_management_actions(state)
     return ProjectReviewStateSummary(
         project_id=state.project_id,
         project_name=state.intake.project_name,
@@ -119,5 +125,9 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
             if approval.target_type == "gate"
             and approval.status == "approved"
             and approval.locked
+        ),
+        management_action_count=len(management_actions),
+        blocking_action_count=sum(
+            1 for action in management_actions if action.blocks_report_issue
         ),
     )
