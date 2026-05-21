@@ -154,6 +154,16 @@ def _ensure_phase_can_accept_output(
             f"Cannot apply {agent_role} output while project is in "
             f"{state.current_phase!r}; target phase {phase!r} is not current or next."
         )
+    if (
+        target_index > current_index
+        and state.current_phase != "intake"
+        and state.phase_statuses.get(state.current_phase) != "approved"
+    ):
+        raise ValueError(
+            f"Cannot apply {agent_role} output before current phase "
+            f"{state.current_phase!r} receives engineer approval; "
+            "current phase requires engineer approval before advancing."
+        )
 
 
 def _upsert_by_id(items: list[object], updates: list[object], id_attribute: str) -> list[object]:

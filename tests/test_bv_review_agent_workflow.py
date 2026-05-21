@@ -73,6 +73,10 @@ def test_basis_agent_output_updates_traceable_basis_references() -> None:
         project_id="pv-001",
         intake=_sample_intake(),
         current_phase="document_check",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "document_check": "approved",
+        },
     )
     output = BasisCodeAgentOutput(
         project_id="pv-001",
@@ -102,6 +106,10 @@ def test_review_plan_and_structural_review_outputs_update_state() -> None:
         project_id="pv-001",
         intake=_sample_intake(),
         current_phase="basis_build",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "basis_build": "approved",
+        },
     )
     with_plan = apply_agent_output_to_state(
         state,
@@ -121,8 +129,16 @@ def test_review_plan_and_structural_review_outputs_update_state() -> None:
             ],
         ),
     )
+    plan_approved_state = with_plan.model_copy(
+        update={
+            "phase_statuses": {
+                **with_plan.phase_statuses,
+                "review_plan": "approved",
+            }
+        }
+    )
     with_path = apply_agent_output_to_state(
-        with_plan,
+        plan_approved_state,
         StructuralReviewAgentOutput(
             project_id="pv-001",
             review_paths=[
@@ -156,6 +172,10 @@ def test_calculation_check_agent_output_only_resolves_existing_state_runs() -> N
         project_id="pv-001",
         intake=_sample_intake(),
         current_phase="engineer_data_lock",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "engineer_data_lock": "approved",
+        },
         approvals=[
             EngineerApproval(
                 approval_id="approval-calculation",
@@ -205,11 +225,27 @@ def test_risk_and_report_agent_outputs_update_state_without_formal_issue_claims(
         project_id="pv-001",
         intake=_sample_intake(),
         current_phase="calculation_check",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "calculation_check": "approved",
+        },
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m"],
+                input_locked=True,
+                status="completed",
+                result_summary={"screening_boundary": "screening-level review support only"},
+            )
+        ],
     )
     with_risk = apply_agent_output_to_state(
         state,
         RiskNCRAgentOutput(
             project_id="pv-001",
+            source_calculation_run_ids=["foundation-run-001"],
             risks=[
                 {
                     "risk_id": "R-001",
@@ -225,8 +261,16 @@ def test_risk_and_report_agent_outputs_update_state_without_formal_issue_claims(
             ],
         ),
     )
+    risk_approved_state = with_risk.model_copy(
+        update={
+            "phase_statuses": {
+                **with_risk.phase_statuses,
+                "risk_register": "approved",
+            }
+        }
+    )
     with_report = apply_agent_output_to_state(
-        with_risk,
+        risk_approved_state,
         ReportComposerAgentOutput(
             project_id="pv-001",
             report_sections=[
@@ -321,11 +365,42 @@ def test_agent_output_cannot_skip_required_workflow_phase() -> None:
         )
 
 
+def test_agent_output_cannot_advance_before_current_phase_engineer_approval() -> None:
+    state = ProjectReviewState(
+        project_id="pv-001",
+        intake=_sample_intake(),
+        current_phase="document_check",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "document_check": "waiting_for_engineer",
+        },
+    )
+
+    with pytest.raises(ValueError, match="requires engineer approval"):
+        apply_agent_output_to_state(
+            state,
+            BasisCodeAgentOutput(
+                project_id="pv-001",
+                basis_references=[
+                    {
+                        "basis_id": "GB-50797",
+                        "title": "GB 50797 PV power station design code",
+                        "source_type": "code",
+                    }
+                ],
+            ),
+        )
+
+
 def test_calculation_check_output_requires_locked_engineer_gate() -> None:
     state = ProjectReviewState(
         project_id="pv-001",
         intake=_sample_intake(),
         current_phase="engineer_data_lock",
+        phase_statuses={
+            **ProjectReviewState(project_id="pv-001", intake=_sample_intake()).phase_statuses,
+            "engineer_data_lock": "approved",
+        },
         calculation_runs=[
             CalculationRun(
                 run_id="foundation-run-001",

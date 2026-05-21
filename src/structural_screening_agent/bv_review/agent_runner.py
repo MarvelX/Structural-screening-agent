@@ -46,6 +46,11 @@ class PersistedWorkflowRunResult(BaseModel):
 
 
 def run_local_agent_workflow_step(state: ProjectReviewState) -> ProjectReviewState | None:
+    if (
+        state.current_phase != "intake"
+        and state.phase_statuses.get(state.current_phase) != "approved"
+    ):
+        return None
     output = _build_local_agent_output_for_current_phase(state)
     if output is None:
         return None
