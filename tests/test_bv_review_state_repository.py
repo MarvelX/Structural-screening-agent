@@ -190,6 +190,11 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
         "finding_closeout",
         "agent_engineer_review",
     ]
+    assert summaries[0].next_action_owner_roles == [
+        "client",
+        "BV structural review engineer",
+        "BV structural review engineer",
+    ]
     assert summaries[1].current_phase == "report_draft"
     assert summaries[1].agent_event_count == 0
     assert summaries[1].pending_agent_review_count == 0
@@ -203,6 +208,7 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[1].workflow_status == "ready"
     assert summaries[1].next_action_ids == []
     assert summaries[1].next_action_categories == []
+    assert summaries[1].next_action_owner_roles == []
 
 
 def test_json_state_repository_inventory_reports_invalid_project_files(

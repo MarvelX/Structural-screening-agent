@@ -704,6 +704,7 @@ def build_project_review_state_summary_rows(
             "workflow_status": "工作流状态",
             "next_action_ids": "下一步行动",
             "next_action_categories": "下一步类型",
+            "next_action_owner_roles": "下一步责任方",
         }
         if language == "zh"
         else {
@@ -722,6 +723,7 @@ def build_project_review_state_summary_rows(
             "workflow_status": "Workflow Status",
             "next_action_ids": "Next Actions",
             "next_action_categories": "Next Action Types",
+            "next_action_owner_roles": "Next Action Owners",
         }
     )
     return [
@@ -748,6 +750,10 @@ def build_project_review_state_summary_rows(
             labels["next_action_categories"]: ", ".join(
                 _project_action_category_label(category, language)
                 for category in summary.next_action_categories
+            ),
+            labels["next_action_owner_roles"]: ", ".join(
+                _project_action_owner_label(owner_role, language)
+                for owner_role in summary.next_action_owner_roles
             ),
         }
         for summary in summaries
@@ -791,6 +797,22 @@ def _project_action_category_label(category: str, language: Language) -> str:
         },
     }
     return labels.get(category, {}).get(language, category)
+
+
+def _project_action_owner_label(owner_role: str, language: Language) -> str:
+    if language == "zh":
+        labels = {
+            "BV structural review engineer": "BV 结构审核工程师",
+            "BV project review lead": "BV 项目审核负责人",
+            "client": "客户",
+            "client / designer": "客户 / 设计院",
+        }
+        return labels.get(owner_role, owner_role)
+    labels = {
+        "client": "Client",
+        "client / designer": "Client / Designer",
+    }
+    return labels.get(owner_role, owner_role)
 
 
 def build_report_revision_history_rows(

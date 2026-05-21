@@ -37,6 +37,7 @@ class ProjectReviewStateSummary(BaseModel):
     workflow_status: ProjectInventoryWorkflowStatus = "ready"
     next_action_ids: list[str] = []
     next_action_categories: list[str] = []
+    next_action_owner_roles: list[str] = []
 
 
 class ProjectReviewStateInventory(BaseModel):
@@ -143,6 +144,9 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
         ),
         next_action_ids=[action.action_id for action in management_actions[:3]],
         next_action_categories=[action.category for action in management_actions[:3]],
+        next_action_owner_roles=[
+            action.owner_role for action in management_actions[:3]
+        ],
     )
 
 
