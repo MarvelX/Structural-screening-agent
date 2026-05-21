@@ -38,6 +38,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
     build_project_timeline_rows,
+    build_quality_gate_status_rows,
     build_report_gate_evidence_rows,
     build_report_revision_history_rows,
     localize_report_gate_reason,
@@ -1833,6 +1834,22 @@ with bv_review_tab:
             )
 
         st.markdown(f'#### {translate(ui_language, "report_draft_gate_heading")}')
+        st.markdown(
+            "##### Quality Gate Status" if ui_language == "en" else "质量门禁状态"
+        )
+        st.dataframe(
+            build_quality_gate_status_rows(
+                effective_bv_intake,
+                has_review_basis=bool(effective_bv_result.basis_references),
+                calculation_gate_locked=reviewed_workflow_state.is_gate_locked(
+                    "calculation"
+                ),
+                report_gate=report_draft_gate,
+                language=ui_language,
+            ),
+            hide_index=True,
+            use_container_width=True,
+        )
         if report_draft_gate.status == "ready":
             st.success(translate(ui_language, "report_draft_gate_ready"))
         else:

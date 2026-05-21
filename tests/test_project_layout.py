@@ -62,6 +62,9 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'previous_human_gate_rows[1]' not in source
     assert "build_incremental_recheck_plan" in source
     assert "build_incremental_recheck_summary_rows" in source
+    assert "build_quality_gate_status_rows" in source
+    assert "质量门禁状态" in source
+    assert "Quality Gate Status" in source
     assert "build_report_gate_evidence_rows" in source
     assert "resume_local_agent_workflow_after_review_decisions" in source
     assert "run_local_agent_workflow_until_blocked" in source

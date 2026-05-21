@@ -22,6 +22,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
     build_project_timeline_rows,
+    build_quality_gate_status_rows,
     build_report_gate_evidence_rows,
     build_report_revision_history_rows,
     default_bv_review_intake,
@@ -793,6 +794,84 @@ def test_report_gate_evidence_rows_localize_structured_gate_ids() -> None:
     ]
     assert "Pending Agent Review" not in str(zh_rows)
     assert "待复核" not in str(en_rows)
+
+
+def test_quality_gate_status_rows_show_four_gates_in_chinese_and_english() -> None:
+    intake = BVReviewIntake(
+        project_name="Quality gate UI demo",
+        country_or_region="China",
+        project_type="utility_pv",
+        design_stage="construction_drawing",
+        standards_systems=["gb"],
+        review_objects=["mounting_structure", "foundation"],
+        documents={
+            "structural_drawings": "available",
+            "calculation_report": "missing",
+            "geotechnical_report": "missing",
+        },
+    )
+    state = ProjectReviewState(
+        project_id="pv-quality-gate-ui",
+        intake=intake,
+        approvals=[
+            EngineerApproval(
+                approval_id="calculation-gate-approval",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                reviewer="Engineer A",
+                locked=True,
+            )
+        ],
+    )
+    gate = ReportDraftGateResult(
+        status="blocked",
+        reasons=[
+            "Missing required document inputs block report draft input: calculation_report, geotechnical_report",
+            "Open RFI items trigger incremental recheck: rfi-foundation-001",
+        ],
+        calculation_run_ids=["foundation-run-001"],
+    )
+
+    zh_rows = build_quality_gate_status_rows(
+        intake,
+        has_review_basis=True,
+        calculation_gate_locked=state.is_gate_locked("calculation"),
+        report_gate=gate,
+        language="zh",
+    )
+    en_rows = build_quality_gate_status_rows(
+        intake,
+        has_review_basis=True,
+        calculation_gate_locked=state.is_gate_locked("calculation"),
+        report_gate=gate,
+        language="en",
+    )
+
+    assert zh_rows == [
+        {
+            "门禁": "资料门禁",
+            "状态": "阻塞",
+            "证据": "缺失资料: 结构计算书, 地勘报告",
+        },
+        {"门禁": "依据门禁", "状态": "通过", "证据": "审核依据已生成"},
+        {"门禁": "计算门禁", "状态": "已锁定", "证据": "可用计算: foundation-run-001"},
+        {
+            "门禁": "签发门禁",
+            "状态": "阻塞",
+            "证据": "缺失必要资料：结构计算书、地勘报告；未关闭的 RFI 触发增量复核：rfi-foundation-001",
+        },
+    ]
+    assert en_rows[0] == {
+        "Gate": "Document Gate",
+        "Status": "Blocked",
+        "Evidence": "Missing documents: Calculation Report, Geotechnical Report",
+    }
+    assert en_rows[2] == {
+        "Gate": "Calculation Gate",
+        "Status": "Locked",
+        "Evidence": "Available calculations: foundation-run-001",
+    }
 
 
 def test_calculation_result_summary_rows_localize_internal_keys_for_chinese_ui() -> None:

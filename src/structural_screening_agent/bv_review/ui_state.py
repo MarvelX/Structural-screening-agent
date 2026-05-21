@@ -1502,6 +1502,119 @@ def build_calculation_result_summary_rows(
     ]
 
 
+def build_quality_gate_status_rows(
+    intake: BVReviewIntake,
+    *,
+    has_review_basis: bool,
+    calculation_gate_locked: bool,
+    report_gate,
+    language: Language,
+) -> list[dict[str, str]]:
+    labels = (
+        {"gate": "门禁", "status": "状态", "evidence": "证据"}
+        if language == "zh"
+        else {"gate": "Gate", "status": "Status", "evidence": "Evidence"}
+    )
+    gate_labels = (
+        {
+            "document": "资料门禁",
+            "basis": "依据门禁",
+            "calculation": "计算门禁",
+            "issue": "签发门禁",
+        }
+        if language == "zh"
+        else {
+            "document": "Document Gate",
+            "basis": "Review Basis Gate",
+            "calculation": "Calculation Gate",
+            "issue": "Issue Gate",
+        }
+    )
+    missing_document_keys = [
+        key for key, status in intake.documents.items() if status == "missing"
+    ]
+    calculation_run_ids = ", ".join(report_gate.calculation_run_ids)
+    reason_separator = "；" if language == "zh" else "; "
+    report_gate_reasons = reason_separator.join(
+        localize_report_gate_reason(reason, language)
+        for reason in report_gate.reasons
+    )
+
+    return [
+        {
+            labels["gate"]: gate_labels["document"],
+            labels["status"]: _quality_gate_status_label(
+                not missing_document_keys,
+                language,
+            ),
+            labels["evidence"]: _quality_gate_missing_document_evidence(
+                missing_document_keys,
+                language,
+            ),
+        },
+        {
+            labels["gate"]: gate_labels["basis"],
+            labels["status"]: _quality_gate_status_label(has_review_basis, language),
+            labels["evidence"]: (
+                "审核依据已生成"
+                if language == "zh" and has_review_basis
+                else "缺少审核依据"
+                if language == "zh"
+                else "Review basis generated"
+                if has_review_basis
+                else "Review basis missing"
+            ),
+        },
+        {
+            labels["gate"]: gate_labels["calculation"],
+            labels["status"]: (
+                "已锁定"
+                if language == "zh" and calculation_gate_locked
+                else "未锁定"
+                if language == "zh"
+                else "Locked"
+                if calculation_gate_locked
+                else "Not Locked"
+            ),
+            labels["evidence"]: (
+                ("可用计算: " if language == "zh" else "Available calculations: ")
+                + (calculation_run_ids or ("无" if language == "zh" else "None"))
+            ),
+        },
+        {
+            labels["gate"]: gate_labels["issue"],
+            labels["status"]: (
+                ("可进入报告草稿" if report_gate.status == "ready" else "阻塞")
+                if language == "zh"
+                else ("Ready" if report_gate.status == "ready" else "Blocked")
+            ),
+            labels["evidence"]: report_gate_reasons or ("无" if language == "zh" else "None"),
+        },
+    ]
+
+
+def _quality_gate_status_label(passed: bool, language: Language) -> str:
+    if language == "zh":
+        return "通过" if passed else "阻塞"
+    return "Pass" if passed else "Blocked"
+
+
+def _quality_gate_missing_document_evidence(
+    document_keys: list[str],
+    language: Language,
+) -> str:
+    if not document_keys:
+        return "资料满足当前审核输入" if language == "zh" else "Documents satisfy current review input"
+    document_labels = ", ".join(_document_label(key, language) for key in document_keys)
+    if language == "zh":
+        return f"缺失资料: {document_labels}"
+    return f"Missing documents: {document_labels}"
+
+
+def _document_label(document_key: str, language: Language) -> str:
+    return BV_DOCUMENT_LABELS.get(document_key, {}).get(language, document_key)
+
+
 def build_report_gate_evidence_rows(report_gate, language: Language) -> list[dict[str, str]]:
     labels = (
         {"type": "证据类型", "id": "ID", "role": "门禁作用"}
@@ -1575,6 +1688,16 @@ def build_report_gate_evidence_rows(report_gate, language: Language) -> list[dic
 
 
 def localize_report_gate_reason(reason: str, language: Language) -> str:
+    missing_documents_prefix = "Missing required document inputs block report draft input: "
+    if reason.startswith(missing_documents_prefix):
+        document_keys = reason.removeprefix(missing_documents_prefix).split(", ")
+        if language == "zh":
+            return "缺失必要资料：" + "、".join(
+                _document_label(key, language) for key in document_keys
+            )
+        return "Missing required documents: " + ", ".join(
+            _document_label(key, language) for key in document_keys
+        )
     incremental_prefix = "Open RFI items trigger incremental recheck: "
     if language == "zh" and reason.startswith(incremental_prefix):
         return "未关闭的 RFI 触发增量复核：" + reason.removeprefix(incremental_prefix)
