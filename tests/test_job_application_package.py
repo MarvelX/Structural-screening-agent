@@ -245,6 +245,15 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "build_blocked_calculation_review_draft_rows" in app_source
     assert '"Blocked Calculation Draft RFI"' in app_source
     assert '"计算阻塞草稿 RFI"' in app_source
+    assert "issue_persisted_blocked_calculation_draft_rfi" in app_source
+    assert '"Issue Draft RFI After Engineer Review"' in app_source
+    assert '"工程师复核后签发草稿 RFI"' in app_source
+    assert "Draft RFI issued after engineer review." in app_source
+    assert "草稿 RFI 已经工程师复核并签发。" in app_source
+    assert "available_draft_rfi_ids" in app_source
+    assert "already been issued into the persisted RFI register" in app_source
+    assert "已进入持久化 RFI 台账" in app_source
+    assert "issuing an RFI moves the persisted workflow to issue/RFI closeout" in app_source
     assert "Saved Project Inventory" in app_source
     assert '"已保存项目清单"' in app_source
     assert "Some saved project files could not be loaded" in app_source

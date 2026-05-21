@@ -16,6 +16,7 @@ from structural_screening_agent.bv_review.agent_prompting import (
 from structural_screening_agent.bv_review.human_gate import (
     ReportDraftGateResult,
     close_rfi_after_engineer_review,
+    issue_blocked_calculation_draft_rfi,
     record_agent_review_decision,
     record_report_revision,
     record_rfi_client_response,
@@ -236,6 +237,32 @@ def close_persisted_rfi_after_engineer_review(
         rfi_id=rfi_id,
         closeout_note=closeout_note,
         completed_recheck_item_ids=completed_recheck_item_ids,
+    )
+    repository.save(updated_state)
+    store_persisted_workflow_state(session_state, updated_state)
+    return updated_state
+
+
+def issue_persisted_blocked_calculation_draft_rfi(
+    session_state: MutableMapping[str, object],
+    repository: JsonProjectReviewStateRepository,
+    *,
+    project_id: str,
+    rfi_id: str,
+    reviewer: str,
+    comment: str = "",
+    approved_at: str | None = None,
+) -> ProjectReviewState:
+    state = get_active_persisted_workflow_state(session_state, project_id)
+    if state is None:
+        raise ValueError("No active persisted workflow state is loaded for this project.")
+
+    updated_state = issue_blocked_calculation_draft_rfi(
+        state,
+        rfi_id=rfi_id,
+        reviewer=reviewer,
+        comment=comment,
+        approved_at=approved_at,
     )
     repository.save(updated_state)
     store_persisted_workflow_state(session_state, updated_state)

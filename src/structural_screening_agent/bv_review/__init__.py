@@ -33,6 +33,7 @@ from structural_screening_agent.bv_review.agent_runner import (
 )
 from structural_screening_agent.bv_review.persisted_workflow_session import (
     apply_persisted_authorized_agent_response,
+    issue_persisted_blocked_calculation_draft_rfi,
 )
 from structural_screening_agent.bv_review.agent_prompting import (
     AgentResponseApplicationAuthorization,
@@ -113,6 +114,7 @@ from structural_screening_agent.bv_review.state_repository import JsonProjectRev
 from structural_screening_agent.bv_review.state_machine import advance_project_phase
 from structural_screening_agent.bv_review.human_gate import (
     close_rfi_after_engineer_review,
+    issue_blocked_calculation_draft_rfi,
     record_agent_review_decision,
     record_report_revision,
     record_rfi_client_response,
@@ -203,6 +205,8 @@ __all__ = [
     "diff_extracted_fields",
     "evaluate_bv_review",
     "is_agent_response_application_packet_current",
+    "issue_blocked_calculation_draft_rfi",
+    "issue_persisted_blocked_calculation_draft_rfi",
     "record_rfi_client_response",
     "record_report_revision",
     "resolve_calculation_check_output_against_state",

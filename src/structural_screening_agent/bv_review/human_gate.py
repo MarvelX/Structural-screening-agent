@@ -2,6 +2,9 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from structural_screening_agent.bv_review.blocked_calculation_draft import (
+    build_blocked_calculation_review_draft,
+)
 from structural_screening_agent.bv_review.field_diff import (
     rfi_incremental_recheck_is_complete,
 )
@@ -148,6 +151,48 @@ def close_rfi_after_engineer_review(
         state,
         updated_items,
         phase_status=phase_status,
+    )
+
+
+def issue_blocked_calculation_draft_rfi(
+    state: ProjectReviewState,
+    *,
+    rfi_id: str,
+    reviewer: str,
+    comment: str = "",
+    approved_at: str | None = None,
+) -> ProjectReviewState:
+    if not reviewer.strip():
+        raise ValueError("RFI issue reviewer must not be empty.")
+    if any(item.rfi_id == rfi_id for item in state.rfi_items):
+        raise ValueError(f"RFI item {rfi_id!r} already exists.")
+
+    draft = build_blocked_calculation_review_draft(state)
+    draft_rfi = next((item for item in draft.rfi_items if item.rfi_id == rfi_id), None)
+    if draft_rfi is None:
+        raise ValueError(
+            f"RFI item {rfi_id!r} does not match a blocked calculation draft."
+        )
+
+    approval = EngineerApproval(
+        approval_id=f"rfi-issue-{rfi_id}",
+        target_type="rfi",
+        target_id=rfi_id,
+        status="approved",
+        reviewer=reviewer,
+        approved_at=approved_at,
+        comment=comment,
+        locked=True,
+    )
+    statuses = dict(state.phase_statuses)
+    statuses["issue_rfi_closeout"] = "waiting_for_client"
+    return state.model_copy(
+        update={
+            "current_phase": "issue_rfi_closeout",
+            "phase_statuses": statuses,
+            "rfi_items": [*state.rfi_items, draft_rfi],
+            "approvals": [*state.approvals, approval],
+        }
     )
 
 

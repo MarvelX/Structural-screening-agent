@@ -13,6 +13,7 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
     close_persisted_rfi_after_engineer_review,
+    issue_persisted_blocked_calculation_draft_rfi,
     record_persisted_agent_review_decision,
     record_persisted_report_revision,
     record_persisted_rfi_client_response,
@@ -344,6 +345,70 @@ def test_persisted_workflow_rfi_response_and_closeout_save_state_and_session(tmp
     assert closed_rfi.status == "closed"
     assert closed_rfi.completed_recheck_items == ["uplift_force_kn"]
     assert closed_state.phase_statuses["issue_rfi_closeout"] == "approved"
+
+
+def test_persisted_workflow_blocked_calculation_draft_rfi_issue_saves_state_and_session(
+    tmp_path,
+) -> None:
+    repository = JsonProjectReviewStateRepository(tmp_path)
+    state = ProjectReviewState(
+        project_id="pv-blocked-rfi",
+        intake=_report_ready_intake(),
+        current_phase="engineer_data_lock",
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-failed-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m"],
+                input_locked=False,
+                status="failed",
+                structured_errors=["foundation calculation failed."],
+            )
+        ],
+    )
+    repository.save(state)
+    session_state: dict[str, object] = {}
+    store_persisted_workflow_result(
+        session_state,
+        PersistedWorkflowRunResult(
+            state=state,
+            summary=PersistedWorkflowRunSummary(
+                project_id="pv-blocked-rfi",
+                start_phase="engineer_data_lock",
+                final_phase="engineer_data_lock",
+                artifact_counts={"calculation_runs": 1},
+                saved=True,
+            ),
+        ),
+    )
+
+    updated_state = issue_persisted_blocked_calculation_draft_rfi(
+        session_state,
+        repository,
+        project_id="pv-blocked-rfi",
+        rfi_id="rfi-calculation_blocked_foundation_failed_001",
+        reviewer="demo-review-engineer",
+        comment="Issue blocked foundation calculation RFI.",
+        approved_at="2026-05-21T12:30:00+08:00",
+    )
+
+    persisted_state = repository.load("pv-blocked-rfi")
+    active_state = get_active_persisted_workflow_state(session_state, "pv-blocked-rfi")
+    assert updated_state == persisted_state
+    assert active_state == updated_state
+    assert updated_state.current_phase == "issue_rfi_closeout"
+    assert updated_state.phase_statuses["issue_rfi_closeout"] == "waiting_for_client"
+    assert updated_state.rfi_items[0].rfi_id == "rfi-calculation_blocked_foundation_failed_001"
+    approval = updated_state.approvals[-1]
+    assert approval.target_type == "rfi"
+    assert approval.target_id == "rfi-calculation_blocked_foundation_failed_001"
+    assert approval.reviewer == "demo-review-engineer"
+    assert approval.approved_at == "2026-05-21T12:30:00+08:00"
+    active_summary = get_active_persisted_workflow_summary(session_state, "pv-blocked-rfi")
+    assert active_summary is not None
+    assert active_summary.artifact_counts["rfi_items"] == 1
+    assert active_summary.artifact_counts["approvals"] == 1
 
 
 def _sample_intake() -> BVReviewIntake:

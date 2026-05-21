@@ -8,8 +8,10 @@ from structural_screening_agent.bv_review import (
 from structural_screening_agent.bv_review.human_gate import (
     close_rfi_after_engineer_review,
     build_report_draft_gate_result,
+    issue_blocked_calculation_draft_rfi,
     record_rfi_client_response,
 )
+from structural_screening_agent.bv_review.project_state import CalculationRun
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
 
@@ -156,4 +158,94 @@ def test_close_incremental_rfi_requires_completed_recheck_items() -> None:
                 "compression_force_kn",
                 "untracked_item",
             ],
+        )
+
+
+def test_issue_blocked_calculation_draft_rfi_requires_engineer_review_and_keeps_calculation_gate_blocked() -> None:
+    state = ProjectReviewState(
+        project_id="pv-rfi-002",
+        intake=_sample_intake(),
+        current_phase="engineer_data_lock",
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-failed-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m"],
+                input_locked=False,
+                status="failed",
+                structured_errors=["foundation calculation failed."],
+            )
+        ],
+    )
+
+    issued = issue_blocked_calculation_draft_rfi(
+        state,
+        rfi_id="rfi-calculation_blocked_foundation_failed_001",
+        reviewer="Engineer A",
+        comment="Issue RFI to request corrected foundation inputs.",
+        approved_at="2026-05-21T12:00:00+08:00",
+    )
+
+    assert issued.current_phase == "issue_rfi_closeout"
+    assert issued.phase_statuses["issue_rfi_closeout"] == "waiting_for_client"
+    assert issued.phase_statuses["calculation_check"] == "pending"
+    assert issued.agent_events == []
+    assert issued.risks == []
+    assert [item.rfi_id for item in issued.rfi_items] == [
+        "rfi-calculation_blocked_foundation_failed_001"
+    ]
+    assert issued.rfi_items[0].status == "open"
+    assert issued.rfi_items[0].triggers_incremental_recheck is True
+    approval = issued.approvals[-1]
+    assert approval.target_type == "rfi"
+    assert approval.target_id == "rfi-calculation_blocked_foundation_failed_001"
+    assert approval.status == "approved"
+    assert approval.reviewer == "Engineer A"
+    assert approval.comment == "Issue RFI to request corrected foundation inputs."
+    assert approval.approved_at == "2026-05-21T12:00:00+08:00"
+    assert approval.locked is True
+
+
+def test_issue_blocked_calculation_draft_rfi_rejects_unknown_or_duplicate_rfi() -> None:
+    state = ProjectReviewState(
+        project_id="pv-rfi-003",
+        intake=_sample_intake(),
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-failed-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m"],
+                input_locked=False,
+                status="failed",
+                structured_errors=["foundation calculation failed."],
+            )
+        ],
+    )
+    issued = issue_blocked_calculation_draft_rfi(
+        state,
+        rfi_id="rfi-calculation_blocked_foundation_failed_001",
+        reviewer="Engineer A",
+    )
+
+    with pytest.raises(ValueError, match="does not match a blocked calculation draft"):
+        issue_blocked_calculation_draft_rfi(
+            state,
+            rfi_id="rfi-missing",
+            reviewer="Engineer A",
+        )
+
+    with pytest.raises(ValueError, match="reviewer must not be empty"):
+        issue_blocked_calculation_draft_rfi(
+            state,
+            rfi_id="rfi-calculation_blocked_foundation_failed_001",
+            reviewer=" ",
+        )
+
+    with pytest.raises(ValueError, match="already exists"):
+        issue_blocked_calculation_draft_rfi(
+            issued,
+            rfi_id="rfi-calculation_blocked_foundation_failed_001",
+            reviewer="Engineer A",
         )

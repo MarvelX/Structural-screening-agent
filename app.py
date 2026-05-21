@@ -61,6 +61,7 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
     get_active_persisted_workflow_state,
     get_active_persisted_workflow_summary,
     apply_persisted_authorized_agent_response,
+    issue_persisted_blocked_calculation_draft_rfi,
     record_persisted_agent_review_decision,
     record_persisted_report_revision,
     record_persisted_rfi_client_response,
@@ -1227,10 +1228,76 @@ with bv_review_tab:
                 use_container_width=True,
             )
             st.caption(
-                "Draft only; the workflow remains at engineer data lock until inputs are corrected and reviewed."
+                "Draft only; issuing an RFI moves the persisted workflow to issue/RFI closeout while calculation remains blocked until inputs are corrected."
                 if ui_language == "en"
-                else "仅作为草稿展示；工作流仍停留在工程师数据锁定阶段，等待输入修正与复核。"
+                else "仅作为草稿展示；签发 RFI 会将持久化工作流转入签发 / RFI 关闭阶段，计算仍需等待输入修正。"
             )
+            draft_rfi_id_key = "Draft RFI ID" if ui_language == "en" else "草稿 RFI ID"
+            existing_rfi_ids = {item.rfi_id for item in reviewed_workflow_state.rfi_items}
+            draft_rfi_ids = [
+                str(row[draft_rfi_id_key])
+                for row in blocked_calculation_draft_rows
+                if row.get(draft_rfi_id_key)
+            ]
+            available_draft_rfi_ids = [
+                rfi_id for rfi_id in draft_rfi_ids if rfi_id not in existing_rfi_ids
+            ]
+            if persisted_workflow_is_active and available_draft_rfi_ids:
+                selected_draft_rfi_id = st.selectbox(
+                    "Draft RFI ID" if ui_language == "en" else "草稿 RFI ID",
+                    available_draft_rfi_ids,
+                    key="bv_blocked_calculation_draft_rfi_id",
+                )
+                draft_rfi_issue_comment = st.text_area(
+                    "Draft RFI Issue Comment"
+                    if ui_language == "en"
+                    else "草稿 RFI 签发意见",
+                    value=(
+                        "Engineer reviewed the blocked calculation draft and issued an RFI."
+                        if ui_language == "en"
+                        else "工程师已复核计算阻塞草稿并签发 RFI。"
+                    ),
+                    key="bv_blocked_calculation_draft_rfi_issue_comment",
+                    height=80,
+                )
+                if st.button(
+                    "Issue Draft RFI After Engineer Review"
+                    if ui_language == "en"
+                    else "工程师复核后签发草稿 RFI",
+                    key="bv_issue_blocked_calculation_draft_rfi",
+                    use_container_width=True,
+                ):
+                    try:
+                        issue_persisted_blocked_calculation_draft_rfi(
+                            st.session_state,
+                            persisted_repository,
+                            project_id=active_persisted_project_id,
+                            rfi_id=selected_draft_rfi_id,
+                            reviewer="demo-review-engineer",
+                            comment=draft_rfi_issue_comment,
+                            approved_at=datetime.now(timezone.utc).isoformat(),
+                        )
+                    except ValueError as exc:
+                        st.warning(str(exc))
+                    else:
+                        st.success(
+                            "Draft RFI issued after engineer review."
+                            if ui_language == "en"
+                            else "草稿 RFI 已经工程师复核并签发。"
+                        )
+                        st.rerun()
+            elif persisted_workflow_is_active:
+                st.caption(
+                    "All blocked calculation draft RFIs have already been issued into the persisted RFI register."
+                    if ui_language == "en"
+                    else "所有计算阻塞草稿 RFI 均已进入持久化 RFI 台账。"
+                )
+            else:
+                st.caption(
+                    "Save or resume a persisted project before issuing a draft RFI."
+                    if ui_language == "en"
+                    else "签发草稿 RFI 前，请先保存或恢复持久化项目。"
+                )
         agent_prompt_packages = build_agent_prompt_packages(reviewed_workflow_state)
         agent_contract_heading = (
             "Agent Contract Prompt Preview"
