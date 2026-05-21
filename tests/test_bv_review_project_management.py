@@ -1,4 +1,6 @@
 from structural_screening_agent.bv_review.project_management import (
+    build_project_management_action_summary,
+    build_project_management_action_summary_rows,
     build_project_management_action_rows,
     build_project_management_actions,
 )
@@ -339,6 +341,84 @@ def test_project_management_action_rows_are_localized_for_dashboard() -> None:
     assert en_rows[-1]["Action Type"] == "Quality Gate Follow-up"
     assert en_rows[-1]["Owner Role"] == "BV Project Review Lead"
     assert "Resolve the open quality gate" in en_rows[-1]["Recommended Action"]
+
+
+def test_project_management_action_summary_counts_blockers_priorities_and_owners() -> None:
+    actions = [
+        *build_project_management_actions(
+            ProjectReviewState(
+                project_id="pv-summary-management",
+                intake=_sample_intake(),
+                rfi_items=[
+                    RFIItem(
+                        rfi_id="rfi-load-001",
+                        question="Please confirm updated load table.",
+                        responsible_party="client / designer",
+                        trigger_basis="Client replied with Rev B load table.",
+                        required_document_or_field="uplift_force_kn",
+                        status="responded",
+                        client_response="Rev B load table submitted.",
+                        reopen_review_items=["uplift_force_kn"],
+                        triggers_incremental_recheck=True,
+                    )
+                ],
+                risks=[
+                    BVRiskItem(
+                        risk_id="foundation-bearing-capacity-open",
+                        title="Foundation bearing capacity evidence remains open",
+                        severity="critical",
+                        trigger_basis="Missing geotechnical confirmation.",
+                        impact_scope="Foundation review",
+                        recommendation="Close the finding after engineer review.",
+                        blocks_report_issue=True,
+                        category="nonconformity",
+                    )
+                ],
+            )
+        ),
+        build_project_management_actions(
+            ProjectReviewState(
+                project_id="pv-summary-quality-gates",
+                intake=_sample_intake(),
+                current_phase="report_draft",
+            )
+        )[0],
+    ]
+
+    summary = build_project_management_action_summary(actions)
+    zh_rows = build_project_management_action_summary_rows(summary, "zh")
+    en_rows = build_project_management_action_summary_rows(summary, "en")
+
+    assert summary.total_action_count == 3
+    assert summary.blocking_action_count == 3
+    assert summary.high_priority_count == 2
+    assert summary.medium_priority_count == 1
+    assert summary.owner_roles == [
+        "BV structural review engineer",
+        "BV project review lead",
+    ]
+    assert summary.next_blocking_action_id == "rfi-engineer-closeout-rfi-load-001"
+    assert zh_rows == [
+        {"指标": "项目待办", "数值": 3},
+        {"指标": "阻塞报告待办", "数值": 3},
+        {"指标": "高优先级", "数值": 2},
+        {"指标": "中优先级", "数值": 1},
+        {"指标": "低优先级", "数值": 0},
+        {"指标": "责任方", "数值": "BV 结构审核工程师, BV 项目审核负责人"},
+        {"指标": "下一项阻塞行动", "数值": "rfi-engineer-closeout-rfi-load-001"},
+    ]
+    assert en_rows == [
+        {"Metric": "Project Actions", "Value": 3},
+        {"Metric": "Blocking Actions", "Value": 3},
+        {"Metric": "High Priority", "Value": 2},
+        {"Metric": "Medium Priority", "Value": 1},
+        {"Metric": "Low Priority", "Value": 0},
+        {
+            "Metric": "Owner Roles",
+            "Value": "BV Structural Review Engineer, BV Project Review Lead",
+        },
+        {"Metric": "Next Blocking Action", "Value": "rfi-engineer-closeout-rfi-load-001"},
+    ]
 
 
 def test_project_management_actions_skip_quality_gate_follow_up_at_intake() -> None:

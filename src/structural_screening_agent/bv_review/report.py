@@ -16,6 +16,8 @@ from structural_screening_agent.bv_review.field_diff import (
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.project_timeline import build_project_timeline_events
 from structural_screening_agent.bv_review.project_management import (
+    build_project_management_action_summary,
+    build_project_management_action_summary_rows,
     build_project_management_action_rows,
     build_project_management_actions,
 )
@@ -390,10 +392,23 @@ def build_bv_project_management_actions_section(
     if not actions:
         return None
 
+    summary = build_project_management_action_summary(actions)
+    summary_rows = build_project_management_action_summary_rows(summary, "zh")
     rows = build_project_management_action_rows(actions, "zh")
     return BVReportSection(
         heading="项目管理待办",
         items=[
+            (
+                "摘要 | "
+                f"项目待办: {summary_rows[0]['数值']} | "
+                f"阻塞报告待办: {summary_rows[1]['数值']} | "
+                f"高优先级: {summary_rows[2]['数值']} | "
+                f"中优先级: {summary_rows[3]['数值']} | "
+                f"低优先级: {summary_rows[4]['数值']} | "
+                f"责任方: {summary_rows[5]['数值']} | "
+                f"下一项阻塞行动: {summary_rows[6]['数值']}"
+            ),
+            *[
             (
                 f"{row['行动 ID']} | "
                 f"行动类型: {row['行动类型']} | "
@@ -404,6 +419,7 @@ def build_bv_project_management_actions_section(
                 f"阻塞报告: {row['阻塞报告']}"
             )
             for row in rows
+            ],
         ],
     )
 

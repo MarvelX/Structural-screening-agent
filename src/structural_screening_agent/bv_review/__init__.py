@@ -111,6 +111,9 @@ from structural_screening_agent.bv_review.project_timeline import (
 )
 from structural_screening_agent.bv_review.project_management import (
     ProjectManagementAction,
+    ProjectManagementActionSummary,
+    build_project_management_action_summary,
+    build_project_management_action_summary_rows,
     build_project_management_action_rows,
     build_project_management_actions,
 )
@@ -162,6 +165,7 @@ __all__ = [
     "ProjectReviewState",
     "ProjectTimelineEvent",
     "ProjectManagementAction",
+    "ProjectManagementActionSummary",
     "PVStructuralSpec",
     "PersistedWorkflowRunResult",
     "PersistedWorkflowRunSummary",
@@ -208,6 +212,8 @@ __all__ = [
     "build_incremental_calculation_recheck_runs_for_rfi",
     "build_incremental_recheck_plan",
     "build_incremental_recheck_plan_from_closed_rfis",
+    "build_project_management_action_summary",
+    "build_project_management_action_summary_rows",
     "build_project_management_action_rows",
     "build_project_management_actions",
     "build_project_timeline_events",

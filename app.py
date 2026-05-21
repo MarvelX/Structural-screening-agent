@@ -74,6 +74,8 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.project_management import (
+    build_project_management_action_summary,
+    build_project_management_action_summary_rows,
     build_project_management_action_rows,
     build_project_management_actions,
 )
@@ -1627,6 +1629,17 @@ with bv_review_tab:
         )
         st.markdown(f"##### {project_management_heading}")
         if project_management_actions:
+            project_management_summary = build_project_management_action_summary(
+                project_management_actions
+            )
+            st.dataframe(
+                build_project_management_action_summary_rows(
+                    project_management_summary,
+                    ui_language,
+                ),
+                hide_index=True,
+                use_container_width=True,
+            )
             st.dataframe(
                 build_project_management_action_rows(
                     project_management_actions,

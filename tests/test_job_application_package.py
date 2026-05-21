@@ -192,6 +192,8 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"BV Service Scope Recommendations"' in app_source
     assert '"BV 服务范围建议"' in app_source
     assert "build_project_management_actions" in app_source
+    assert "build_project_management_action_summary" in app_source
+    assert "build_project_management_action_summary_rows" in app_source
     assert "build_project_management_action_rows" in app_source
     assert '"Project Management Action Dashboard"' in app_source
     assert '"项目管理行动看板"' in app_source

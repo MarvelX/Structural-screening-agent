@@ -36,6 +36,16 @@ class ProjectManagementAction(BaseModel):
     blocks_report_issue: bool = False
 
 
+class ProjectManagementActionSummary(BaseModel):
+    total_action_count: int = Field(ge=0)
+    blocking_action_count: int = Field(ge=0)
+    high_priority_count: int = Field(ge=0)
+    medium_priority_count: int = Field(ge=0)
+    low_priority_count: int = Field(ge=0)
+    owner_roles: list[str] = Field(default_factory=list)
+    next_blocking_action_id: Optional[str] = None
+
+
 def build_project_management_actions(
     state: ProjectReviewState,
 ) -> list[ProjectManagementAction]:
@@ -49,6 +59,61 @@ def build_project_management_actions(
     if report_revision_action is not None:
         actions.append(report_revision_action)
     return sorted(actions, key=_action_sort_key)
+
+
+def build_project_management_action_summary(
+    actions: list[ProjectManagementAction],
+) -> ProjectManagementActionSummary:
+    owner_roles: list[str] = []
+    for action in actions:
+        if action.owner_role not in owner_roles:
+            owner_roles.append(action.owner_role)
+    next_blocking_action = next(
+        (action for action in actions if action.blocks_report_issue),
+        None,
+    )
+    return ProjectManagementActionSummary(
+        total_action_count=len(actions),
+        blocking_action_count=sum(1 for action in actions if action.blocks_report_issue),
+        high_priority_count=sum(1 for action in actions if action.priority == "high"),
+        medium_priority_count=sum(1 for action in actions if action.priority == "medium"),
+        low_priority_count=sum(1 for action in actions if action.priority == "low"),
+        owner_roles=owner_roles,
+        next_blocking_action_id=(
+            next_blocking_action.action_id if next_blocking_action is not None else None
+        ),
+    )
+
+
+def build_project_management_action_summary_rows(
+    summary: ProjectManagementActionSummary,
+    language: ProjectActionLanguage,
+) -> list[dict[str, object]]:
+    if language == "zh":
+        return [
+            {"指标": "项目待办", "数值": summary.total_action_count},
+            {"指标": "阻塞报告待办", "数值": summary.blocking_action_count},
+            {"指标": "高优先级", "数值": summary.high_priority_count},
+            {"指标": "中优先级", "数值": summary.medium_priority_count},
+            {"指标": "低优先级", "数值": summary.low_priority_count},
+            {"指标": "责任方", "数值": _owner_roles_value(summary.owner_roles, "zh")},
+            {
+                "指标": "下一项阻塞行动",
+                "数值": summary.next_blocking_action_id or "无",
+            },
+        ]
+    return [
+        {"Metric": "Project Actions", "Value": summary.total_action_count},
+        {"Metric": "Blocking Actions", "Value": summary.blocking_action_count},
+        {"Metric": "High Priority", "Value": summary.high_priority_count},
+        {"Metric": "Medium Priority", "Value": summary.medium_priority_count},
+        {"Metric": "Low Priority", "Value": summary.low_priority_count},
+        {"Metric": "Owner Roles", "Value": _owner_roles_value(summary.owner_roles, "en")},
+        {
+            "Metric": "Next Blocking Action",
+            "Value": summary.next_blocking_action_id or "None",
+        },
+    ]
 
 
 def build_project_management_action_rows(
@@ -361,6 +426,15 @@ def _owner_label(owner_role: str, language: ProjectActionLanguage) -> str:
         "client / designer": "Client / Designer",
     }
     return labels.get(owner_role, owner_role)
+
+
+def _owner_roles_value(
+    owner_roles: list[str],
+    language: ProjectActionLanguage,
+) -> str:
+    if not owner_roles:
+        return "无" if language == "zh" else "None"
+    return ", ".join(_owner_label(owner_role, language) for owner_role in owner_roles)
 
 
 def _localized_recommended_action(

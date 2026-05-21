@@ -651,6 +651,9 @@ def test_bv_report_preview_includes_project_management_actions_when_state_is_pro
     section = next(section for section in preview.sections if section.heading == "项目管理待办")
     text = "\n".join(section.items)
 
+    assert "摘要 | 项目待办: 7 | 阻塞报告待办: 7 | 高优先级: 3" in text
+    assert "中优先级: 4 | 低优先级: 0" in text
+    assert "责任方: 客户 / 设计院, BV 结构审核工程师, BV 项目审核负责人" in text
     assert "rfi-client-response-rfi-foundation-001" in text
     assert "行动类型: RFI 客户回复" in text
     assert "责任角色: 客户 / 设计院" in text
@@ -683,6 +686,7 @@ def test_bv_markdown_report_includes_project_management_actions_when_state_is_pr
     report = build_bv_markdown_report(intake, result, project_state=state)
 
     assert "## 项目管理待办" in report
+    assert "摘要 | 项目待办: 1 | 阻塞报告待办: 1" in report
     assert "rfi-client-response-rfi-foundation-001" in report
     assert "建议动作: 跟进客户 / 设计院回复" in report
 
