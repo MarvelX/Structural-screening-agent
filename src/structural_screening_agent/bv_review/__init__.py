@@ -25,6 +25,7 @@ from structural_screening_agent.bv_review.agent_application import (
 from structural_screening_agent.bv_review.agent_runner import (
     PersistedWorkflowRunResult,
     PersistedWorkflowRunSummary,
+    resume_local_agent_workflow_after_review_decisions,
     run_local_agent_workflow_step,
     run_local_agent_workflow_until_blocked,
     run_persisted_local_agent_workflow_until_blocked,
@@ -153,6 +154,7 @@ __all__ = [
     "RiskNCRAgentOutput",
     "ServiceScopeRecommendation",
     "run_local_agent_workflow_step",
+    "resume_local_agent_workflow_after_review_decisions",
     "run_local_agent_workflow_until_blocked",
     "run_persisted_local_agent_workflow_until_blocked",
     "run_persisted_local_agent_workflow_with_summary",

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from pydantic import BaseModel, Field
 
 from structural_screening_agent.bv_review.agent_contracts import (
@@ -14,6 +16,7 @@ from structural_screening_agent.bv_review.agent_contracts import (
 from structural_screening_agent.bv_review.agent_workflow import apply_agent_output_to_state
 from structural_screening_agent.bv_review.basis import build_review_basis
 from structural_screening_agent.bv_review.checklist import build_document_checklist
+from structural_screening_agent.bv_review.human_gate import record_agent_review_decision
 from structural_screening_agent.bv_review.project_state import (
     DocumentVersion,
     ProjectReviewState,
@@ -45,6 +48,38 @@ class PersistedWorkflowRunResult(BaseModel):
     summary: PersistedWorkflowRunSummary
 
 
+def resume_local_agent_workflow_after_review_decisions(
+    state: ProjectReviewState,
+    decision_records: Mapping[str, object],
+    *,
+    reviewer: str,
+) -> ProjectReviewState:
+    review_event = _next_pending_review_event_with_decision(
+        state,
+        decision_records,
+    )
+    if review_event is None:
+        return state
+
+    decision_record = decision_records[review_event.event_id]
+    if not isinstance(decision_record, Mapping):
+        return state
+    decision = str(decision_record.get("decision", ""))
+    if decision not in {"approved", "rejected"}:
+        return state
+
+    reviewed_state = record_agent_review_decision(
+        state,
+        event_id=review_event.event_id,
+        decision=decision,
+        reviewer=reviewer,
+        comment=str(decision_record.get("comment") or ""),
+    )
+    if decision != "approved":
+        return reviewed_state
+    return run_local_agent_workflow_until_blocked(reviewed_state)
+
+
 def run_local_agent_workflow_step(state: ProjectReviewState) -> ProjectReviewState | None:
     if (
         state.current_phase != "intake"
@@ -69,6 +104,20 @@ def run_local_agent_workflow_until_blocked(
             return current
         current = next_state
     return current
+
+
+def _next_pending_review_event_with_decision(
+    state: ProjectReviewState,
+    decision_records: Mapping[str, object],
+):
+    for event in state.agent_events:
+        if (
+            event.requires_engineer_review
+            and state.phase_statuses.get(event.target_phase) == "waiting_for_engineer"
+            and event.event_id in decision_records
+        ):
+            return event
+    return None
 
 
 def run_persisted_local_agent_workflow_until_blocked(

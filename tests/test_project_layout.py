@@ -63,7 +63,7 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "build_incremental_recheck_plan" in source
     assert "build_incremental_recheck_summary_rows" in source
     assert "build_report_gate_evidence_rows" in source
-    assert "record_agent_review_decision" in source
+    assert "resume_local_agent_workflow_after_review_decisions" in source
     assert "run_local_agent_workflow_until_blocked" in source
     assert "build_agent_workflow_phase_rows" in source
     assert "build_agent_workflow_artifact_rows" in source

@@ -51,7 +51,6 @@ from structural_screening_agent.bv_review.calculation_engines import (
 from structural_screening_agent.bv_review.human_gate import (
     build_engineer_approval,
     build_report_draft_gate_result,
-    record_agent_review_decision,
     record_report_revision,
 )
 from structural_screening_agent.bv_review.persisted_workflow_session import (
@@ -112,6 +111,7 @@ from structural_screening_agent.bv_review.ui import (
 )
 from structural_screening_agent.bv_review import (
     JsonProjectReviewStateRepository,
+    resume_local_agent_workflow_after_review_decisions,
     run_local_agent_workflow_until_blocked,
     run_persisted_local_agent_workflow_with_summary,
 )
@@ -1126,23 +1126,15 @@ with bv_review_tab:
                 {},
             )
         )
-        reviewed_workflow_state = workflow_state
-        for event_id, decision_record in stored_agent_review_decisions.items():
-            if not isinstance(decision_record, dict):
-                continue
-            decision = str(decision_record.get("decision", ""))
-            if decision not in {"approved", "rejected"}:
-                continue
-            try:
-                reviewed_workflow_state = record_agent_review_decision(
-                    reviewed_workflow_state,
-                    event_id=str(event_id),
-                    decision=decision,
-                    reviewer="demo-review-engineer",
-                    comment=str(decision_record.get("comment") or ""),
-                )
-            except ValueError:
-                continue
+        reviewed_workflow_state = (
+            workflow_state
+            if persisted_workflow_is_active
+            else resume_local_agent_workflow_after_review_decisions(
+                workflow_state,
+                stored_agent_review_decisions,
+                reviewer="demo-review-engineer",
+            )
+        )
         if not persisted_workflow_is_active:
             if (
                 st.session_state.get("bv_report_gate_approved") is True

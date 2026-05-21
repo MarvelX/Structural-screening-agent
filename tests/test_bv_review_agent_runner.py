@@ -3,6 +3,7 @@ from structural_screening_agent.bv_review import (
     ProjectReviewState,
     run_persisted_local_agent_workflow_until_blocked,
     run_persisted_local_agent_workflow_with_summary,
+    resume_local_agent_workflow_after_review_decisions,
     run_local_agent_workflow_step,
     run_local_agent_workflow_until_blocked,
 )
@@ -143,6 +144,58 @@ def test_local_agent_workflow_resumes_after_each_engineer_review_gate() -> None:
         "calculation_check",
         "risk_ncr",
         "report_composer",
+    ]
+
+
+def test_resume_local_agent_workflow_after_review_decisions_applies_review_and_runs_next_segment() -> None:
+    state = run_local_agent_workflow_until_blocked(
+        ProjectReviewState(project_id="pv-001", intake=_sample_intake())
+    )
+
+    resumed = resume_local_agent_workflow_after_review_decisions(
+        state,
+        {
+            "agent-event-001": {
+                "decision": "approved",
+                "comment": "Document intake evidence reviewed.",
+            }
+        },
+        reviewer="Engineer A",
+    )
+
+    assert resumed.current_phase == "basis_build"
+    assert resumed.phase_statuses["document_check"] == "approved"
+    assert resumed.phase_statuses["basis_build"] == "waiting_for_engineer"
+    assert [event.agent_role for event in resumed.agent_events] == [
+        "document_intake",
+        "basis_code",
+    ]
+    assert resumed.approvals[-1].target_type == "agent_event"
+    assert resumed.approvals[-1].target_id == "agent-event-001"
+    assert resumed.approvals[-1].reviewer == "Engineer A"
+    assert resumed.approvals[-1].comment == "Document intake evidence reviewed."
+
+
+def test_resume_local_agent_workflow_after_review_decisions_does_not_consume_future_decisions() -> None:
+    state = run_local_agent_workflow_until_blocked(
+        ProjectReviewState(project_id="pv-001", intake=_sample_intake())
+    )
+
+    resumed = resume_local_agent_workflow_after_review_decisions(
+        state,
+        {
+            "agent-event-001": {"decision": "approved"},
+            "agent-event-002": {"decision": "approved"},
+        },
+        reviewer="Engineer A",
+    )
+
+    assert resumed.current_phase == "basis_build"
+    assert resumed.phase_statuses["basis_build"] == "waiting_for_engineer"
+    assert [approval.target_id for approval in resumed.approvals] == ["agent-event-001"]
+    assert [event.agent_role for event in resumed.agent_events] == [
+        "document_intake",
+        "basis_code",
     ]
 
 
