@@ -97,6 +97,9 @@ def build_bv_report_preview(
     finding_closeout_section = build_bv_finding_closeout_evidence_section(project_state)
     if finding_closeout_section is not None:
         sections.insert(-1, finding_closeout_section)
+    report_revision_section = build_bv_report_revision_history_section(project_state)
+    if report_revision_section is not None:
+        sections.insert(-1, report_revision_section)
     service_scope_section = build_bv_service_scope_section(
         intake,
         result,
@@ -231,6 +234,32 @@ def build_bv_finding_closeout_evidence_section(
                 f"关闭说明: {item.closeout_note or 'N/A'}"
             )
             for item in closed_findings
+        ],
+    )
+
+
+def build_bv_report_revision_history_section(
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
+    if project_state is None or not project_state.report_revisions:
+        return None
+
+    return BVReportSection(
+        heading="报告版本历史",
+        items=[
+            (
+                f"报告版本 {revision.revision_id} | "
+                f"来源阶段: {revision.source_phase} | "
+                f"标题: {revision.report_title} | "
+                f"章节数: {revision.section_count} | "
+                f"RFI 数量: {revision.rfi_count} | "
+                f"阻塞发现项: {', '.join(revision.blocking_risk_ids) or 'N/A'} | "
+                f"计算运行: {', '.join(revision.calculation_run_ids) or 'N/A'} | "
+                f"创建人: {revision.created_by} | "
+                f"创建时间: {revision.created_at or 'N/A'} | "
+                f"备注: {revision.note or 'N/A'}"
+            )
+            for revision in project_state.report_revisions
         ],
     )
 

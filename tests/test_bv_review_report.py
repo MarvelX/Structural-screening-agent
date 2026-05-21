@@ -10,6 +10,7 @@ from structural_screening_agent.bv_review.report import (
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
     ProjectReviewState,
+    ReportRevision,
     RFIItem,
 )
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
@@ -314,6 +315,69 @@ def test_bv_markdown_report_includes_finding_closeout_evidence_when_state_is_pro
     assert "## 发现项关闭证据" in report
     assert "foundation-bearing-capacity-closed" in report
     assert "关闭说明: 工程师确认 Rev B 地勘承载力参数可用于筛查级报告。" in report
+
+
+def test_bv_report_preview_includes_report_revision_history_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-revision-history",
+        intake=intake,
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-001",
+                source_phase="report_draft",
+                report_title="BV 光伏结构设计审查报告",
+                section_count=10,
+                rfi_count=1,
+                blocking_risk_ids=["risk-foundation-input"],
+                calculation_run_ids=["foundation-run-001"],
+                created_by="Engineer A",
+                created_at="2026-05-21T10:00:00+08:00",
+                note="Issued for internal technical review.",
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "报告版本历史")
+    text = "\n".join(section.items)
+
+    assert "report-rev-001" in text
+    assert "来源阶段: report_draft" in text
+    assert "章节数: 10" in text
+    assert "RFI 数量: 1" in text
+    assert "阻塞发现项: risk-foundation-input" in text
+    assert "计算运行: foundation-run-001" in text
+    assert "创建人: Engineer A" in text
+    assert "Issued for internal technical review." in text
+
+
+def test_bv_markdown_report_includes_report_revision_history_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-revision-history",
+        intake=intake,
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-001",
+                source_phase="report_draft",
+                report_title="BV 光伏结构设计审查报告",
+                section_count=10,
+                rfi_count=0,
+                blocking_risk_ids=[],
+                calculation_run_ids=["foundation-run-001"],
+                created_by="Engineer A",
+            )
+        ],
+    )
+
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "## 报告版本历史" in report
+    assert "report-rev-001" in report
+    assert "计算运行: foundation-run-001" in report
 
 
 def test_bv_report_preview_includes_active_rfi_register_when_state_is_provided() -> None:
