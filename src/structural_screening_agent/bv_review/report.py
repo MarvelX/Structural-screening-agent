@@ -100,6 +100,9 @@ def build_bv_report_preview(
     report_revision_section = build_bv_report_revision_history_section(project_state)
     if report_revision_section is not None:
         sections.insert(-1, report_revision_section)
+    project_timeline_section = build_bv_project_timeline_section(project_state)
+    if project_timeline_section is not None:
+        sections.insert(-1, project_timeline_section)
     service_scope_section = build_bv_service_scope_section(
         intake,
         result,
@@ -262,6 +265,98 @@ def build_bv_report_revision_history_section(
             for revision in project_state.report_revisions
         ],
     )
+
+
+def build_bv_project_timeline_section(
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
+    if project_state is None:
+        return None
+
+    items: list[str] = []
+    for rfi in project_state.rfi_items:
+        items.append(
+            (
+                f"排序: 01-RFI-{rfi.rfi_id} | "
+                f"类型: RFI | "
+                f"项目 ID: {rfi.rfi_id} | "
+                f"状态: {_rfi_status_label(rfi.status)} | "
+                f"责任方: {rfi.responsible_party} | "
+                f"关联对象: {rfi.required_document_or_field} | "
+                f"说明: {rfi.trigger_basis} | "
+                f"证据: {rfi.client_response or 'N/A'} | "
+                "建议动作: 工程师复核客户回复并保留关闭证据"
+            )
+        )
+    for risk in project_state.risks:
+        if risk.status not in {"closed", "accepted_with_comment"}:
+            continue
+        items.append(
+            (
+                f"排序: 02-FINDING-{risk.risk_id} | "
+                f"类型: 发现项 | "
+                f"项目 ID: {risk.risk_id} | "
+                f"状态: {_finding_status_label(risk.status)} | "
+                f"责任方: 工程师 | "
+                f"关联对象: {risk.impact_scope} | "
+                f"说明: {risk.title} | "
+                f"证据: {risk.closeout_note or 'N/A'} | "
+                "建议动作: 保留发现项关闭证据并进入报告"
+            )
+        )
+    for revision in project_state.report_revisions:
+        items.append(
+            (
+                f"排序: 03-REPORT-{revision.revision_id} | "
+                f"类型: 报告版本 | "
+                f"项目 ID: {revision.revision_id} | "
+                f"状态: {_review_phase_label(revision.source_phase)} | "
+                f"责任方: {revision.created_by} | "
+                f"关联对象: {', '.join(revision.calculation_run_ids) or 'N/A'} | "
+                f"说明: {revision.report_title} | "
+                f"证据: {revision.note or 'N/A'} | "
+                "建议动作: 按报告版本记录继续内部复核"
+            )
+        )
+    if not items:
+        return None
+    return BVReportSection(heading="项目时间线", items=items)
+
+
+def _rfi_status_label(status: str) -> str:
+    labels = {
+        "open": "待回复",
+        "responded": "已回复",
+        "closed": "已关闭",
+        "reopened": "重新打开",
+    }
+    return labels.get(status, status)
+
+
+def _finding_status_label(status: str) -> str:
+    labels = {
+        "open": "未关闭",
+        "under_review": "复核中",
+        "closed": "已关闭",
+        "accepted_with_comment": "带意见接受",
+    }
+    return labels.get(status, status)
+
+
+def _review_phase_label(phase: str) -> str:
+    labels = {
+        "intake": "项目录入",
+        "document_check": "资料检查",
+        "basis_build": "审核依据",
+        "review_plan": "审核计划",
+        "engineer_data_lock": "工程师数据锁定",
+        "calculation_check": "计算校核",
+        "risk_register": "风险登记",
+        "report_draft": "报告草稿",
+        "engineer_approval": "工程师批准",
+        "issue_rfi_closeout": "签发 / RFI 关闭",
+    }
+    return labels.get(phase, phase)
 
 
 def build_bv_service_scope_section(

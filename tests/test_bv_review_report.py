@@ -380,6 +380,98 @@ def test_bv_markdown_report_includes_report_revision_history_when_state_is_provi
     assert "计算运行: foundation-run-001" in report
 
 
+def test_bv_report_preview_includes_project_timeline_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-project-timeline",
+        intake=intake,
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-input",
+                question="Please confirm foundation input.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation input changed in Rev B.",
+                required_document_or_field="pile_length_m",
+                status="closed",
+                client_response="Designer confirmed Rev B pile length.",
+                reopen_review_items=["pile_length_m"],
+                completed_recheck_items=["pile_length_m"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+        risks=[
+            BVRiskItem(
+                risk_id="risk-foundation-input",
+                title="Foundation input closed",
+                severity="high",
+                trigger_basis="Engineer reviewed Rev B input.",
+                impact_scope="Foundation review",
+                recommendation="Keep closeout evidence.",
+                blocks_report_issue=True,
+                category="nonconformity",
+                status="closed",
+                closeout_note="Engineer accepted Rev B input for screening report.",
+            )
+        ],
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-001",
+                source_phase="report_draft",
+                report_title="BV 光伏结构设计审查报告",
+                section_count=12,
+                rfi_count=1,
+                blocking_risk_ids=[],
+                calculation_run_ids=["foundation-run-001"],
+                created_by="Engineer A",
+                created_at="2026-05-21T10:00:00+08:00",
+                note="Ready for internal review.",
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "项目时间线")
+    text = "\n".join(section.items)
+
+    assert "01-RFI-rfi-foundation-input" in text
+    assert "类型: RFI" in text
+    assert "责任方: client / designer" in text
+    assert "建议动作: 工程师复核客户回复并保留关闭证据" in text
+    assert "02-FINDING-risk-foundation-input" in text
+    assert "类型: 发现项" in text
+    assert "责任方: 工程师" in text
+    assert "03-REPORT-report-rev-001" in text
+    assert "类型: 报告版本" in text
+    assert "责任方: Engineer A" in text
+
+
+def test_bv_markdown_report_includes_project_timeline_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-project-timeline",
+        intake=intake,
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-001",
+                source_phase="report_draft",
+                report_title="BV 光伏结构设计审查报告",
+                section_count=12,
+                rfi_count=0,
+                calculation_run_ids=["foundation-run-001"],
+                created_by="Engineer A",
+            )
+        ],
+    )
+
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "## 项目时间线" in report
+    assert "03-REPORT-report-rev-001" in report
+    assert "建议动作: 按报告版本记录继续内部复核" in report
+
+
 def test_bv_report_preview_includes_active_rfi_register_when_state_is_provided() -> None:
     intake = _sample_intake()
     result = evaluate_bv_review(intake)
