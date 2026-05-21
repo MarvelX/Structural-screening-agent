@@ -10,7 +10,7 @@ from structural_screening_agent.bv_review.project_state import (
     RFIItem,
     ReportRevision,
 )
-from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.models import BVRiskItem, BVReviewIntake
 
 
 def test_project_management_actions_prioritize_rfi_agent_and_calculation_work() -> None:
@@ -88,6 +88,46 @@ def test_project_management_actions_prioritize_rfi_agent_and_calculation_work() 
     assert actions[0].owner_role == "client / designer"
     assert actions[1].owner_role == "BV structural review engineer"
     assert actions[2].blocks_report_issue is True
+
+
+def test_project_management_actions_include_open_blocking_finding_closeout() -> None:
+    state = ProjectReviewState(
+        project_id="pv-finding-closeout-actions",
+        intake=_sample_intake(),
+        risks=[
+            BVRiskItem(
+                risk_id="foundation-bearing-capacity-open",
+                title="Foundation bearing capacity evidence remains open",
+                severity="critical",
+                trigger_basis="Missing geotechnical confirmation.",
+                impact_scope="Foundation review",
+                recommendation="Close the finding after engineer review of evidence.",
+                blocks_report_issue=True,
+                category="nonconformity",
+            ),
+            BVRiskItem(
+                risk_id="layout-optimization-closed",
+                title="Layout optimization comment closed",
+                severity="medium",
+                trigger_basis="Engineer accepted residual comment.",
+                impact_scope="PV layout review",
+                recommendation="Keep comment in workpaper.",
+                blocks_report_issue=True,
+                category="optimization",
+                status="closed",
+                closeout_note="Closed after engineer review.",
+            ),
+        ],
+    )
+
+    actions = build_project_management_actions(state)
+
+    assert [item.action_id for item in actions] == [
+        "finding-closeout-foundation-bearing-capacity-open"
+    ]
+    assert actions[0].category == "finding_closeout"
+    assert actions[0].owner_role == "BV structural review engineer"
+    assert actions[0].blocks_report_issue is True
 
 
 def test_project_management_actions_include_report_revision_after_report_gate_approval() -> None:

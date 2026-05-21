@@ -9,11 +9,13 @@ from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
     ProjectReviewState,
 )
+from structural_screening_agent.bv_review.models import BVRiskItem
 
 
 ProjectActionCategory = Literal[
     "rfi_client_response",
     "rfi_engineer_closeout",
+    "finding_closeout",
     "agent_engineer_review",
     "calculation_follow_up",
     "report_revision",
@@ -37,6 +39,7 @@ def build_project_management_actions(
 ) -> list[ProjectManagementAction]:
     actions: list[ProjectManagementAction] = []
     actions.extend(_rfi_actions(state))
+    actions.extend(_finding_actions(state))
     actions.extend(_agent_review_actions(state))
     actions.extend(_calculation_actions(state))
     report_revision_action = _report_revision_action(state)
@@ -131,6 +134,31 @@ def _agent_review_actions(state: ProjectReviewState) -> list[ProjectManagementAc
     ]
 
 
+def _finding_actions(state: ProjectReviewState) -> list[ProjectManagementAction]:
+    return [
+        ProjectManagementAction(
+            action_id=f"finding-closeout-{risk.risk_id}",
+            category="finding_closeout",
+            priority=_finding_action_priority(risk),
+            owner_role="BV structural review engineer",
+            trigger_evidence_ids=[risk.risk_id],
+            recommended_action=(
+                "Close the finding after engineer review of evidence, or record "
+                "an accepted residual comment before report issue."
+            ),
+            blocks_report_issue=True,
+        )
+        for risk in state.risks
+        if risk.blocks_report_issue and risk.status not in _CLOSED_FINDING_STATUSES
+    ]
+
+
+def _finding_action_priority(risk: BVRiskItem) -> ProjectActionPriority:
+    if risk.severity in {"critical", "high"}:
+        return "high"
+    return "medium"
+
+
 def _calculation_actions(state: ProjectReviewState) -> list[ProjectManagementAction]:
     return [
         ProjectManagementAction(
@@ -187,9 +215,10 @@ def _action_sort_key(action: ProjectManagementAction) -> tuple[int, int, str]:
     category_rank = {
         "rfi_client_response": 0,
         "rfi_engineer_closeout": 1,
-        "agent_engineer_review": 2,
-        "calculation_follow_up": 3,
-        "report_revision": 4,
+        "finding_closeout": 2,
+        "agent_engineer_review": 3,
+        "calculation_follow_up": 4,
+        "report_revision": 5,
     }[action.category]
     return priority_rank, category_rank, action.action_id
 
@@ -206,6 +235,10 @@ def _category_label(
         "rfi_engineer_closeout": {
             "zh": "RFI 工程师关闭",
             "en": "RFI Engineer Closeout",
+        },
+        "finding_closeout": {
+            "zh": "发现项关闭",
+            "en": "Finding Closeout",
         },
         "agent_engineer_review": {
             "zh": "Agent 产物复核",
@@ -255,8 +288,12 @@ def _localized_recommended_action(
     labels = {
         "rfi_client_response": "跟进客户 / 设计院回复和所需证据，关闭前不得进入无保留报告结论。",
         "rfi_engineer_closeout": "工程师复核客户回复，并完成相关增量复核项后关闭 RFI。",
+        "finding_closeout": "工程师复核证据后关闭发现项，或记录可接受的残余意见后再进入报告签发。",
         "agent_engineer_review": "复核 Agent 产物，记录批准或驳回决定及工程判断依据。",
         "calculation_follow_up": "补齐或修正确定性计算输入，避免将失败计算用于报告结论。",
         "report_revision": "报告门禁批准后记录可追踪的报告修订快照。",
     }
     return labels[action.category]
+
+
+_CLOSED_FINDING_STATUSES = {"closed", "accepted_with_comment"}

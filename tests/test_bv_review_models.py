@@ -80,3 +80,21 @@ def test_bv_risk_item_defaults_to_no_linked_fields_for_legacy_risks() -> None:
     )
 
     assert risk.linked_field_ids == []
+
+
+def test_bv_risk_item_tracks_finding_lifecycle_status_and_closeout_note() -> None:
+    risk = BVRiskItem(
+        risk_id="foundation_bearing_capacity_closed",
+        title="Foundation bearing capacity clarification closed",
+        severity="high",
+        trigger_basis="Engineer reviewed geotechnical Rev B response.",
+        impact_scope="Foundation review",
+        recommendation="Keep closeout evidence in the report workpaper.",
+        blocks_report_issue=True,
+        category="nonconformity",
+        status="closed",
+        closeout_note="Engineer accepted Rev B bearing capacity evidence.",
+    )
+
+    assert risk.status == "closed"
+    assert risk.closeout_note == "Engineer accepted Rev B bearing capacity evidence."

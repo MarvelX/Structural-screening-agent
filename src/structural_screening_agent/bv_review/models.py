@@ -16,6 +16,7 @@ BVReviewObject = Literal[
 BVDocumentStatus = Literal["available", "partial", "missing", "not_applicable"]
 BVReviewDecision = Literal["ready_for_review", "review_with_holds", "not_ready"]
 BVSeverity = Literal["low", "medium", "high", "critical"]
+BVFindingStatus = Literal["open", "under_review", "closed", "accepted_with_comment"]
 
 
 class BVReviewIntake(BaseModel):
@@ -69,6 +70,8 @@ class BVRiskItem(BaseModel):
     recommendation: str = Field(min_length=1)
     blocks_report_issue: bool = False
     category: Literal["risk", "nonconformity", "optimization"]
+    status: BVFindingStatus = "open"
+    closeout_note: Optional[str] = None
 
 
 class BVReviewPlanItem(BaseModel):

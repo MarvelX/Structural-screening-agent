@@ -340,7 +340,9 @@ def build_report_draft_gate_result(
         )
 
     blocking_risk_ids = [
-        item.risk_id for item in result.risks if item.blocks_report_issue
+        item.risk_id
+        for item in result.risks
+        if item.blocks_report_issue and item.status not in _CLOSED_FINDING_STATUSES
     ]
     if blocking_risk_ids:
         reasons.append(
@@ -411,6 +413,9 @@ def build_report_draft_gate_result(
         calculation_run_ids=calculation_run_ids,
         notes=notes,
     )
+
+
+_CLOSED_FINDING_STATUSES = {"closed", "accepted_with_comment"}
 
 
 def record_report_revision(

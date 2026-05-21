@@ -1,5 +1,5 @@
 from structural_screening_agent.bv_review.human_gate import build_report_draft_gate_result
-from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.models import BVRiskItem, BVReviewIntake
 from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
     CalculationRun,
@@ -106,6 +106,45 @@ def test_report_draft_gate_blocks_when_blocking_risks_remain() -> None:
 
     assert gate.status == "blocked"
     assert gate.blocking_risk_ids
+
+
+def test_report_draft_gate_does_not_block_closed_or_engineer_accepted_findings() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake).model_copy(
+        update={
+            "risks": [
+                BVRiskItem(
+                    risk_id="closed-foundation-finding",
+                    title="Foundation evidence clarification closed",
+                    severity="high",
+                    trigger_basis="Engineer reviewed Rev B geotechnical response.",
+                    impact_scope="Foundation review",
+                    recommendation="Retain closeout evidence in the workpaper.",
+                    blocks_report_issue=True,
+                    category="nonconformity",
+                    status="closed",
+                    closeout_note="Rev B evidence accepted by engineer.",
+                ),
+                BVRiskItem(
+                    risk_id="accepted-layout-finding",
+                    title="Residual layout optimization accepted",
+                    severity="medium",
+                    trigger_basis="Engineer accepted residual optimization note.",
+                    impact_scope="PV layout review",
+                    recommendation="Track as residual optimization comment.",
+                    blocks_report_issue=True,
+                    category="optimization",
+                    status="accepted_with_comment",
+                    closeout_note="Accepted with residual comment in report.",
+                ),
+            ]
+        }
+    )
+
+    gate = build_report_draft_gate_result(_sample_state(intake), result)
+
+    assert gate.status == "ready"
+    assert gate.blocking_risk_ids == []
 
 
 def test_report_draft_gate_blocks_before_calculation_gate_is_locked() -> None:
