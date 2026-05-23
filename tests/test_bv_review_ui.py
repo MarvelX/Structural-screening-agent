@@ -3,6 +3,7 @@ from structural_screening_agent.bv_review.ui import (
     build_foundation_evidence_display_rows,
     build_bv_project_management_dashboard_view,
     build_bv_report_preview_sections,
+    render_bv_section,
 )
 from structural_screening_agent.bv_review.project_management import (
     build_project_management_actions,
@@ -14,6 +15,18 @@ from structural_screening_agent.bv_review.project_state import (
 )
 from structural_screening_agent.bv_review.ui_state import default_bv_review_intake
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
+
+
+class _FakeStreamlit:
+    def __init__(self) -> None:
+        self.markdown_calls: list[str] = []
+        self.write_calls: list[str] = []
+
+    def markdown(self, text: str) -> None:
+        self.markdown_calls.append(text)
+
+    def write(self, text: str) -> None:
+        self.write_calls.append(text)
 
 
 def test_bv_ui_helpers_import_without_streamlit_runtime() -> None:
@@ -112,3 +125,17 @@ def test_foundation_evidence_display_rows_localize_status_and_documents() -> Non
     assert en_rows[0]["Missing Documents"] == "Geotechnical Report"
     assert en_rows[0]["Blocks Foundation Calculation"] == "Yes"
     assert "地勘报告" not in str(en_rows)
+
+
+def test_render_bv_section_uses_streamlit_like_api_and_limit() -> None:
+    fake_st = _FakeStreamlit()
+
+    render_bv_section(
+        fake_st,
+        "Review Basis",
+        ["GB 50797", "IEC 62548", "Eurocode"],
+        limit=2,
+    )
+
+    assert fake_st.markdown_calls == ["#### Review Basis"]
+    assert fake_st.write_calls == ["- GB 50797", "- IEC 62548"]

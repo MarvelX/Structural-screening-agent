@@ -1,3 +1,5 @@
+from typing import Optional, Protocol
+
 from pydantic import BaseModel, Field
 
 from structural_screening_agent.bv_review.models import (
@@ -28,6 +30,26 @@ class BVProjectManagementDashboardView(BaseModel):
     summary_rows: list[dict[str, object]] = Field(default_factory=list)
     action_rows: list[dict[str, object]] = Field(default_factory=list)
     empty_caption: str = Field(min_length=1)
+
+
+class StreamlitSectionRenderer(Protocol):
+    def markdown(self, text: str) -> None:
+        ...
+
+    def write(self, text: str) -> None:
+        ...
+
+
+def render_bv_section(
+    streamlit_api: StreamlitSectionRenderer,
+    title: str,
+    items: list[str],
+    limit: Optional[int] = None,
+) -> None:
+    streamlit_api.markdown(f"#### {title}")
+    visible_items = items if limit is None else items[:limit]
+    for item in visible_items:
+        streamlit_api.write(f"- {item}")
 
 
 def format_bv_label(

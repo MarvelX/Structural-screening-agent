@@ -19,6 +19,7 @@ Already present in the repository:
 - JD feature mapping documentation in `docs/bv-jd-feature-mapping.md`.
 - portfolio narrative page and showcase support material under `docs/showcase/`.
 - BV UI helper smoke tests and app import checks that do not require manual Streamlit interaction.
+- BV section renderer extraction: simple BV report section rendering now lives in `src/structural_screening_agent/bv_review/ui.py` behind a Streamlit-like protocol and has direct unit coverage.
 - UI / report evidence matrix alignment: workbench rows and exported BV reports now trace final report findings to fields, document versions, intake document status, or missing evidence.
 - workspace cleanliness policy in `docs/workspace-cleanliness.md`, with tests that keep ignored local artifact rules documented.
 
@@ -129,7 +130,7 @@ This phase should not turn the product into a CRM. Service scope recommendation 
 
 Recommended next three small, verifiable steps:
 
-1. Extract BV UI presentation helpers from `app.py` into a dedicated module.
+1. Continue extracting BV UI presentation helpers from `app.py` into dedicated BV UI modules, starting with simple protocol-based helpers before moving stateful Streamlit flows.
    - Verification: existing BV review tests pass; app still imports.
 
 2. Keep roadmap, JD mapping, and showcase narrative synchronized with completed workflow slices.

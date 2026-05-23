@@ -116,6 +116,7 @@ from structural_screening_agent.bv_review.ui import (
     build_bv_plan_items,
     build_bv_report_preview_sections,
     build_bv_risk_items,
+    render_bv_section,
 )
 from structural_screening_agent.bv_review import (
     JsonProjectReviewStateRepository,
@@ -271,13 +272,6 @@ def _render_key_calculation_cards(cards: list[ContentCard], language: Language, 
                 with st.expander("计算式" if language == "zh" else "Formula"):
                     for line in formula_text.splitlines():
                         st.write(line)
-
-
-def _render_bv_section(title: str, items: list[str], limit: Optional[int] = None) -> None:
-    st.markdown(f"#### {title}")
-    visible_items = items if limit is None else items[:limit]
-    for item in visible_items:
-        st.write(f"- {item}")
 
 
 def _preset_or_custom_value(
@@ -1810,23 +1804,27 @@ with bv_review_tab:
 
         overview_col, risk_col = st.columns([1.0, 1.0])
         with overview_col:
-            _render_bv_section(
+            render_bv_section(
+                st,
                 translate(ui_language, "bv_review_basis_heading"),
                 build_bv_basis_items(effective_bv_result, ui_language),
                 limit=4,
             )
-            _render_bv_section(
+            render_bv_section(
+                st,
                 translate(ui_language, "bv_review_path_heading"),
                 build_bv_path_items(effective_bv_result, ui_language),
                 limit=5,
             )
         with risk_col:
-            _render_bv_section(
+            render_bv_section(
+                st,
                 translate(ui_language, "bv_review_risk_heading"),
                 build_bv_risk_items(effective_bv_result, ui_language),
                 limit=6,
             )
-            _render_bv_section(
+            render_bv_section(
+                st,
                 translate(ui_language, "bv_review_plan_heading"),
                 build_bv_plan_items(effective_bv_result, ui_language),
                 limit=5,
