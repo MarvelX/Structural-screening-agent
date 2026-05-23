@@ -192,6 +192,20 @@ def test_incremental_recheck_plan_creates_rfi_item_without_agent_generated_langu
     assert "AI" not in plan.rfi_items[0].question
 
 
+def test_incremental_recheck_plan_timestamps_generated_rfi_items() -> None:
+    diffs = diff_extracted_fields(
+        [_field("pile_length_m", "3.5", unit="m", confirmed=True, include_in_calculation=True)],
+        [_field("pile_length_m", "4.0", unit="m", confirmed=True, include_in_calculation=True)],
+    )
+
+    plan = build_incremental_recheck_plan(
+        diffs,
+        opened_at="2026-05-22T09:15:00+08:00",
+    )
+
+    assert plan.rfi_items[0].opened_at == "2026-05-22"
+
+
 def test_incremental_recheck_plan_from_closed_rfis_builds_calculation_recheck_items() -> None:
     plan = build_incremental_recheck_plan_from_closed_rfis(
         [

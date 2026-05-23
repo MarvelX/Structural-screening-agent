@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -189,9 +190,11 @@ def build_incremental_recheck_plan(
     diffs: list[FieldDiff],
     *,
     rfi_prefix: str = "rfi",
+    opened_at: Optional[str] = None,
 ) -> IncrementalRecheckPlan:
     affected_items: list[AffectedReviewItem] = []
     rfi_items: list[RFIItem] = []
+    rfi_opened_at = _rfi_opened_date(opened_at)
 
     for diff in diffs:
         if diff.affects_confirmed_calculation:
@@ -226,6 +229,7 @@ def build_incremental_recheck_plan(
                     ),
                     required_document_or_field=diff.field_id,
                     status="open",
+                    opened_at=rfi_opened_at,
                     reopen_review_items=[item.item_id for item in affected_items if diff.field_id in item.field_ids],
                     triggers_incremental_recheck=diff.affects_confirmed_calculation,
                 )
@@ -236,6 +240,12 @@ def build_incremental_recheck_plan(
         affected_items=affected_items,
         rfi_items=rfi_items,
     )
+
+
+def _rfi_opened_date(opened_at: Optional[str]) -> str:
+    if opened_at:
+        return opened_at[:10]
+    return date.today().isoformat()
 
 
 def build_incremental_recheck_plan_from_closed_rfis(

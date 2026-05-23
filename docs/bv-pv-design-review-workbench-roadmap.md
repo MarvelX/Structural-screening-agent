@@ -129,6 +129,7 @@ Implemented:
 - responsible-party SLA / overdue tracking with earliest due date, overdue count, and localized status labels.
 - report-facing responsible-party SLA status so design review drafts can cite owner, overdue count, earliest due date, and next blocking action.
 - blocked-calculation RFI issue timestamps that start the responsible-party SLA clock from the engineer approval date.
+- incremental-recheck RFI timestamps that start the responsible-party SLA clock when changed inputs generate follow-up clarification items.
 
 Candidate work:
 
