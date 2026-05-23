@@ -43,6 +43,10 @@ class BVEvidenceTableText(BaseModel):
     closed_rfi_empty_caption: str = Field(min_length=1)
 
 
+class BVGatePanelText(BaseModel):
+    quality_gate_heading: str = Field(min_length=1)
+
+
 class StreamlitSectionRenderer(Protocol):
     def markdown(self, text: str) -> None:
         ...
@@ -94,6 +98,12 @@ def build_bv_evidence_table_text(language: Language) -> BVEvidenceTableText:
         closed_rfi_heading="已关闭澄清问题增量复核证据",
         closed_rfi_empty_caption="当前没有已关闭澄清问题的增量复核证据。",
     )
+
+
+def build_bv_gate_panel_text(language: Language) -> BVGatePanelText:
+    if language == "en":
+        return BVGatePanelText(quality_gate_heading="Quality Gate Status")
+    return BVGatePanelText(quality_gate_heading="质量门禁状态")
 
 
 def format_bv_object_labels(values: list[str], language: Language) -> str:

@@ -112,6 +112,7 @@ from structural_screening_agent.bv_review.service_scope import (
 from structural_screening_agent.bv_review.ui import (
     build_bv_basis_items,
     build_bv_evidence_table_text,
+    build_bv_gate_panel_text,
     build_foundation_evidence_display_rows,
     build_bv_path_items,
     build_bv_plan_items,
@@ -1858,9 +1859,8 @@ with bv_review_tab:
             )
 
         st.markdown(f'#### {translate(ui_language, "report_draft_gate_heading")}')
-        st.markdown(
-            "##### Quality Gate Status" if ui_language == "en" else "质量门禁状态"
-        )
+        gate_panel_text = build_bv_gate_panel_text(ui_language)
+        st.markdown(f"##### {gate_panel_text.quality_gate_heading}")
         st.dataframe(
             build_quality_gate_status_rows(
                 effective_bv_intake,

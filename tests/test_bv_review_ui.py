@@ -1,6 +1,7 @@
 from structural_screening_agent.bv_review.ui import (
     build_bv_basis_items,
     build_bv_evidence_table_text,
+    build_bv_gate_panel_text,
     build_foundation_evidence_display_rows,
     build_bv_project_management_dashboard_view,
     build_bv_report_preview_sections,
@@ -69,6 +70,15 @@ def test_bv_evidence_table_text_localizes_headings_and_empty_captions() -> None:
         "No finding source evidence is available yet."
     )
     assert en_text.closed_rfi_heading == "Closed RFI Recheck Evidence"
+
+
+def test_bv_gate_panel_text_localizes_quality_gate_heading() -> None:
+    zh_text = build_bv_gate_panel_text("zh")
+    en_text = build_bv_gate_panel_text("en")
+
+    assert zh_text.quality_gate_heading == "质量门禁状态"
+    assert en_text.quality_gate_heading == "Quality Gate Status"
+    assert "Quality Gate Status" not in str(zh_text)
 
 
 def test_bv_report_preview_sections_support_chinese_and_english() -> None:
