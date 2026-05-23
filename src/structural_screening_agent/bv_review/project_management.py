@@ -307,6 +307,7 @@ def _rfi_actions(state: ProjectReviewState) -> list[ProjectManagementAction]:
                         "closing the RFI."
                     ),
                     blocks_report_issue=True,
+                    opened_at=rfi.opened_at,
                 )
             )
         elif rfi.status == "responded":
@@ -322,6 +323,7 @@ def _rfi_actions(state: ProjectReviewState) -> list[ProjectManagementAction]:
                         "recheck items."
                     ),
                     blocks_report_issue=True,
+                    opened_at=rfi.opened_at,
                 )
             )
     return actions

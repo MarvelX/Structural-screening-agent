@@ -166,6 +166,7 @@ class RFIItem(BaseModel):
     trigger_basis: str = Field(min_length=1)
     required_document_or_field: str = Field(min_length=1)
     status: Literal["open", "responded", "closed", "reopened"]
+    opened_at: Optional[str] = None
     client_response: Optional[str] = None
     reopen_review_items: List[str] = Field(default_factory=list)
     completed_recheck_items: List[str] = Field(default_factory=list)

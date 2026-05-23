@@ -24,6 +24,7 @@ from structural_screening_agent.bv_review.project_management import (
     build_project_management_action_summary_rows,
     build_project_management_action_rows,
     build_project_management_actions,
+    build_responsible_party_status_rows,
 )
 from structural_screening_agent.bv_review.service_scope import (
     build_service_scope_recommendations,
@@ -519,6 +520,7 @@ def build_bv_project_management_actions_section(
 
     summary = build_project_management_action_summary(actions)
     summary_rows = build_project_management_action_summary_rows(summary, "zh")
+    responsible_party_rows = build_responsible_party_status_rows(actions, "zh")
     rows = build_project_management_action_rows(actions, "zh")
     return BVReportSection(
         heading="项目管理待办",
@@ -534,16 +536,29 @@ def build_bv_project_management_actions_section(
                 f"下一项阻塞行动: {summary_rows[6]['数值']}"
             ),
             *[
-            (
-                f"{row['行动 ID']} | "
-                f"行动类型: {row['行动类型']} | "
-                f"优先级: {row['优先级']} | "
-                f"责任角色: {row['责任角色']} | "
-                f"触发证据: {row['触发证据']} | "
-                f"建议动作: {row['建议动作']} | "
-                f"阻塞报告: {row['阻塞报告']}"
-            )
-            for row in rows
+                (
+                    "责任方时限 | "
+                    f"责任方: {row['责任方']} | "
+                    f"待办数: {row['待办数']} | "
+                    f"阻塞报告: {row['阻塞报告']} | "
+                    f"超期数: {row['超期数']} | "
+                    f"时限状态: {row['SLA状态']} | "
+                    f"最早到期: {row['最早到期']} | "
+                    f"下一项行动: {row['下一项行动']}"
+                )
+                for row in responsible_party_rows
+            ],
+            *[
+                (
+                    f"{row['行动 ID']} | "
+                    f"行动类型: {row['行动类型']} | "
+                    f"优先级: {row['优先级']} | "
+                    f"责任角色: {row['责任角色']} | "
+                    f"触发证据: {row['触发证据']} | "
+                    f"建议动作: {row['建议动作']} | "
+                    f"阻塞报告: {row['阻塞报告']}"
+                )
+                for row in rows
             ],
         ],
     )

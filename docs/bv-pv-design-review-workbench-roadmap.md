@@ -127,6 +127,7 @@ Implemented:
 - finding lifecycle summary for open findings, blocking findings, closed / accepted findings, client clarification response status, engineer closeout status, and the next lifecycle action.
 - responsible-party status rows for open actions, grouped by client / designer, BV structural review engineer, and BV project review lead.
 - responsible-party SLA / overdue tracking with earliest due date, overdue count, and localized status labels.
+- report-facing responsible-party SLA status so design review drafts can cite owner, overdue count, earliest due date, and next blocking action.
 
 Candidate work:
 

@@ -665,6 +665,38 @@ def test_bv_report_preview_includes_project_management_actions_when_state_is_pro
     assert "calculation-follow-up-foundation-run-001" in text
 
 
+def test_bv_report_preview_includes_responsible_party_sla_status() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-management-sla",
+        intake=intake,
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-overdue-geotech",
+                question="Please provide geotechnical side resistance.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation calculation missing side resistance.",
+                required_document_or_field="side_resistance_standard_kpa",
+                status="open",
+                reopen_review_items=["side_resistance_standard_kpa"],
+                triggers_incremental_recheck=True,
+                opened_at="2000-01-01",
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "项目管理待办")
+    text = "\n".join(section.items)
+
+    assert "责任方时限 | 责任方: 客户 / 设计院" in text
+    assert "超期数: 1" in text
+    assert "时限状态: 已超期" in text
+    assert "最早到期: 2000-01-08" in text
+    assert "下一项行动: rfi-client-response-rfi-overdue-geotech" in text
+
+
 def test_bv_report_preview_includes_foundation_evidence_path_when_state_is_provided() -> None:
     intake = _sample_intake()
     result = evaluate_bv_review(intake)
@@ -890,6 +922,7 @@ def test_bv_markdown_report_includes_project_management_actions_when_state_is_pr
 
     assert "## 项目管理待办" in report
     assert "摘要 | 项目待办: 1 | 阻塞报告待办: 1" in report
+    assert "责任方时限 | 责任方: 客户 / 设计院" in report
     assert "rfi-client-response-rfi-foundation-001" in report
     assert "建议动作: 跟进客户 / 设计院回复" in report
 
