@@ -1,12 +1,17 @@
 from structural_screening_agent.bv_review.ui import (
     build_bv_basis_items,
+    build_foundation_evidence_display_rows,
     build_bv_project_management_dashboard_view,
     build_bv_report_preview_sections,
 )
 from structural_screening_agent.bv_review.project_management import (
     build_project_management_actions,
 )
-from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
+from structural_screening_agent.bv_review.project_state import (
+    ExtractedField,
+    ProjectReviewState,
+    RFIItem,
+)
 from structural_screening_agent.bv_review.ui_state import default_bv_review_intake
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
@@ -72,3 +77,38 @@ def test_bv_project_management_dashboard_view_localizes_summary_and_rows() -> No
     assert empty_view.summary_rows == []
     assert empty_view.action_rows == []
     assert empty_view.empty_caption == "No project management actions are currently open."
+
+
+def test_foundation_evidence_display_rows_localize_status_and_documents() -> None:
+    intake = default_bv_review_intake()
+    state = ProjectReviewState(
+        project_id="pv-ui-foundation-evidence",
+        intake=intake,
+        extracted_fields=[
+            ExtractedField(
+                field_id="bearing_capacity_characteristic_kpa",
+                name="Bearing capacity characteristic",
+                candidate_value="180",
+                unit="kPa",
+                source_document_id="geotechnical-report-g001",
+                page_or_section="Geotechnical parameter table",
+                quote="fak = 180 kPa",
+                confidence=0.88,
+                is_confirmed=False,
+                include_in_calculation=False,
+            )
+        ],
+    )
+
+    zh_rows = build_foundation_evidence_display_rows(state, "zh")
+    en_rows = build_foundation_evidence_display_rows(state, "en")
+
+    assert zh_rows[0]["证据项"] == "地勘参数证据"
+    assert zh_rows[0]["状态"] == "缺失"
+    assert zh_rows[0]["缺失资料"] == "地勘报告"
+    assert zh_rows[0]["阻塞基础计算"] == "是"
+    assert en_rows[0]["Evidence Item"] == "Geotechnical Parameters"
+    assert en_rows[0]["Status"] == "Missing"
+    assert en_rows[0]["Missing Documents"] == "Geotechnical Report"
+    assert en_rows[0]["Blocks Foundation Calculation"] == "Yes"
+    assert "地勘报告" not in str(en_rows)

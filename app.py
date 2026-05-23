@@ -110,6 +110,7 @@ from structural_screening_agent.bv_review.service_scope import (
 )
 from structural_screening_agent.bv_review.ui import (
     build_bv_basis_items,
+    build_foundation_evidence_display_rows,
     build_bv_path_items,
     build_bv_plan_items,
     build_bv_report_preview_sections,
@@ -1855,6 +1856,27 @@ with bv_review_tab:
                 st.write(f"- {localize_report_gate_reason(reason, ui_language)}")
         for note in report_draft_gate.notes:
             st.caption(note)
+        foundation_evidence_rows = build_foundation_evidence_display_rows(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown(
+            "##### Foundation Evidence Path"
+            if ui_language == "en"
+            else "基础证据路径"
+        )
+        if foundation_evidence_rows:
+            st.dataframe(
+                foundation_evidence_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "Foundation review is not selected for this project."
+                if ui_language == "en"
+                else "当前项目未选择地基与基础审核对象。"
+            )
         report_gate_evidence_rows = build_report_gate_evidence_rows(
             report_draft_gate,
             ui_language,

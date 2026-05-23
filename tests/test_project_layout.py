@@ -100,7 +100,10 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "view.conclusion_overview_card" in source
     assert "view.evidence_overview_cards" in source
     assert "build_bv_basis_items" in source
+    assert "build_foundation_evidence_display_rows" in source
     assert "build_bv_report_preview_sections" in source
+    assert "Foundation Evidence Path" in source
+    assert "基础证据路径" in source
     assert 'translate(ui_language, "critical_calculation_results")' in source
     assert 'translate(ui_language, "detailed_calculation_results")' in source
     assert 'translate(ui_language, "detailed_evidence_status")' in source

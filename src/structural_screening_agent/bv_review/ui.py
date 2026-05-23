@@ -11,7 +11,15 @@ from structural_screening_agent.bv_review.project_management import (
     build_project_management_action_summary,
     build_project_management_action_summary_rows,
 )
-from structural_screening_agent.bv_review.ui_state import BV_REVIEW_OBJECT_LABELS
+from structural_screening_agent.bv_review.foundation_evidence import (
+    FoundationEvidenceItem,
+    build_foundation_evidence_path,
+)
+from structural_screening_agent.bv_review.project_state import ProjectReviewState
+from structural_screening_agent.bv_review.ui_state import (
+    BV_DOCUMENT_LABELS,
+    BV_REVIEW_OBJECT_LABELS,
+)
 from structural_screening_agent.localization import Language
 
 
@@ -150,3 +158,99 @@ def build_bv_project_management_dashboard_view(
         action_rows=build_project_management_action_rows(actions, language),
         empty_caption=empty_caption,
     )
+
+
+def build_foundation_evidence_display_rows(
+    state: ProjectReviewState,
+    language: Language,
+) -> list[dict[str, object]]:
+    evidence_items = build_foundation_evidence_path(state)
+    if language == "en":
+        return [_foundation_evidence_row_en(item) for item in evidence_items]
+    return [_foundation_evidence_row_zh(item) for item in evidence_items]
+
+
+def _foundation_evidence_row_zh(
+    item: FoundationEvidenceItem,
+) -> dict[str, object]:
+    return {
+        "证据项": _foundation_evidence_title(item.evidence_id, "zh"),
+        "状态": _foundation_evidence_status_label(item.status, "zh"),
+        "必要资料": _document_list_label(item.required_document_keys, "zh"),
+        "缺失资料": _document_list_label(item.missing_document_keys, "zh"),
+        "部分资料": _document_list_label(item.partial_document_keys, "zh"),
+        "已确认字段": ", ".join(item.confirmed_field_ids) or "无",
+        "未确认字段": ", ".join(item.unconfirmed_field_ids) or "无",
+        "缺失字段": ", ".join(item.missing_field_ids) or "无",
+        "阻塞基础计算": "是" if item.blocks_calculation else "否",
+        "建议动作": item.review_action,
+    }
+
+
+def _foundation_evidence_row_en(
+    item: FoundationEvidenceItem,
+) -> dict[str, object]:
+    return {
+        "Evidence Item": _foundation_evidence_title(item.evidence_id, "en"),
+        "Status": _foundation_evidence_status_label(item.status, "en"),
+        "Required Documents": _document_list_label(item.required_document_keys, "en"),
+        "Missing Documents": _document_list_label(item.missing_document_keys, "en"),
+        "Partial Documents": _document_list_label(item.partial_document_keys, "en"),
+        "Confirmed Fields": ", ".join(item.confirmed_field_ids) or "None",
+        "Unconfirmed Fields": ", ".join(item.unconfirmed_field_ids) or "None",
+        "Missing Fields": ", ".join(item.missing_field_ids) or "None",
+        "Blocks Foundation Calculation": "Yes" if item.blocks_calculation else "No",
+        "Review Action": _foundation_evidence_action_label(item.evidence_id),
+    }
+
+
+def _foundation_evidence_title(evidence_id: str, language: Language) -> str:
+    labels = {
+        "geotechnical_parameters": {
+            "zh": "地勘参数证据",
+            "en": "Geotechnical Parameters",
+        },
+        "foundation_geometry": {
+            "zh": "基础几何与布置证据",
+            "en": "Foundation Geometry and Layout",
+        },
+        "foundation_reactions": {
+            "zh": "基础最不利反力证据",
+            "en": "Foundation Governing Reactions",
+        },
+    }
+    return labels.get(evidence_id, {}).get(language, evidence_id)
+
+
+def _foundation_evidence_status_label(status: str, language: Language) -> str:
+    labels = {
+        "satisfied": {"zh": "满足", "en": "Satisfied"},
+        "partial": {"zh": "部分满足", "en": "Partial"},
+        "missing": {"zh": "缺失", "en": "Missing"},
+    }
+    return labels.get(status, {}).get(language, status)
+
+
+def _document_list_label(document_keys: list[str], language: Language) -> str:
+    empty_label = "None" if language == "en" else "无"
+    return ", ".join(
+        BV_DOCUMENT_LABELS.get(key, {}).get(language, key) for key in document_keys
+    ) or empty_label
+
+
+def _foundation_evidence_action_label(evidence_id: str) -> str:
+    actions = {
+        "geotechnical_parameters": (
+            "Provide or confirm the geotechnical report, characteristic bearing capacity, "
+            "pile side resistance, soil parameters, and groundwater conditions."
+        ),
+        "foundation_geometry": (
+            "Provide or confirm pile diameter, pile length, pile type, pile spacing, "
+            "and the foundation layout source."
+        ),
+        "foundation_reactions": (
+            "Provide or confirm governing uplift, compression, horizontal reaction, "
+            "and load-combination source before foundation screening calculation."
+        ),
+    }
+    return actions.get(evidence_id, evidence_id)
