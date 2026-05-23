@@ -200,8 +200,8 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "Finding / RFI Lifecycle" in app_source
     assert "发现项与澄清问题生命周期" in app_source
     assert "build_responsible_party_status_rows" in app_source
-    assert "Responsible Party Status" in app_source
-    assert "责任方待办状态" in app_source
+    assert "Responsible Party Status and SLA" in app_source
+    assert "责任方待办与时限状态" in app_source
     assert "build_project_management_actions" in app_source
     assert "build_bv_project_management_dashboard_view" in app_source
     assert "build_project_management_action_summary" in ui_source

@@ -1667,9 +1667,9 @@ with bv_review_tab:
             ui_language,
         )
         st.markdown(
-            "##### Responsible Party Status"
+            "##### Responsible Party Status and SLA"
             if ui_language == "en"
-            else "责任方待办状态"
+            else "责任方待办与时限状态"
         )
         if responsible_party_rows:
             st.dataframe(

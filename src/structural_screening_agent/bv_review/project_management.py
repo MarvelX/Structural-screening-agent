@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date, timedelta
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -34,6 +35,8 @@ class ProjectManagementAction(BaseModel):
     trigger_evidence_ids: list[str] = Field(min_length=1)
     recommended_action: str = Field(min_length=1)
     blocks_report_issue: bool = False
+    opened_at: Optional[str] = None
+    sla_days: Optional[int] = Field(default=None, ge=0)
 
 
 class ProjectManagementActionSummary(BaseModel):
@@ -150,7 +153,9 @@ def build_finding_lifecycle_summary_rows(
 def build_responsible_party_status_rows(
     actions: list[ProjectManagementAction],
     language: ProjectActionLanguage,
+    reference_date: Optional[date] = None,
 ) -> list[dict[str, object]]:
+    current_date = reference_date or date.today()
     grouped_actions: dict[str, list[ProjectManagementAction]] = {}
     for action in actions:
         grouped_actions.setdefault(action.owner_role, []).append(action)
@@ -166,6 +171,13 @@ def build_responsible_party_status_rows(
                 "高优先级": sum(
                     1 for action in owner_actions if action.priority == "high"
                 ),
+                "超期数": _overdue_action_count(owner_actions, current_date),
+                "SLA状态": _owner_sla_status_label(owner_actions, current_date, "zh"),
+                "最早到期": _earliest_due_date_value(
+                    owner_actions,
+                    current_date,
+                    "zh",
+                ),
                 "下一项行动": owner_actions[0].action_id,
             }
             for owner_role, owner_actions in grouped_actions.items()
@@ -179,6 +191,13 @@ def build_responsible_party_status_rows(
             ),
             "High Priority": sum(
                 1 for action in owner_actions if action.priority == "high"
+            ),
+            "Overdue Actions": _overdue_action_count(owner_actions, current_date),
+            "SLA Status": _owner_sla_status_label(owner_actions, current_date, "en"),
+            "Earliest Due": _earliest_due_date_value(
+                owner_actions,
+                current_date,
+                "en",
             ),
             "Next Action": owner_actions[0].action_id,
         }
@@ -475,6 +494,97 @@ def _agent_event_waits_for_engineer(
 
 def _calculation_run_requires_follow_up(run: CalculationRun) -> bool:
     return run.status in {"blocked", "failed"}
+
+
+def _overdue_action_count(
+    actions: list[ProjectManagementAction],
+    reference_date: date,
+) -> int:
+    return sum(
+        1 for action in actions if _action_sla_status(action, reference_date) == "overdue"
+    )
+
+
+def _owner_sla_status_label(
+    actions: list[ProjectManagementAction],
+    reference_date: date,
+    language: ProjectActionLanguage,
+) -> str:
+    statuses = [_action_sla_status(action, reference_date) for action in actions]
+    if "overdue" in statuses:
+        status = "overdue"
+    elif "due_today" in statuses:
+        status = "due_today"
+    elif "on_track" in statuses:
+        status = "on_track"
+    else:
+        status = "not_tracked"
+    labels = {
+        "not_tracked": {"zh": "未跟踪", "en": "Not Tracked"},
+        "on_track": {"zh": "按期", "en": "On Track"},
+        "due_today": {"zh": "今日到期", "en": "Due Today"},
+        "overdue": {"zh": "已超期", "en": "Overdue"},
+    }
+    return labels[status][language]
+
+
+def _earliest_due_date_value(
+    actions: list[ProjectManagementAction],
+    reference_date: date,
+    language: ProjectActionLanguage,
+) -> str:
+    due_dates = [
+        due_date
+        for due_date in (_action_due_date(action) for action in actions)
+        if due_date is not None
+    ]
+    if not due_dates:
+        return "未跟踪" if language == "zh" else "Not Tracked"
+    return min(due_dates).isoformat()
+
+
+def _action_sla_status(
+    action: ProjectManagementAction,
+    reference_date: date,
+) -> str:
+    due_date = _action_due_date(action)
+    if due_date is None:
+        return "not_tracked"
+    if reference_date > due_date:
+        return "overdue"
+    if reference_date == due_date:
+        return "due_today"
+    return "on_track"
+
+
+def _action_due_date(action: ProjectManagementAction) -> Optional[date]:
+    opened_date = _parse_iso_date(action.opened_at)
+    if opened_date is None:
+        return None
+    return opened_date + timedelta(days=_action_sla_days(action))
+
+
+def _action_sla_days(action: ProjectManagementAction) -> int:
+    if action.sla_days is not None:
+        return action.sla_days
+    return {
+        "rfi_client_response": 7,
+        "rfi_engineer_closeout": 2,
+        "finding_closeout": 3,
+        "agent_engineer_review": 2,
+        "calculation_follow_up": 2,
+        "quality_gate_follow_up": 3,
+        "report_revision": 5,
+    }[action.category]
+
+
+def _parse_iso_date(value: Optional[str]) -> Optional[date]:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value[:10])
+    except ValueError:
+        return None
 
 
 def _action_sort_key(action: ProjectManagementAction) -> tuple[int, int, str]:

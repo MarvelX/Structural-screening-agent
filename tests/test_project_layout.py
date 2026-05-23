@@ -109,8 +109,8 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "发现项与澄清问题生命周期" in source
     assert "Finding / RFI Lifecycle" in source
     assert "build_responsible_party_status_rows" in source
-    assert "责任方待办状态" in source
-    assert "Responsible Party Status" in source
+    assert "责任方待办与时限状态" in source
+    assert "Responsible Party Status and SLA" in source
     assert "build_bv_gate_panel_text" in source
     assert "gate_panel_text.quality_gate_heading" in source
     assert "Quality Gate Status" not in source
