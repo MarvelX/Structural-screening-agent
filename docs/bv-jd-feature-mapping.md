@@ -18,9 +18,9 @@
 | 审查并理解适用的合同要求、法规、技术标准和项目规范 | `Project Review Intake`、客户要求输入、`Review Basis Builder`、合同资料 checklist | 已把合同技术要求作为资料项，支持客户要求文本进入项目 intake；basis builder 可把项目规范和合同要求作为审核依据的一部分 | 增加合同条款摘录、法规清单、项目规范差异记录和合同优先级冲突提示 |
 | 定义和审查项目特定设计审核计划、检查与测试计划及相关程序 | `ITP & Review Plan Generator`、`ReviewPlanAgentOutput`、review plan 表 | 已根据项目阶段、资料状态和审核对象生成 ITP / review plan，包含方法、责任角色、交付物和阻塞条件 | 增加公司程序模板、hold / witness / review point 分类和可导出的 ITP 表格 |
 | 执行或监督设计审核工作，并出具专业的设计审查报告 | `Local Agent Workflow Runner`、`Risk & NCR Agent`、`Design Review Report Composer`、Markdown / Word / PDF 导出 | 已支持本地 deterministic agent workflow、工程师复核队列、报告草稿门禁、BV 风格报告预览及 Markdown / Word / PDF 导出 | 增加报告 revision history、审核人签名状态、RFI closeout 后的再签发流程；继续声明不替代 BV 官方签发 |
-| 保持内外部沟通，与客户、设计院及承包商进行技术联络 | `RFIItem`、RFI register、客户回复、增量复核触发 | 已有 RFI 问题编号、责任方、触发依据、所需资料、状态、客户回复和是否触发增量复核；报告门禁能识别未关闭 RFI | 增加客户、设计院及承包商联系人视图、澄清历史、会议纪要和责任方 SLA |
+| 保持内外部沟通，与客户、设计院及承包商进行技术联络 | `RFIItem`、RFI register、客户回复、增量复核触发、`Foundation Review Evidence Path` 草稿 RFI | 已有 RFI 问题编号、责任方、触发依据、所需资料、状态、客户回复和是否触发增量复核；报告门禁能识别未关闭 RFI；基础证据路径可把地勘参数证据缺口转换为工程师复核后的草稿 RFI，例如 `foundation_evidence_blocked_geotechnical_parameters` | 增加客户、设计院及承包商联系人视图、澄清历史、会议纪要和责任方 SLA |
 | 识别设计中的潜在风险、错误、遗漏及不经济之处，并提出优化建议 | `Risk & Nonconformity Register`、`Optimization Advisor`、report findings | 已生成风险 / 不符合项 / 优化建议，风险带等级、触发依据、影响范围、建议措施和是否阻塞报告签发 | 增加成本 / 施工可行性维度、典型错误库、优化建议分类和关闭验证要求 |
-| 对结构荷载计算、连接节点设计、地基承载力计算等进行校核 | 既有门式刚架屋面光伏 screening kernel、Foundation Engine、Superstructure Engine、Calculation Check Agent | 已有屋面光伏增载筛查；地面固定支架已接入基础抗拔 / 地基承载力筛查和上部构件强度、稳定、长细比筛查级计算接口；计算结果保留运行记录和结构化错误 | 增加连接节点 force path、风 / 雪 / 地震荷载组合、基础抗倾覆、构件库和更强的单位校验 |
+| 对结构荷载计算、连接节点设计、地基承载力计算等进行校核 | 既有门式刚架屋面光伏 screening kernel、Foundation Engine、Superstructure Engine、Calculation Check Agent、基础证据路径 | 已有屋面光伏增载筛查；地面固定支架已接入基础抗拔 / 地基承载力筛查和上部构件强度、稳定、长细比筛查级计算接口；计算结果保留运行记录和结构化错误；基础证据路径会在地勘报告、地基承载力特征值或桩侧阻力标准值证据不足时阻止计算并生成草稿 RFI | 增加连接节点 force path、风 / 雪 / 地震荷载组合、基础抗倾覆、构件库和更强的单位校验 |
 | 独立就设计相关的技术问题做出判断和决策 | 工程师数据锁定、Agent review approve / reject、报告草稿门禁、签发边界声明 | 已实现人工确认字段、锁定计算输入、批准 / 驳回 Agent 产物、阻塞报告草稿和结构化 evidence；系统把独立技术判断保留给工程师，不让 Agent 直接作结构安全结论 | 增加多级 reviewer、判断依据备注、争议项记录和复核意见追踪 |
 | 向客户推广 BV 的服务与解决方案 | `Service Scope Recommendation` 方向、job application microsite、作品集 narrative | 当前 README、showcase 和 job application 页面已把工具定位为第三方光伏设计审核工作台，能展示 BV 服务与解决方案价值：资料审查、风险发现、RFI、报告交付 | 增加服务范围建议模块，把资料缺口和风险项映射到可建议的 BV 服务包，但避免变成 CRM |
 | 负责设计项目管理工作 | `ProjectReviewState`、阶段状态、RFI 状态、calculation run history、agent event trace | 已有项目状态、阶段流转、资料版本、RFI、工程师确认、Agent 事件追踪和报告门禁证据 | 增加项目 dashboard、任务责任人、时间线、报告 revision history 和长期状态持久化视图 |
@@ -36,7 +36,7 @@
 5. 多 Agent 工作流：资料接收、依据整理、审核计划、结构路径、计算校核、风险 / NCR、报告编制。
 6. 工程师门禁：字段确认、计算锁定、Agent 产物批准 / 驳回、报告草稿门禁。
 7. 确定性计算：屋面门刚筛查、基础筛查、上部支架构件筛查，均保留输入和运行记录。
-8. RFI 闭环：客户补资、版本差分、增量复核、未关闭 RFI 阻塞报告草稿。
+8. RFI 闭环：客户补资、版本差分、增量复核、未关闭 RFI 阻塞报告草稿；基础证据路径可生成 `foundation_evidence_blocked_geotechnical_parameters` 等草稿 RFI。
 9. 报告输出：BV 风格报告预览，Markdown / Word / PDF 导出。
 
 ## 面试表达建议

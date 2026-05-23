@@ -49,3 +49,18 @@ def test_bv_jd_feature_mapping_states_current_boundaries() -> None:
         "不做完整有限元分析",
     ]:
         assert phrase in content
+
+
+def test_bv_jd_feature_mapping_and_roadmap_include_foundation_evidence_rfi_closure() -> None:
+    root = project_root()
+    mapping = (root / "docs" / "bv-jd-feature-mapping.md").read_text()
+    roadmap = (root / "docs" / "bv-pv-design-review-workbench-roadmap.md").read_text()
+
+    for phrase in [
+        "Foundation Review Evidence Path",
+        "基础证据路径",
+        "草稿 RFI",
+        "foundation_evidence_blocked_geotechnical_parameters",
+    ]:
+        assert phrase in mapping
+        assert phrase in roadmap

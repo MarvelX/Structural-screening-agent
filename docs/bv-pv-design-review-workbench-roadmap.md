@@ -55,25 +55,27 @@ Status: started.
 Implemented:
 
 - `Foundation Review Evidence Path` domain helper, covering geotechnical parameters, foundation geometry, and foundation reaction evidence readiness before foundation screening calculations.
+- 基础证据路径 / foundation evidence gaps now become traceable draft RFI items after engineer review. For example, missing geotechnical evidence can produce `foundation_evidence_blocked_geotechnical_parameters`, which appears in the blocked calculation draft RFI workflow and workbench rows.
 
 Candidate modules:
 
 - mounting structure checklist and risk rules
-- foundation review checklist and bearing capacity evidence path
+- foundation review checklist and bearing capacity evidence path deeper rules
 - connection detail review checklist
 - corrosion and durability review
 - PV array layout and O&M access interface review
 - basic cable tray / grounding interface checklist
 
-Suggested first target:
+First target status:
 
 `Foundation Review Evidence Path`
 
-Reason:
+Current result:
 
 - BV JD explicitly mentions foundation engineering and bearing capacity.
 - It is strongly connected to document completeness through geotechnical reports.
-- It can start as evidence-path and checklist logic before adding calculations.
+- The current implementation checks 地勘参数证据, 基础几何与布置证据, and 基础最不利反力证据 before screening-level foundation calculations.
+- If evidence is incomplete, the workbench can create a 草稿 RFI for engineer review instead of silently proceeding with weak inputs.
 
 ## Phase 3: Calculation and Evidence Deepening
 
