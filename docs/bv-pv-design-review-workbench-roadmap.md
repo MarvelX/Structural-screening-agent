@@ -21,6 +21,7 @@ Already present in the repository:
 - BV UI helper smoke tests and app import checks that do not require manual Streamlit interaction.
 - BV section renderer extraction: simple BV report section rendering now lives in `src/structural_screening_agent/bv_review/ui.py` behind a Streamlit-like protocol and has direct unit coverage.
 - BV label formatter extraction: BV form and calculation labels now share `format_bv_label` with language fallback behavior covered by unit tests.
+- BV evidence table text extraction: evidence table headings and empty states now share a tested bilingual text helper outside `app.py`.
 - UI / report evidence matrix alignment: workbench rows and exported BV reports now trace final report findings to fields, document versions, intake document status, or missing evidence.
 - workspace cleanliness policy in `docs/workspace-cleanliness.md`, with tests that keep ignored local artifact rules documented.
 

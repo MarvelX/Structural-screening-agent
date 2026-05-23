@@ -77,6 +77,7 @@ def test_bv_roadmap_reflects_current_traceability_and_clean_workspace_baseline()
         "BV UI helper smoke tests",
         "BV section renderer extraction",
         "BV label formatter extraction",
+        "BV evidence table text extraction",
         "default Pytest duplicate-copy exclusion",
         "workspace cleanliness policy",
         "UI / report evidence matrix alignment",

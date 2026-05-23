@@ -134,11 +134,10 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "本地 Agent 事件追踪" in source
     assert 'translate(ui_language, "bv_review_warning_standards")' in source
     assert 'translate(ui_language, "bv_review_warning_objects")' in source
-    assert "报告门禁证据" in source
-    assert "Report Gate Evidence" in source
-    assert "证据矩阵" in source
-    assert "Evidence Matrix" in source
-    assert "No structured report gate evidence is available." in source
+    assert "build_bv_evidence_table_text" in source
+    assert "evidence_table_text.report_gate_heading" in source
+    assert "evidence_table_text.evidence_matrix_heading" in source
+    assert "No structured report gate evidence is available." not in source
     assert "view.traceability_cards" in source
     assert "view.assessment_metric_cards" in source
     assert "view.conclusion_overview_card" in source
@@ -148,8 +147,7 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "def _render_bv_section" not in source
     assert "build_foundation_evidence_display_rows" in source
     assert "build_bv_report_preview_sections" in source
-    assert "Foundation Evidence Path" in source
-    assert "基础证据路径" in source
+    assert "evidence_table_text.foundation_heading" in source
     assert 'translate(ui_language, "critical_calculation_results")' in source
     assert 'translate(ui_language, "detailed_calculation_results")' in source
     assert 'translate(ui_language, "detailed_evidence_status")' in source

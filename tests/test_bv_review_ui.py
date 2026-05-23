@@ -1,5 +1,6 @@
 from structural_screening_agent.bv_review.ui import (
     build_bv_basis_items,
+    build_bv_evidence_table_text,
     build_foundation_evidence_display_rows,
     build_bv_project_management_dashboard_view,
     build_bv_report_preview_sections,
@@ -52,6 +53,22 @@ def test_format_bv_label_prefers_language_then_english_then_raw_value() -> None:
     assert format_bv_label(labels, "foundation", "zh") == "基础验算"
     assert format_bv_label(labels, "superstructure", "zh") == "Superstructure"
     assert format_bv_label(labels, "unknown", "zh") == "unknown"
+
+
+def test_bv_evidence_table_text_localizes_headings_and_empty_captions() -> None:
+    zh_text = build_bv_evidence_table_text("zh")
+    en_text = build_bv_evidence_table_text("en")
+
+    assert zh_text.foundation_heading == "基础证据路径"
+    assert zh_text.report_gate_empty_caption == "当前没有结构化报告门禁证据。"
+    assert zh_text.closed_rfi_heading == "已关闭澄清问题增量复核证据"
+    assert "No " not in str(zh_text)
+    assert "RFI" not in zh_text.closed_rfi_heading
+    assert en_text.foundation_heading == "Foundation Evidence Path"
+    assert en_text.evidence_matrix_empty_caption == (
+        "No finding source evidence is available yet."
+    )
+    assert en_text.closed_rfi_heading == "Closed RFI Recheck Evidence"
 
 
 def test_bv_report_preview_sections_support_chinese_and_english() -> None:

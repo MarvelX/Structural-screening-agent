@@ -32,6 +32,17 @@ class BVProjectManagementDashboardView(BaseModel):
     empty_caption: str = Field(min_length=1)
 
 
+class BVEvidenceTableText(BaseModel):
+    foundation_heading: str = Field(min_length=1)
+    foundation_empty_caption: str = Field(min_length=1)
+    report_gate_heading: str = Field(min_length=1)
+    report_gate_empty_caption: str = Field(min_length=1)
+    evidence_matrix_heading: str = Field(min_length=1)
+    evidence_matrix_empty_caption: str = Field(min_length=1)
+    closed_rfi_heading: str = Field(min_length=1)
+    closed_rfi_empty_caption: str = Field(min_length=1)
+
+
 class StreamlitSectionRenderer(Protocol):
     def markdown(self, text: str) -> None:
         ...
@@ -57,6 +68,32 @@ def format_bv_label(
 ) -> str:
     localized = label_map.get(value, {})
     return localized.get(language) or localized.get("en") or value
+
+
+def build_bv_evidence_table_text(language: Language) -> BVEvidenceTableText:
+    if language == "en":
+        return BVEvidenceTableText(
+            foundation_heading="Foundation Evidence Path",
+            foundation_empty_caption="Foundation review is not selected for this project.",
+            report_gate_heading="Report Gate Evidence",
+            report_gate_empty_caption="No structured report gate evidence is available.",
+            evidence_matrix_heading="Evidence Matrix",
+            evidence_matrix_empty_caption="No finding source evidence is available yet.",
+            closed_rfi_heading="Closed RFI Recheck Evidence",
+            closed_rfi_empty_caption=(
+                "No closed RFI incremental recheck evidence is available."
+            ),
+        )
+    return BVEvidenceTableText(
+        foundation_heading="基础证据路径",
+        foundation_empty_caption="当前项目未选择地基与基础审核对象。",
+        report_gate_heading="报告门禁证据",
+        report_gate_empty_caption="当前没有结构化报告门禁证据。",
+        evidence_matrix_heading="证据矩阵",
+        evidence_matrix_empty_caption="当前还没有发现项来源证据。",
+        closed_rfi_heading="已关闭澄清问题增量复核证据",
+        closed_rfi_empty_caption="当前没有已关闭澄清问题的增量复核证据。",
+    )
 
 
 def format_bv_object_labels(values: list[str], language: Language) -> str:

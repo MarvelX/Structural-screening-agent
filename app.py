@@ -111,6 +111,7 @@ from structural_screening_agent.bv_review.service_scope import (
 )
 from structural_screening_agent.bv_review.ui import (
     build_bv_basis_items,
+    build_bv_evidence_table_text,
     build_foundation_evidence_display_rows,
     build_bv_path_items,
     build_bv_plan_items,
@@ -1885,11 +1886,8 @@ with bv_review_tab:
             reviewed_workflow_state,
             ui_language,
         )
-        st.markdown(
-            "##### Foundation Evidence Path"
-            if ui_language == "en"
-            else "基础证据路径"
-        )
+        evidence_table_text = build_bv_evidence_table_text(ui_language)
+        st.markdown(f"##### {evidence_table_text.foundation_heading}")
         if foundation_evidence_rows:
             st.dataframe(
                 foundation_evidence_rows,
@@ -1897,18 +1895,12 @@ with bv_review_tab:
                 use_container_width=True,
             )
         else:
-            st.caption(
-                "Foundation review is not selected for this project."
-                if ui_language == "en"
-                else "当前项目未选择地基与基础审核对象。"
-            )
+            st.caption(evidence_table_text.foundation_empty_caption)
         report_gate_evidence_rows = build_report_gate_evidence_rows(
             report_draft_gate,
             ui_language,
         )
-        st.markdown(
-            "##### Report Gate Evidence" if ui_language == "en" else "报告门禁证据"
-        )
+        st.markdown(f"##### {evidence_table_text.report_gate_heading}")
         if report_gate_evidence_rows:
             st.dataframe(
                 report_gate_evidence_rows,
@@ -1916,17 +1908,13 @@ with bv_review_tab:
                 use_container_width=True,
             )
         else:
-            st.caption(
-                "No structured report gate evidence is available."
-                if ui_language == "en"
-                else "当前没有结构化报告门禁证据。"
-            )
+            st.caption(evidence_table_text.report_gate_empty_caption)
         evidence_matrix_rows = build_evidence_matrix_rows(
             reviewed_workflow_state,
             ui_language,
             report_risks=effective_bv_result.risks,
         )
-        st.markdown("##### Evidence Matrix" if ui_language == "en" else "证据矩阵")
+        st.markdown(f"##### {evidence_table_text.evidence_matrix_heading}")
         if evidence_matrix_rows:
             st.dataframe(
                 evidence_matrix_rows,
@@ -1934,20 +1922,12 @@ with bv_review_tab:
                 use_container_width=True,
             )
         else:
-            st.caption(
-                "No finding source evidence is available yet."
-                if ui_language == "en"
-                else "当前还没有发现项来源证据。"
-            )
+            st.caption(evidence_table_text.evidence_matrix_empty_caption)
         closed_rfi_recheck_rows = build_closed_rfi_incremental_recheck_rows(
             reviewed_workflow_state,
             ui_language,
         )
-        st.markdown(
-            "##### Closed RFI Recheck Evidence"
-            if ui_language == "en"
-            else "已关闭 RFI 增量复核证据"
-        )
+        st.markdown(f"##### {evidence_table_text.closed_rfi_heading}")
         if closed_rfi_recheck_rows:
             st.dataframe(
                 closed_rfi_recheck_rows,
@@ -1955,11 +1935,7 @@ with bv_review_tab:
                 use_container_width=True,
             )
         else:
-            st.caption(
-                "No closed RFI incremental recheck evidence is available."
-                if ui_language == "en"
-                else "当前没有已关闭 RFI 的增量复核证据。"
-            )
+            st.caption(evidence_table_text.closed_rfi_empty_caption)
 
         if persisted_workflow_is_active and reviewed_workflow_state.rfi_items:
             persisted_rfi_register_heading = (
