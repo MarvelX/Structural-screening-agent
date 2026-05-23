@@ -24,6 +24,13 @@ def test_app_py_compiles() -> None:
     py_compile.compile(str(root / "app.py"), doraise=True)
 
 
+def test_pytest_config_ignores_duplicate_local_copy_tests_by_default() -> None:
+    root = project_root()
+    source = (root / "pyproject.toml").read_text()
+
+    assert "--ignore-glob=* 2.py" in source
+
+
 def test_app_py_uses_tabbed_information_architecture() -> None:
     root = project_root()
     source = (root / "app.py").read_text()
