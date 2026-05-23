@@ -90,6 +90,10 @@ from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan_from_closed_rfis,
     diff_extracted_fields,
 )
+from structural_screening_agent.bv_review.foundation_evidence import (
+    FoundationEvidenceItem,
+    build_foundation_evidence_path,
+)
 from structural_screening_agent.bv_review.models import (
     BVReviewIntake,
     BVReviewResult,
@@ -160,6 +164,7 @@ __all__ = [
     "EngineerApproval",
     "ExtractedField",
     "FieldDiff",
+    "FoundationEvidenceItem",
     "FoundationEngineInput",
     "IncrementalRecheckPlan",
     "ProjectReviewState",
@@ -191,6 +196,7 @@ __all__ = [
     "apply_persisted_authorized_agent_response",
     "build_agent_response_application_packet",
     "build_foundation_calculation_run",
+    "build_foundation_evidence_path",
     "build_agent_provider_invocation_request",
     "build_agent_provider_invocation_rows",
     "build_agent_response_application_plan",

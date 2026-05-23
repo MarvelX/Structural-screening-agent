@@ -50,6 +50,12 @@ Next improvements:
 
 Goal: expand from one implemented technical module to a broader PV civil / structural review scope.
 
+Status: started.
+
+Implemented:
+
+- `Foundation Review Evidence Path` domain helper, covering geotechnical parameters, foundation geometry, and foundation reaction evidence readiness before foundation screening calculations.
+
 Candidate modules:
 
 - mounting structure checklist and risk rules
