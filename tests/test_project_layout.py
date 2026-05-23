@@ -31,6 +31,38 @@ def test_pytest_config_ignores_duplicate_local_copy_tests_by_default() -> None:
     assert "--ignore-glob=* 2.py" in source
 
 
+def test_workspace_cleanliness_policy_documents_ignored_local_artifacts() -> None:
+    root = project_root()
+    gitignore = (root / ".gitignore").read_text()
+    policy = (root / "docs" / "workspace-cleanliness.md").read_text()
+
+    for pattern in [
+        "__pycache__/",
+        "*.py[cod]",
+        ".pytest_cache/",
+        ".DS_Store",
+        "*.egg-info/",
+        ".local_data/",
+        ".venv/",
+        "tmp/",
+        ".superpowers/",
+        ".pycache-check/",
+        "* 2.py",
+        "* 2.md",
+        "* 2/",
+    ]:
+        assert pattern in gitignore
+        assert pattern in policy
+
+    for phrase in [
+        "Do not delete `* 2.py` or `* 2.md` duplicate local copies",
+        "Do not commit local runtime state",
+        "Safe cleanup candidates",
+        "Requires confirmation",
+    ]:
+        assert phrase in policy
+
+
 def test_app_py_uses_tabbed_information_architecture() -> None:
     root = project_root()
     source = (root / "app.py").read_text()

@@ -20,6 +20,7 @@ Already present in the repository:
 - portfolio narrative page and showcase support material under `docs/showcase/`.
 - BV UI helper smoke tests and app import checks that do not require manual Streamlit interaction.
 - UI / report evidence matrix alignment: workbench rows and exported BV reports now trace final report findings to fields, document versions, intake document status, or missing evidence.
+- workspace cleanliness policy in `docs/workspace-cleanliness.md`, with tests that keep ignored local artifact rules documented.
 
 Open caution:
 

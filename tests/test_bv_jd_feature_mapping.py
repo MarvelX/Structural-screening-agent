@@ -76,6 +76,7 @@ def test_bv_roadmap_reflects_current_traceability_and_clean_workspace_baseline()
         "portfolio narrative page",
         "BV UI helper smoke tests",
         "default Pytest duplicate-copy exclusion",
+        "workspace cleanliness policy",
         "UI / report evidence matrix alignment",
     ]:
         assert completed_phrase in roadmap
