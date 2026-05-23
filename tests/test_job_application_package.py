@@ -131,6 +131,9 @@ def test_readme_and_app_expose_public_demo_context() -> None:
 def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls() -> None:
     root = project_root()
     app_source = (root / "app.py").read_text()
+    ui_source = (
+        root / "src" / "structural_screening_agent" / "bv_review" / "ui.py"
+    ).read_text()
     gitignore = (root / ".gitignore").read_text()
 
     assert "def _label(" in app_source
@@ -192,11 +195,12 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert '"BV Service Scope Recommendations"' in app_source
     assert '"BV 服务范围建议"' in app_source
     assert "build_project_management_actions" in app_source
-    assert "build_project_management_action_summary" in app_source
-    assert "build_project_management_action_summary_rows" in app_source
-    assert "build_project_management_action_rows" in app_source
-    assert '"Project Management Action Dashboard"' in app_source
-    assert '"项目管理行动看板"' in app_source
+    assert "build_bv_project_management_dashboard_view" in app_source
+    assert "build_project_management_action_summary" in ui_source
+    assert "build_project_management_action_summary_rows" in ui_source
+    assert "build_project_management_action_rows" in ui_source
+    assert '"Project Management Action Dashboard"' in ui_source
+    assert '"项目管理行动看板"' in ui_source
     assert "build_agent_prompt_packages" in app_source
     assert "build_agent_prompt_package_rows" in app_source
     assert "build_agent_provider_invocation_request" in app_source

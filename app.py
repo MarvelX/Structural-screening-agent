@@ -74,11 +74,9 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.project_management import (
-    build_project_management_action_summary,
-    build_project_management_action_summary_rows,
-    build_project_management_action_rows,
     build_project_management_actions,
 )
+from structural_screening_agent.bv_review.ui import build_bv_project_management_dashboard_view
 from structural_screening_agent.bv_review.agent_application import (
     AgentResponseApplicationPacket,
     apply_authorized_agent_response_to_state,
@@ -1622,38 +1620,24 @@ with bv_review_tab:
         project_management_actions = build_project_management_actions(
             reviewed_workflow_state
         )
-        project_management_heading = (
-            "Project Management Action Dashboard"
-            if ui_language == "en"
-            else "项目管理行动看板"
+        project_management_view = build_bv_project_management_dashboard_view(
+            project_management_actions,
+            ui_language,
         )
-        st.markdown(f"##### {project_management_heading}")
-        if project_management_actions:
-            project_management_summary = build_project_management_action_summary(
-                project_management_actions
-            )
+        st.markdown(f"##### {project_management_view.heading}")
+        if project_management_view.action_rows:
             st.dataframe(
-                build_project_management_action_summary_rows(
-                    project_management_summary,
-                    ui_language,
-                ),
+                project_management_view.summary_rows,
                 hide_index=True,
                 use_container_width=True,
             )
             st.dataframe(
-                build_project_management_action_rows(
-                    project_management_actions,
-                    ui_language,
-                ),
+                project_management_view.action_rows,
                 hide_index=True,
                 use_container_width=True,
             )
         else:
-            st.caption(
-                "No project management actions are currently open."
-                if ui_language == "en"
-                else "当前没有待处理的项目管理行动。"
-            )
+            st.caption(project_management_view.empty_caption)
         project_timeline_rows = build_project_timeline_rows(
             reviewed_workflow_state,
             ui_language,

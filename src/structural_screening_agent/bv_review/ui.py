@@ -1,10 +1,25 @@
+from pydantic import BaseModel, Field
+
 from structural_screening_agent.bv_review.models import (
     BVReportSection,
     BVReviewIntake,
     BVReviewResult,
 )
+from structural_screening_agent.bv_review.project_management import (
+    ProjectManagementAction,
+    build_project_management_action_rows,
+    build_project_management_action_summary,
+    build_project_management_action_summary_rows,
+)
 from structural_screening_agent.bv_review.ui_state import BV_REVIEW_OBJECT_LABELS
 from structural_screening_agent.localization import Language
+
+
+class BVProjectManagementDashboardView(BaseModel):
+    heading: str = Field(min_length=1)
+    summary_rows: list[dict[str, object]] = Field(default_factory=list)
+    action_rows: list[dict[str, object]] = Field(default_factory=list)
+    empty_caption: str = Field(min_length=1)
 
 
 def format_bv_label(
@@ -107,3 +122,31 @@ def build_bv_report_preview_sections(
             ],
         ),
     ]
+
+
+def build_bv_project_management_dashboard_view(
+    actions: list[ProjectManagementAction],
+    language: Language,
+) -> BVProjectManagementDashboardView:
+    heading = (
+        "Project Management Action Dashboard"
+        if language == "en"
+        else "项目管理行动看板"
+    )
+    empty_caption = (
+        "No project management actions are currently open."
+        if language == "en"
+        else "当前没有待处理的项目管理行动。"
+    )
+    if not actions:
+        return BVProjectManagementDashboardView(
+            heading=heading,
+            empty_caption=empty_caption,
+        )
+    summary = build_project_management_action_summary(actions)
+    return BVProjectManagementDashboardView(
+        heading=heading,
+        summary_rows=build_project_management_action_summary_rows(summary, language),
+        action_rows=build_project_management_action_rows(actions, language),
+        empty_caption=empty_caption,
+    )
