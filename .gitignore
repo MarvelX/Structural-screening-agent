@@ -6,3 +6,6 @@ __pycache__/
 .local_data/
 .venv/
 tmp/
+.superpowers/
+* 2.py
+* 2.md
