@@ -16,10 +16,15 @@ Already present in the repository:
 - BV review models, basis builder, document checklist, review path, review plan, risk register, workflow, and report preview.
 - Tests for BV review models, workflow, UI state, and report.
 - Existing portal-frame rooftop PV screening kernel, report export, basis traceability, and tests.
+- JD feature mapping documentation in `docs/bv-jd-feature-mapping.md`.
+- portfolio narrative page and showcase support material under `docs/showcase/`.
+- BV UI helper smoke tests and app import checks that do not require manual Streamlit interaction.
+- UI / report evidence matrix alignment: workbench rows and exported BV reports now trace final report findings to fields, document versions, intake document status, or missing evidence.
 
 Open caution:
 
 - The repository contains untracked duplicate files named like `* 2.py` and `* 2.md`. They should be ignored unless the user explicitly asks to clean them.
+- The default Pytest duplicate-copy exclusion is configured through `--ignore-glob=* 2.py`, so local duplicate test copies do not inflate the default test set.
 
 ## Phase 1: Portfolio MVP
 
@@ -38,13 +43,15 @@ Completed:
 - Risk and nonconformity register.
 - BV-style report preview and Markdown / Word / PDF export from the app.
 - Unit tests for BV review model, workflow, report, and UI state.
+- JD feature mapping documentation for BV role responsibilities and interview talking points.
+- Portfolio narrative page that explains the current MVP as a BV role-aligned product artifact.
+- BV UI helper smoke tests and public demo checks.
 
 Next improvements:
 
 1. Move BV UI rendering helpers out of `app.py` into `src/structural_screening_agent/bv_review/ui.py`.
-2. Add `docs/bv-jd-feature-mapping.md` to map each feature to BV JD responsibilities and interview talking points.
-3. Add a portfolio narrative page under `docs/showcase/` that explains how the current MVP maps to the BV role.
-4. Add a small regression test or smoke test that imports the BV UI helper without requiring Streamlit runtime interaction.
+2. Continue reducing duplicated Streamlit presentation logic in `app.py` while keeping existing workflow behavior intact.
+3. Keep portfolio and JD documentation synchronized with tested product behavior after each major workflow slice.
 
 ## Phase 2: Technical Review Expansion
 
@@ -86,6 +93,8 @@ Status: started.
 Implemented:
 
 - Evidence matrix by finding and document source. Blocking risks and nonconformities can now be traced back to extracted fields, document versions, intake document status, or explicit missing evidence; the workbench shows this as a localized evidence table and BV report packages include the same traceability section.
+- UI / report evidence matrix alignment ensures final report findings are traced consistently even when the persisted project-state risk ledger has not yet been synchronized.
+- Evidence matrix traceability is covered by report tests, UI-state tests, and default test collection that ignores duplicate local copy files.
 
 Candidate work:
 
@@ -122,11 +131,11 @@ Recommended next three small, verifiable steps:
 1. Extract BV UI presentation helpers from `app.py` into a dedicated module.
    - Verification: existing BV review tests pass; app still imports.
 
-2. Add BV JD feature mapping documentation.
-   - Verification: document includes each major JD responsibility and maps it to current or planned functionality.
+2. Keep roadmap, JD mapping, and showcase narrative synchronized with completed workflow slices.
+   - Verification: documentation tests check that roadmap claims match implemented traceability and clean-workspace behavior.
 
-3. Strengthen the BV report boundary and portfolio narrative.
-   - Verification: tests confirm the report still states screening / review-support boundary and does not claim official BV signing.
+3. Strengthen evidence matrix export formatting for Word / PDF.
+   - Verification: report export tests confirm traceability content survives generated artifacts.
 
 ## Non-Goals
 

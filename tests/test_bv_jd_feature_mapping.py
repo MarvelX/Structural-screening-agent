@@ -64,3 +64,25 @@ def test_bv_jd_feature_mapping_and_roadmap_include_foundation_evidence_rfi_closu
     ]:
         assert phrase in mapping
         assert phrase in roadmap
+
+
+def test_bv_roadmap_reflects_current_traceability_and_clean_workspace_baseline() -> None:
+    roadmap = (
+        project_root() / "docs" / "bv-pv-design-review-workbench-roadmap.md"
+    ).read_text()
+
+    for completed_phrase in [
+        "JD feature mapping documentation",
+        "portfolio narrative page",
+        "BV UI helper smoke tests",
+        "default Pytest duplicate-copy exclusion",
+        "UI / report evidence matrix alignment",
+    ]:
+        assert completed_phrase in roadmap
+
+    for stale_next_step in [
+        "Add `docs/bv-jd-feature-mapping.md`",
+        "Add a portfolio narrative page under `docs/showcase/`",
+        "Add a small regression test or smoke test that imports the BV UI helper",
+    ]:
+        assert stale_next_step not in roadmap
