@@ -147,6 +147,45 @@ def build_finding_lifecycle_summary_rows(
     ]
 
 
+def build_responsible_party_status_rows(
+    actions: list[ProjectManagementAction],
+    language: ProjectActionLanguage,
+) -> list[dict[str, object]]:
+    grouped_actions: dict[str, list[ProjectManagementAction]] = {}
+    for action in actions:
+        grouped_actions.setdefault(action.owner_role, []).append(action)
+
+    if language == "zh":
+        return [
+            {
+                "责任方": _owner_label(owner_role, "zh"),
+                "待办数": len(owner_actions),
+                "阻塞报告": sum(
+                    1 for action in owner_actions if action.blocks_report_issue
+                ),
+                "高优先级": sum(
+                    1 for action in owner_actions if action.priority == "high"
+                ),
+                "下一项行动": owner_actions[0].action_id,
+            }
+            for owner_role, owner_actions in grouped_actions.items()
+        ]
+    return [
+        {
+            "Owner Role": _owner_label(owner_role, "en"),
+            "Open Actions": len(owner_actions),
+            "Blocking Actions": sum(
+                1 for action in owner_actions if action.blocks_report_issue
+            ),
+            "High Priority": sum(
+                1 for action in owner_actions if action.priority == "high"
+            ),
+            "Next Action": owner_actions[0].action_id,
+        }
+        for owner_role, owner_actions in grouped_actions.items()
+    ]
+
+
 def build_project_management_action_summary(
     actions: list[ProjectManagementAction],
 ) -> ProjectManagementActionSummary:

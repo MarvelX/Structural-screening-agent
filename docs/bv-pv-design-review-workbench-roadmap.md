@@ -125,12 +125,13 @@ Status: started.
 Implemented:
 
 - finding lifecycle summary for open findings, blocking findings, closed / accepted findings, client clarification response status, engineer closeout status, and the next lifecycle action.
+- responsible-party status rows for open actions, grouped by client / designer, BV structural review engineer, and BV project review lead.
 
 Candidate work:
 
 - deeper finding lifecycle tracking
 - clarification history
-- responsible-party status
+- responsible-party SLA / overdue tracking
 - review dashboard
 - report revision history
 - service scope and fee discussion support

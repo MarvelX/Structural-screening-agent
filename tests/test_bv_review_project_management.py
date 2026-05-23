@@ -1,10 +1,12 @@
 from structural_screening_agent.bv_review.project_management import (
+    ProjectManagementAction,
     build_finding_lifecycle_summary,
     build_finding_lifecycle_summary_rows,
     build_project_management_action_summary,
     build_project_management_action_summary_rows,
     build_project_management_action_rows,
     build_project_management_actions,
+    build_responsible_party_status_rows,
 )
 from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
@@ -515,6 +517,70 @@ def test_finding_lifecycle_summary_tracks_findings_rfis_and_next_action() -> Non
     assert "RFI" not in str(zh_rows)
     assert en_rows[0] == {"Metric": "Open Findings", "Value": 2}
     assert en_rows[4] == {"Metric": "RFIs Awaiting Engineer Closeout", "Value": 1}
+
+
+def test_responsible_party_status_rows_group_open_actions_by_owner() -> None:
+    actions = [
+        ProjectManagementAction(
+            action_id="rfi-client-response-rfi-geotech",
+            category="rfi_client_response",
+            priority="high",
+            owner_role="client / designer",
+            trigger_evidence_ids=["rfi-geotech"],
+            recommended_action="Request response.",
+            blocks_report_issue=True,
+        ),
+        ProjectManagementAction(
+            action_id="rfi-engineer-closeout-rfi-load-table",
+            category="rfi_engineer_closeout",
+            priority="high",
+            owner_role="BV structural review engineer",
+            trigger_evidence_ids=["rfi-load-table"],
+            recommended_action="Close RFI.",
+            blocks_report_issue=True,
+        ),
+        ProjectManagementAction(
+            action_id="record-report-revision-snapshot",
+            category="report_revision",
+            priority="medium",
+            owner_role="BV project review lead",
+            trigger_evidence_ids=["report"],
+            recommended_action="Record revision.",
+            blocks_report_issue=False,
+        ),
+    ]
+
+    zh_rows = build_responsible_party_status_rows(actions, "zh")
+    en_rows = build_responsible_party_status_rows(actions, "en")
+    empty_rows = build_responsible_party_status_rows([], "en")
+
+    assert zh_rows == [
+        {
+            "责任方": "客户 / 设计院",
+            "待办数": 1,
+            "阻塞报告": 1,
+            "高优先级": 1,
+            "下一项行动": "rfi-client-response-rfi-geotech",
+        },
+        {
+            "责任方": "BV 结构审核工程师",
+            "待办数": 1,
+            "阻塞报告": 1,
+            "高优先级": 1,
+            "下一项行动": "rfi-engineer-closeout-rfi-load-table",
+        },
+        {
+            "责任方": "BV 项目审核负责人",
+            "待办数": 1,
+            "阻塞报告": 0,
+            "高优先级": 0,
+            "下一项行动": "record-report-revision-snapshot",
+        },
+    ]
+    assert en_rows[0]["Owner Role"] == "Client / Designer"
+    assert en_rows[1]["Owner Role"] == "BV Structural Review Engineer"
+    assert en_rows[2]["Owner Role"] == "BV Project Review Lead"
+    assert empty_rows == []
 
 
 def test_project_management_actions_skip_quality_gate_follow_up_at_intake() -> None:

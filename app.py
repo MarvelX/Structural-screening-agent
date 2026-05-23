@@ -77,6 +77,7 @@ from structural_screening_agent.bv_review.project_management import (
     build_finding_lifecycle_summary,
     build_finding_lifecycle_summary_rows,
     build_project_management_actions,
+    build_responsible_party_status_rows,
 )
 from structural_screening_agent.bv_review.ui import build_bv_project_management_dashboard_view
 from structural_screening_agent.bv_review.agent_application import (
@@ -1661,6 +1662,27 @@ with bv_review_tab:
         project_management_actions = build_project_management_actions(
             reviewed_workflow_state
         )
+        responsible_party_rows = build_responsible_party_status_rows(
+            project_management_actions,
+            ui_language,
+        )
+        st.markdown(
+            "##### Responsible Party Status"
+            if ui_language == "en"
+            else "责任方待办状态"
+        )
+        if responsible_party_rows:
+            st.dataframe(
+                responsible_party_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No responsible-party actions are currently open."
+                if ui_language == "en"
+                else "当前没有责任方待办。"
+            )
         project_management_view = build_bv_project_management_dashboard_view(
             project_management_actions,
             ui_language,
