@@ -421,11 +421,10 @@ def build_bv_evidence_matrix_section(
     if project_state is None:
         return None
 
-    merged_risks = _merge_report_and_state_risks(project_state.risks, report_risks or [])
-    matrix_state = project_state.model_copy(
-        update={"risks": merged_risks}
+    matrix_items = build_evidence_matrix(
+        project_state,
+        report_risks=report_risks,
     )
-    matrix_items = build_evidence_matrix(matrix_state)
     if not matrix_items:
         return None
 
@@ -446,16 +445,6 @@ def build_bv_evidence_matrix_section(
             for item in matrix_items
         ],
     )
-
-
-def _merge_report_and_state_risks(
-    state_risks: list[BVRiskItem],
-    report_risks: list[BVRiskItem],
-) -> list[BVRiskItem]:
-    merged: dict[str, BVRiskItem] = {risk.risk_id: risk for risk in state_risks}
-    for risk in report_risks:
-        merged.setdefault(risk.risk_id, risk)
-    return list(merged.values())
 
 
 def _evidence_source_type_label(source_type: str) -> str:

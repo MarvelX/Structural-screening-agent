@@ -1900,6 +1900,7 @@ with bv_review_tab:
         evidence_matrix_rows = build_evidence_matrix_rows(
             reviewed_workflow_state,
             ui_language,
+            report_risks=effective_bv_result.risks,
         )
         st.markdown("##### Evidence Matrix" if ui_language == "en" else "证据矩阵")
         if evidence_matrix_rows:

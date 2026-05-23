@@ -1,9 +1,11 @@
+from typing import Optional
+
 from structural_screening_agent.bv_review.agent_runner import PersistedWorkflowRunSummary
 from structural_screening_agent.bv_review.blocked_calculation_draft import (
     build_blocked_calculation_review_draft,
 )
 from structural_screening_agent.bv_review.evidence_matrix import build_evidence_matrix
-from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.models import BVReviewIntake, BVRiskItem
 from structural_screening_agent.bv_review.field_diff import (
     FieldDiff,
     IncrementalRecheckPlan,
@@ -1746,6 +1748,8 @@ def build_report_gate_evidence_rows(report_gate, language: Language) -> list[dic
 def build_evidence_matrix_rows(
     state: ProjectReviewState,
     language: Language,
+    *,
+    report_risks: Optional[list[BVRiskItem]] = None,
 ) -> list[dict[str, str]]:
     labels = (
         {
@@ -1771,7 +1775,7 @@ def build_evidence_matrix_rows(
         }
     )
     rows: list[dict[str, str]] = []
-    for item in build_evidence_matrix(state):
+    for item in build_evidence_matrix(state, report_risks=report_risks):
         rows.append(
             {
                 labels["finding"]: item.finding_id,

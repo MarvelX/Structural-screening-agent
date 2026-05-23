@@ -974,6 +974,63 @@ def test_evidence_matrix_rows_localize_finding_source_traceability() -> None:
     assert "字段证据" not in str(en_rows)
 
 
+def test_evidence_matrix_rows_can_trace_report_findings_when_state_risks_are_empty() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-evidence-matrix-report-risks",
+        intake=BVReviewIntake(
+            project_name="Evidence matrix UI",
+            country_or_region="China",
+            project_type="utility_pv",
+            design_stage="detailed_design",
+            standards_systems=["gb"],
+            review_objects=["foundation"],
+            documents={"geotechnical_report": "available"},
+        ),
+        extracted_fields=[
+            ExtractedField(
+                field_id="bearing_capacity_characteristic_kpa",
+                name="Bearing capacity characteristic value",
+                candidate_value="180",
+                unit="kPa",
+                source_document_id="geo-r1",
+                page_or_section="Section 4.2",
+                quote="fak = 180 kPa",
+                confidence=0.91,
+                is_confirmed=True,
+                confirmed_value="180",
+                include_in_calculation=True,
+            )
+        ],
+        risks=[],
+    )
+    report_risk = BVRiskItem(
+        risk_id="risk-report-only-bearing-capacity",
+        title="报告发现项中的地基承载力证据不足",
+        severity="critical",
+        trigger_basis="报告结果已识别地基承载力参数缺口。",
+        linked_field_ids=["bearing_capacity_characteristic_kpa"],
+        impact_scope="基础筛查级计算",
+        recommendation="补充或确认地基承载力特征值。",
+        blocks_report_issue=True,
+        category="nonconformity",
+    )
+
+    rows = build_evidence_matrix_rows(state, "zh", report_risks=[report_risk])
+
+    assert rows == [
+        {
+            "发现 ID": "risk-report-only-bearing-capacity",
+            "关联项": "bearing_capacity_characteristic_kpa",
+            "证据类型": "字段证据",
+            "来源资料": "geo-r1",
+            "位置": "Section 4.2",
+            "证据摘录": "fak = 180 kPa",
+            "状态": "已确认",
+            "置信度": "0.91",
+        }
+    ]
+
+
 def test_quality_gate_status_rows_show_four_gates_in_chinese_and_english() -> None:
     intake = BVReviewIntake(
         project_name="Quality gate UI demo",

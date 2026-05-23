@@ -4,6 +4,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
+from structural_screening_agent.bv_review.models import BVRiskItem
 from structural_screening_agent.bv_review.project_state import (
     DocumentVersion,
     ExtractedField,
@@ -35,11 +36,15 @@ class EvidenceMatrixItem(BaseModel):
     confidence: Optional[float] = None
 
 
-def build_evidence_matrix(state: ProjectReviewState) -> list[EvidenceMatrixItem]:
+def build_evidence_matrix(
+    state: ProjectReviewState,
+    *,
+    report_risks: Optional[list[BVRiskItem]] = None,
+) -> list[EvidenceMatrixItem]:
     fields_by_id = {field.field_id: field for field in state.extracted_fields}
     documents_by_key = _index_documents_by_key(state.document_versions)
     rows: list[EvidenceMatrixItem] = []
-    for risk in state.risks:
+    for risk in _merge_report_and_state_risks(state.risks, report_risks or []):
         for linked_id in risk.linked_field_ids:
             field = fields_by_id.get(linked_id)
             if field is not None:
@@ -68,6 +73,16 @@ def build_evidence_matrix(state: ProjectReviewState) -> list[EvidenceMatrixItem]
                 continue
             rows.append(_missing_evidence_item(risk.risk_id, risk.title, linked_id))
     return rows
+
+
+def _merge_report_and_state_risks(
+    state_risks: list[BVRiskItem],
+    report_risks: list[BVRiskItem],
+) -> list[BVRiskItem]:
+    merged: dict[str, BVRiskItem] = {risk.risk_id: risk for risk in state_risks}
+    for risk in report_risks:
+        merged.setdefault(risk.risk_id, risk)
+    return list(merged.values())
 
 
 def _index_documents_by_key(
