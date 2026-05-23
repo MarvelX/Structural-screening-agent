@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import date
 from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
@@ -182,6 +183,9 @@ def issue_blocked_calculation_draft_rfi(
             f"RFI item {rfi_id!r} does not match a blocked calculation draft."
         )
 
+    issued_rfi = draft_rfi.model_copy(
+        update={"opened_at": _rfi_opened_date(approved_at)}
+    )
     approval = EngineerApproval(
         approval_id=f"rfi-issue-{rfi_id}",
         target_type="rfi",
@@ -198,7 +202,7 @@ def issue_blocked_calculation_draft_rfi(
         update={
             "current_phase": "issue_rfi_closeout",
             "phase_statuses": statuses,
-            "rfi_items": [*state.rfi_items, draft_rfi],
+            "rfi_items": [*state.rfi_items, issued_rfi],
             "approvals": [*state.approvals, approval],
         }
     )
@@ -282,6 +286,12 @@ def _find_unique_risk(state: ProjectReviewState, risk_id: str) -> BVRiskItem:
     if len(matches) > 1:
         raise ValueError(f"Finding {risk_id!r} is duplicated in project state.")
     return matches[0]
+
+
+def _rfi_opened_date(approved_at: Optional[str]) -> str:
+    if approved_at:
+        return approved_at[:10]
+    return date.today().isoformat()
 
 
 def _replace_risk(risks: list[BVRiskItem], updated_risk: BVRiskItem) -> list[BVRiskItem]:

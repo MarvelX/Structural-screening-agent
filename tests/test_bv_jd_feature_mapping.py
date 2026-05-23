@@ -84,6 +84,7 @@ def test_bv_roadmap_reflects_current_traceability_and_clean_workspace_baseline()
         "responsible-party status",
         "responsible-party SLA / overdue tracking",
         "report-facing responsible-party SLA status",
+        "blocked-calculation RFI issue timestamps",
         "default Pytest duplicate-copy exclusion",
         "workspace cleanliness policy",
         "UI / report evidence matrix alignment",

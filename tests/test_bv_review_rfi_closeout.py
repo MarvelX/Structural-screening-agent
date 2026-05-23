@@ -11,6 +11,7 @@ from structural_screening_agent.bv_review.human_gate import (
     issue_blocked_calculation_draft_rfi,
     record_rfi_client_response,
 )
+from structural_screening_agent.bv_review.report import build_bv_report_preview
 from structural_screening_agent.bv_review.project_state import CalculationRun
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 
@@ -196,6 +197,7 @@ def test_issue_blocked_calculation_draft_rfi_requires_engineer_review_and_keeps_
         "rfi-calculation_blocked_foundation_failed_001"
     ]
     assert issued.rfi_items[0].status == "open"
+    assert issued.rfi_items[0].opened_at == "2026-05-21"
     assert issued.rfi_items[0].triggers_incremental_recheck is True
     approval = issued.approvals[-1]
     assert approval.target_type == "rfi"
@@ -205,6 +207,42 @@ def test_issue_blocked_calculation_draft_rfi_requires_engineer_review_and_keeps_
     assert approval.comment == "Issue RFI to request corrected foundation inputs."
     assert approval.approved_at == "2026-05-21T12:00:00+08:00"
     assert approval.locked is True
+
+
+def test_issued_blocked_calculation_rfi_feeds_report_sla_status() -> None:
+    state = ProjectReviewState(
+        project_id="pv-rfi-report-sla",
+        intake=_sample_intake(),
+        current_phase="engineer_data_lock",
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-failed-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_field_ids=["pile_length_m"],
+                input_locked=False,
+                status="failed",
+                structured_errors=["foundation calculation failed."],
+            )
+        ],
+    )
+
+    issued = issue_blocked_calculation_draft_rfi(
+        state,
+        rfi_id="rfi-calculation_blocked_foundation_failed_001",
+        reviewer="Engineer A",
+        approved_at="2026-05-21T12:00:00+08:00",
+    )
+    preview = build_bv_report_preview(
+        issued.intake,
+        evaluate_bv_review(issued.intake),
+        project_state=issued,
+    )
+    section = next(section for section in preview.sections if section.heading == "项目管理待办")
+    text = "\n".join(section.items)
+
+    assert "责任方时限 | 责任方: 客户 / 设计院" in text
+    assert "最早到期: 2026-05-28" in text
 
 
 def test_issue_blocked_calculation_draft_rfi_rejects_unknown_or_duplicate_rfi() -> None:
