@@ -55,7 +55,8 @@ def render_bv_section(
 def format_bv_label(
     label_map: dict[str, dict[str, str]], value: str, language: Language
 ) -> str:
-    return label_map.get(value, {}).get(language, value)
+    localized = label_map.get(value, {})
+    return localized.get(language) or localized.get("en") or value
 
 
 def format_bv_object_labels(values: list[str], language: Language) -> str:

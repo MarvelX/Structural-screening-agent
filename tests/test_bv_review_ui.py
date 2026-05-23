@@ -3,6 +3,7 @@ from structural_screening_agent.bv_review.ui import (
     build_foundation_evidence_display_rows,
     build_bv_project_management_dashboard_view,
     build_bv_report_preview_sections,
+    format_bv_label,
     render_bv_section,
 )
 from structural_screening_agent.bv_review.project_management import (
@@ -40,6 +41,17 @@ def test_bv_ui_helpers_import_without_streamlit_runtime() -> None:
     assert en_items
     assert "Review Basis" not in str(zh_items)
     assert "objects:" in en_items[0]
+
+
+def test_format_bv_label_prefers_language_then_english_then_raw_value() -> None:
+    labels = {
+        "foundation": {"zh": "基础验算", "en": "Foundation"},
+        "superstructure": {"en": "Superstructure"},
+    }
+
+    assert format_bv_label(labels, "foundation", "zh") == "基础验算"
+    assert format_bv_label(labels, "superstructure", "zh") == "Superstructure"
+    assert format_bv_label(labels, "unknown", "zh") == "unknown"
 
 
 def test_bv_report_preview_sections_support_chinese_and_english() -> None:

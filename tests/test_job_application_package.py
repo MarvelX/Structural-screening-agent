@@ -136,7 +136,8 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     ).read_text()
     gitignore = (root / ".gitignore").read_text()
 
-    assert "def _label(" in app_source
+    assert "format_bv_label" in app_source
+    assert "def _label(" not in app_source
     assert "JsonProjectReviewStateRepository" in app_source
     assert "run_persisted_local_agent_workflow_with_summary" in app_source
     assert "build_persisted_workflow_run_summary_rows" in app_source

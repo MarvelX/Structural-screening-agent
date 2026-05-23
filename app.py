@@ -116,6 +116,7 @@ from structural_screening_agent.bv_review.ui import (
     build_bv_plan_items,
     build_bv_report_preview_sections,
     build_bv_risk_items,
+    format_bv_label,
     render_bv_section,
 )
 from structural_screening_agent.bv_review import (
@@ -239,11 +240,6 @@ def _split_calc_detail(detail: str) -> tuple[str, str, Optional[str]]:
         value, summary = main_line.split(" | ", 1)
         return value.strip(), summary.strip(), formula_line
     return main_line.strip(), "", formula_line
-
-
-def _label(labels: dict[str, dict[str, str]], value: str, language: Language) -> str:
-    localized = labels.get(value, {})
-    return localized.get(language) or localized.get("en") or value
 
 
 def _render_card(card: ContentCard) -> None:
@@ -617,14 +613,22 @@ with bv_review_tab:
             "Project Type" if ui_language == "en" else "项目类型",
             list(BV_PROJECT_TYPE_LABELS),
             index=list(BV_PROJECT_TYPE_LABELS).index(default_bv_intake.project_type),
-            format_func=lambda value: _label(BV_PROJECT_TYPE_LABELS, value, ui_language),
+            format_func=lambda value: format_bv_label(
+                BV_PROJECT_TYPE_LABELS,
+                value,
+                ui_language,
+            ),
             key="bv_project_type",
         )
         bv_design_stage = st.selectbox(
             "Design Stage" if ui_language == "en" else "设计阶段",
             list(BV_DESIGN_STAGE_LABELS),
             index=list(BV_DESIGN_STAGE_LABELS).index(default_bv_intake.design_stage),
-            format_func=lambda value: _label(BV_DESIGN_STAGE_LABELS, value, ui_language),
+            format_func=lambda value: format_bv_label(
+                BV_DESIGN_STAGE_LABELS,
+                value,
+                ui_language,
+            ),
             key="bv_design_stage",
         )
     with bv_col_2:
@@ -632,14 +636,22 @@ with bv_review_tab:
             "Standards Systems" if ui_language == "en" else "标准体系",
             list(BV_STANDARD_LABELS),
             default=list(default_bv_intake.standards_systems),
-            format_func=lambda value: _label(BV_STANDARD_LABELS, value, ui_language),
+            format_func=lambda value: format_bv_label(
+                BV_STANDARD_LABELS,
+                value,
+                ui_language,
+            ),
             key="bv_standards",
         )
         bv_review_objects = st.multiselect(
             "Review Objects" if ui_language == "en" else "审核对象",
             list(BV_REVIEW_OBJECT_LABELS),
             default=list(default_bv_intake.review_objects),
-            format_func=lambda value: _label(BV_REVIEW_OBJECT_LABELS, value, ui_language),
+            format_func=lambda value: format_bv_label(
+                BV_REVIEW_OBJECT_LABELS,
+                value,
+                ui_language,
+            ),
             key="bv_review_objects",
         )
         bv_client_requirements_text = st.text_area(
@@ -658,7 +670,11 @@ with bv_review_tab:
                 labels[ui_language],
                 list(BV_DOCUMENT_STATUS_LABELS),
                 index=list(BV_DOCUMENT_STATUS_LABELS).index(default_bv_intake.documents[document_key]),
-                format_func=lambda value: _label(BV_DOCUMENT_STATUS_LABELS, value, ui_language),
+                format_func=lambda value: format_bv_label(
+                    BV_DOCUMENT_STATUS_LABELS,
+                    value,
+                    ui_language,
+                ),
                 key=f"bv_doc_{document_key}",
             )
 
@@ -753,10 +769,20 @@ with bv_review_tab:
             )
             for run in calculation_gate_runs:
                 if run.result_summary:
+                    engine_labels = {
+                        "foundation": {
+                            "zh": "基础验算",
+                            "en": "Foundation",
+                        },
+                        "superstructure": {
+                            "zh": "上部构件验算",
+                            "en": "Superstructure",
+                        },
+                    }
                     st.markdown(
                         f"**{run.engine_name.title()}**"
                         if ui_language == "en"
-                        else f"**{_label({'foundation': {'zh': '基础验算', 'en': 'Foundation'}, 'superstructure': {'zh': '上部构件验算', 'en': 'Superstructure'}}, run.engine_name, ui_language)}**"
+                        else f"**{format_bv_label(engine_labels, run.engine_name, ui_language)}**"
                     )
                     st.dataframe(
                         build_calculation_result_summary_rows(

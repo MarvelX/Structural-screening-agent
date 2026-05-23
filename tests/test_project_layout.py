@@ -81,6 +81,8 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'translate(ui_language, "report_export_tab")' in source
     assert 'translate(ui_language, "pv_3d_studio_tab")' in source
     assert 'translate(ui_language, "calculation_extension_tab")' in source
+    assert "format_bv_label" in source
+    assert "def _label" not in source
     assert 'translate(ui_language, "public_demo_banner")' in source
     assert 'translate(ui_language, "public_demo_caption")' in source
     assert 'translate(ui_language, "bv_review_intake_heading")' in source
