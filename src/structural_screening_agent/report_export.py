@@ -41,6 +41,58 @@ def _is_heading(section_heading: str, zh_text: str, en_text: str) -> bool:
     return section_heading in {zh_text, en_text}
 
 
+_EVIDENCE_MATRIX_HEADERS = [
+    "发现项",
+    "标题",
+    "关联项",
+    "证据类型",
+    "来源",
+    "位置",
+    "摘录",
+    "状态",
+    "置信度",
+]
+
+
+def _is_evidence_matrix_section(section_heading: str) -> bool:
+    return _is_heading(section_heading, "发现项证据矩阵", "Finding Evidence Matrix")
+
+
+def _parse_evidence_matrix_item(item: str) -> dict[str, str]:
+    values = {header: "" for header in _EVIDENCE_MATRIX_HEADERS}
+    parts = [part.strip() for part in item.split(" | ") if part.strip()]
+    if not parts:
+        return values
+
+    first_part = parts[0]
+    if first_part.startswith("发现项 "):
+        values["发现项"] = first_part.removeprefix("发现项 ").strip()
+    else:
+        values["发现项"] = first_part
+
+    for part in parts[1:]:
+        key, separator, value = part.partition(": ")
+        if separator and key in values:
+            values[key] = value.strip()
+    return values
+
+
+def _add_evidence_matrix_table(document: Document, items: list[str]) -> None:
+    table = document.add_table(rows=1, cols=len(_EVIDENCE_MATRIX_HEADERS))
+    table.style = "Table Grid"
+    header_cells = table.rows[0].cells
+    for index, header in enumerate(_EVIDENCE_MATRIX_HEADERS):
+        header_cells[index].text = header
+
+    for item in items:
+        values = _parse_evidence_matrix_item(item)
+        row_cells = table.add_row().cells
+        for index, header in enumerate(_EVIDENCE_MATRIX_HEADERS):
+            row_cells[index].text = values.get(header, "")
+
+    document.add_paragraph()
+
+
 def _key_export_sections(preview: ReportPreview) -> tuple[list[tuple[str, str]], list]:
     conclusion_items: list[tuple[str, str]] = []
     calc_items: list[tuple[str, str]] = []
@@ -141,20 +193,25 @@ def build_docx_report_bytes(preview: ReportPreview) -> bytes:
 
     document.add_page_break()
 
-    for item_type, text in _iter_sections_items(remaining_sections):
-        if item_type == "heading":
-            heading = document.add_heading(text, level=1)
-            heading.runs[0].font.size = Pt(13)
-        elif item_type == "subheading":
-            subheading = document.add_heading(text, level=2)
-            subheading.runs[0].font.size = Pt(11.5)
-        elif item_type == "bullet":
-            paragraph = document.add_paragraph(style="List Bullet")
-            paragraph.paragraph_format.space_after = Pt(3)
-            paragraph.add_run(text)
-        else:
-            paragraph = document.add_paragraph(text)
-            paragraph.paragraph_format.space_after = Pt(3)
+    for section_item in remaining_sections:
+        heading = document.add_heading(section_item.heading, level=1)
+        heading.runs[0].font.size = Pt(13)
+        if _is_evidence_matrix_section(section_item.heading):
+            _add_evidence_matrix_table(document, section_item.items)
+            continue
+        for item_type, text in _iter_sections_items([section_item]):
+            if item_type == "heading":
+                continue
+            if item_type == "subheading":
+                subheading = document.add_heading(text, level=2)
+                subheading.runs[0].font.size = Pt(11.5)
+            elif item_type == "bullet":
+                paragraph = document.add_paragraph(style="List Bullet")
+                paragraph.paragraph_format.space_after = Pt(3)
+                paragraph.add_run(text)
+            else:
+                paragraph = document.add_paragraph(text)
+                paragraph.paragraph_format.space_after = Pt(3)
 
     output = BytesIO()
     document.save(output)

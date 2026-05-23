@@ -2,7 +2,8 @@ import zipfile
 from io import BytesIO
 
 from structural_screening_agent.app_state import evaluate_case
-from structural_screening_agent.bv_review.models import BVReviewIntake
+from structural_screening_agent.bv_review.models import BVReviewIntake, BVRiskItem
+from structural_screening_agent.bv_review.project_state import ExtractedField, ProjectReviewState
 from structural_screening_agent.bv_review.report import build_bv_report_preview
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
 from structural_screening_agent.demo_data import main_demo_case
@@ -95,3 +96,53 @@ def test_report_export_generates_docx_and_pdf_bytes_for_bv_preview() -> None:
     assert "审核依据" in document_xml
     assert "审核边界声明" in document_xml
     assert "BV 光伏结构设计审查报告" in footer_xml
+
+
+def test_docx_export_renders_bv_evidence_matrix_as_table() -> None:
+    intake = _sample_bv_intake()
+    result = evaluate_bv_review(intake)
+    risk = BVRiskItem(
+        risk_id="risk-report-only-bearing-capacity",
+        title="报告发现项中的地基承载力证据不足",
+        severity="critical",
+        trigger_basis="报告结果已识别地基承载力参数缺口。",
+        linked_field_ids=["bearing_capacity_characteristic_kpa"],
+        impact_scope="基础筛查级计算",
+        recommendation="补充或确认地基承载力特征值。",
+        blocks_report_issue=True,
+        category="nonconformity",
+    )
+    result = result.model_copy(update={"risks": [risk]})
+    state = ProjectReviewState(
+        project_id="pv-export-evidence-matrix",
+        intake=intake,
+        extracted_fields=[
+            ExtractedField(
+                field_id="bearing_capacity_characteristic_kpa",
+                name="Bearing capacity characteristic",
+                candidate_value="180",
+                unit="kPa",
+                source_document_id="geo-r1",
+                page_or_section="Section 4.2",
+                quote="fak = 180 kPa",
+                confidence=0.91,
+                is_confirmed=True,
+                confirmed_value="180",
+                include_in_calculation=True,
+            )
+        ],
+    )
+    preview = build_bv_report_preview(intake, result, project_state=state)
+
+    docx_bytes = build_docx_report_bytes(preview)
+
+    with zipfile.ZipFile(BytesIO(docx_bytes)) as archive:
+        document_xml = archive.read("word/document.xml").decode("utf-8", errors="ignore")
+
+    assert "发现项证据矩阵" in document_xml
+    assert "<w:tbl>" in document_xml
+    assert "发现项" in document_xml
+    assert "关联项" in document_xml
+    assert "risk-report-only-bearing-capacity" in document_xml
+    assert "bearing_capacity_characteristic_kpa" in document_xml
+    assert "fak = 180 kPa" in document_xml
