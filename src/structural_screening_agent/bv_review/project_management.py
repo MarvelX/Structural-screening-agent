@@ -46,6 +46,16 @@ class ProjectManagementActionSummary(BaseModel):
     next_blocking_action_id: Optional[str] = None
 
 
+class FindingLifecycleSummary(BaseModel):
+    open_finding_count: int = Field(ge=0)
+    blocking_open_finding_count: int = Field(ge=0)
+    closed_or_accepted_finding_count: int = Field(ge=0)
+    open_rfi_count: int = Field(ge=0)
+    responded_rfi_count: int = Field(ge=0)
+    closed_rfi_count: int = Field(ge=0)
+    next_lifecycle_action_id: Optional[str] = None
+
+
 def build_project_management_actions(
     state: ProjectReviewState,
 ) -> list[ProjectManagementAction]:
@@ -59,6 +69,82 @@ def build_project_management_actions(
     if report_revision_action is not None:
         actions.append(report_revision_action)
     return sorted(actions, key=_action_sort_key)
+
+
+def build_finding_lifecycle_summary(
+    state: ProjectReviewState,
+) -> FindingLifecycleSummary:
+    open_findings = [
+        risk for risk in state.risks if risk.status in {"open", "under_review"}
+    ]
+    lifecycle_actions = [
+        action
+        for action in build_project_management_actions(state)
+        if action.category
+        in {"rfi_client_response", "rfi_engineer_closeout", "finding_closeout"}
+    ]
+    return FindingLifecycleSummary(
+        open_finding_count=len(open_findings),
+        blocking_open_finding_count=sum(
+            1 for risk in open_findings if risk.blocks_report_issue
+        ),
+        closed_or_accepted_finding_count=sum(
+            1
+            for risk in state.risks
+            if risk.status in {"closed", "accepted_with_comment"}
+        ),
+        open_rfi_count=sum(
+            1 for rfi in state.rfi_items if rfi.status in {"open", "reopened"}
+        ),
+        responded_rfi_count=sum(1 for rfi in state.rfi_items if rfi.status == "responded"),
+        closed_rfi_count=sum(1 for rfi in state.rfi_items if rfi.status == "closed"),
+        next_lifecycle_action_id=(
+            lifecycle_actions[0].action_id if lifecycle_actions else None
+        ),
+    )
+
+
+def build_finding_lifecycle_summary_rows(
+    summary: FindingLifecycleSummary,
+    language: ProjectActionLanguage,
+) -> list[dict[str, object]]:
+    if language == "zh":
+        return [
+            {"指标": "待关闭发现项", "数值": summary.open_finding_count},
+            {"指标": "阻塞报告发现项", "数值": summary.blocking_open_finding_count},
+            {
+                "指标": "已关闭/接受发现项",
+                "数值": summary.closed_or_accepted_finding_count,
+            },
+            {"指标": "待客户回复澄清", "数值": summary.open_rfi_count},
+            {"指标": "待工程师关闭澄清", "数值": summary.responded_rfi_count},
+            {"指标": "已关闭澄清", "数值": summary.closed_rfi_count},
+            {
+                "指标": "下一项生命周期行动",
+                "数值": summary.next_lifecycle_action_id or "无",
+            },
+        ]
+    return [
+        {"Metric": "Open Findings", "Value": summary.open_finding_count},
+        {
+            "Metric": "Blocking Open Findings",
+            "Value": summary.blocking_open_finding_count,
+        },
+        {
+            "Metric": "Closed / Accepted Findings",
+            "Value": summary.closed_or_accepted_finding_count,
+        },
+        {"Metric": "RFIs Awaiting Client Response", "Value": summary.open_rfi_count},
+        {
+            "Metric": "RFIs Awaiting Engineer Closeout",
+            "Value": summary.responded_rfi_count,
+        },
+        {"Metric": "Closed RFIs", "Value": summary.closed_rfi_count},
+        {
+            "Metric": "Next Lifecycle Action",
+            "Value": summary.next_lifecycle_action_id or "None",
+        },
+    ]
 
 
 def build_project_management_action_summary(

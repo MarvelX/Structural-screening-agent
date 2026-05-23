@@ -24,6 +24,7 @@ Already present in the repository:
 - BV evidence table text extraction: evidence table headings and empty states now share a tested bilingual text helper outside `app.py`.
 - BV gate panel text extraction: quality-gate panel headings now share a tested bilingual helper outside `app.py`.
 - BV report gate status renderer extraction: ready / blocked report-gate notices, localized reasons, and notes now render through a tested Streamlit-like helper outside `app.py`.
+- finding lifecycle summary: the workbench now summarizes open / closed findings, clarification status, and the next lifecycle action for ongoing review management.
 - UI / report evidence matrix alignment: workbench rows and exported BV reports now trace final report findings to fields, document versions, intake document status, or missing evidence.
 - workspace cleanliness policy in `docs/workspace-cleanliness.md`, with tests that keep ignored local artifact rules documented.
 
@@ -119,9 +120,15 @@ Calculators should remain screening-level unless the repository deliberately add
 
 Goal: support ongoing review projects rather than one-off assessments.
 
+Status: started.
+
+Implemented:
+
+- finding lifecycle summary for open findings, blocking findings, closed / accepted findings, client clarification response status, engineer closeout status, and the next lifecycle action.
+
 Candidate work:
 
-- finding lifecycle tracking
+- deeper finding lifecycle tracking
 - clarification history
 - responsible-party status
 - review dashboard

@@ -74,6 +74,8 @@ from structural_screening_agent.bv_review.persisted_workflow_session import (
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.project_management import (
+    build_finding_lifecycle_summary,
+    build_finding_lifecycle_summary_rows,
     build_project_management_actions,
 )
 from structural_screening_agent.bv_review.ui import build_bv_project_management_dashboard_view
@@ -1641,6 +1643,21 @@ with bv_review_tab:
                         st.rerun()
         elif agent_application_packet is not None:
             st.session_state.pop("bv_agent_response_application_packet", None)
+        lifecycle_summary = build_finding_lifecycle_summary(reviewed_workflow_state)
+        lifecycle_rows = build_finding_lifecycle_summary_rows(
+            lifecycle_summary,
+            ui_language,
+        )
+        st.markdown(
+            "##### Finding / RFI Lifecycle"
+            if ui_language == "en"
+            else "发现项与澄清问题生命周期"
+        )
+        st.dataframe(
+            lifecycle_rows,
+            hide_index=True,
+            use_container_width=True,
+        )
         project_management_actions = build_project_management_actions(
             reviewed_workflow_state
         )

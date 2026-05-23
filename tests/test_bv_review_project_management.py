@@ -1,4 +1,6 @@
 from structural_screening_agent.bv_review.project_management import (
+    build_finding_lifecycle_summary,
+    build_finding_lifecycle_summary_rows,
     build_project_management_action_summary,
     build_project_management_action_summary_rows,
     build_project_management_action_rows,
@@ -419,6 +421,100 @@ def test_project_management_action_summary_counts_blockers_priorities_and_owners
         },
         {"Metric": "Next Blocking Action", "Value": "rfi-engineer-closeout-rfi-load-001"},
     ]
+
+
+def test_finding_lifecycle_summary_tracks_findings_rfis_and_next_action() -> None:
+    state = ProjectReviewState(
+        project_id="pv-lifecycle-summary",
+        intake=_sample_intake(),
+        risks=[
+            BVRiskItem(
+                risk_id="foundation-open",
+                title="Foundation evidence remains open",
+                severity="critical",
+                trigger_basis="Missing geotechnical report.",
+                impact_scope="Foundation review",
+                recommendation="Request evidence.",
+                blocks_report_issue=True,
+                category="nonconformity",
+            ),
+            BVRiskItem(
+                risk_id="layout-under-review",
+                title="Layout optimization under review",
+                severity="medium",
+                trigger_basis="O&M access route unclear.",
+                impact_scope="Layout review",
+                recommendation="Confirm access route.",
+                blocks_report_issue=False,
+                category="optimization",
+                status="under_review",
+            ),
+            BVRiskItem(
+                risk_id="connection-accepted",
+                title="Connection residual comment accepted",
+                severity="low",
+                trigger_basis="Engineer accepted residual issue.",
+                impact_scope="Connection review",
+                recommendation="Keep in report.",
+                blocks_report_issue=True,
+                category="risk",
+                status="accepted_with_comment",
+            ),
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-geotech",
+                question="Provide geotechnical report.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation evidence gap.",
+                required_document_or_field="geotechnical_report",
+                status="open",
+            ),
+            RFIItem(
+                rfi_id="rfi-load-table",
+                question="Confirm load table.",
+                responsible_party="client / designer",
+                trigger_basis="Revised reaction table submitted.",
+                required_document_or_field="uplift_force_kn",
+                status="responded",
+                client_response="Rev B table submitted.",
+            ),
+            RFIItem(
+                rfi_id="rfi-closed",
+                question="Confirm pile length.",
+                responsible_party="client / designer",
+                trigger_basis="Closed after engineer review.",
+                required_document_or_field="pile_length_m",
+                status="closed",
+                client_response="Pile length confirmed.",
+            ),
+            RFIItem(
+                rfi_id="rfi-reopened",
+                question="Confirm revised pile spacing.",
+                responsible_party="client / designer",
+                trigger_basis="Rev C superseded previous closeout.",
+                required_document_or_field="pile_spacing_m",
+                status="reopened",
+            ),
+        ],
+    )
+
+    summary = build_finding_lifecycle_summary(state)
+    zh_rows = build_finding_lifecycle_summary_rows(summary, "zh")
+    en_rows = build_finding_lifecycle_summary_rows(summary, "en")
+
+    assert summary.open_finding_count == 2
+    assert summary.blocking_open_finding_count == 1
+    assert summary.closed_or_accepted_finding_count == 1
+    assert summary.open_rfi_count == 2
+    assert summary.responded_rfi_count == 1
+    assert summary.closed_rfi_count == 1
+    assert summary.next_lifecycle_action_id == "rfi-client-response-rfi-geotech"
+    assert zh_rows[0] == {"指标": "待关闭发现项", "数值": 2}
+    assert zh_rows[4] == {"指标": "待工程师关闭澄清", "数值": 1}
+    assert "RFI" not in str(zh_rows)
+    assert en_rows[0] == {"Metric": "Open Findings", "Value": 2}
+    assert en_rows[4] == {"Metric": "RFIs Awaiting Engineer Closeout", "Value": 1}
 
 
 def test_project_management_actions_skip_quality_gate_follow_up_at_intake() -> None:
