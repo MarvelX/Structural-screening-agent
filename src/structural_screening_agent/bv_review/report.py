@@ -120,7 +120,10 @@ def build_bv_report_preview(
     foundation_evidence_section = build_bv_foundation_evidence_section(project_state)
     if foundation_evidence_section is not None:
         sections.insert(-1, foundation_evidence_section)
-    evidence_matrix_section = build_bv_evidence_matrix_section(project_state)
+    evidence_matrix_section = build_bv_evidence_matrix_section(
+        project_state,
+        report_risks=result.risks,
+    )
     if evidence_matrix_section is not None:
         sections.insert(-1, evidence_matrix_section)
     project_timeline_section = build_bv_project_timeline_section(project_state)
@@ -412,11 +415,17 @@ def _document_key_list_label(document_keys: list[str]) -> str:
 
 def build_bv_evidence_matrix_section(
     project_state: Optional[ProjectReviewState],
+    *,
+    report_risks: Optional[list[BVRiskItem]] = None,
 ) -> Optional[BVReportSection]:
     if project_state is None:
         return None
 
-    matrix_items = build_evidence_matrix(project_state)
+    merged_risks = _merge_report_and_state_risks(project_state.risks, report_risks or [])
+    matrix_state = project_state.model_copy(
+        update={"risks": merged_risks}
+    )
+    matrix_items = build_evidence_matrix(matrix_state)
     if not matrix_items:
         return None
 
@@ -437,6 +446,16 @@ def build_bv_evidence_matrix_section(
             for item in matrix_items
         ],
     )
+
+
+def _merge_report_and_state_risks(
+    state_risks: list[BVRiskItem],
+    report_risks: list[BVRiskItem],
+) -> list[BVRiskItem]:
+    merged: dict[str, BVRiskItem] = {risk.risk_id: risk for risk in state_risks}
+    for risk in report_risks:
+        merged.setdefault(risk.risk_id, risk)
+    return list(merged.values())
 
 
 def _evidence_source_type_label(source_type: str) -> str:

@@ -793,6 +793,51 @@ def test_bv_report_preview_includes_evidence_matrix_when_state_is_provided() -> 
     assert "证据类型: 缺失证据" in text
 
 
+def test_bv_report_preview_evidence_matrix_uses_report_findings_when_state_risks_are_empty() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    risk = BVRiskItem(
+        risk_id="risk-report-only-bearing-capacity",
+        title="报告发现项中的地基承载力证据不足",
+        severity="critical",
+        trigger_basis="报告结果已识别地基承载力参数缺口。",
+        linked_field_ids=["bearing_capacity_characteristic_kpa"],
+        impact_scope="基础筛查级计算",
+        recommendation="补充或确认地基承载力特征值。",
+        blocks_report_issue=True,
+        category="nonconformity",
+    )
+    result = result.model_copy(update={"risks": [risk]})
+    state = ProjectReviewState(
+        project_id="pv-report-evidence-matrix-result-risks",
+        intake=intake,
+        extracted_fields=[
+            ExtractedField(
+                field_id="bearing_capacity_characteristic_kpa",
+                name="Bearing capacity characteristic",
+                candidate_value="180",
+                unit="kPa",
+                source_document_id="geo-r1",
+                page_or_section="Section 4.2",
+                quote="fak = 180 kPa",
+                confidence=0.91,
+                is_confirmed=True,
+                confirmed_value="180",
+                include_in_calculation=True,
+            )
+        ],
+        risks=[],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "发现项证据矩阵")
+    text = "\n".join(section.items)
+
+    assert "发现项 risk-report-only-bearing-capacity" in text
+    assert "关联项: bearing_capacity_characteristic_kpa" in text
+    assert "摘录: fak = 180 kPa" in text
+
+
 def test_bv_markdown_report_includes_evidence_matrix_when_state_is_provided() -> None:
     intake = _sample_intake()
     result = evaluate_bv_review(intake)
