@@ -11,6 +11,7 @@ from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
     CalculationRun,
     EngineerApproval,
+    ExtractedField,
     ProjectReviewState,
     ReportRevision,
     RFIItem,
@@ -661,6 +662,66 @@ def test_bv_report_preview_includes_project_management_actions_when_state_is_pro
     assert "阻塞报告: 是" in text
     assert "agent-review-calculation-check-agent-001" in text
     assert "calculation-follow-up-foundation-run-001" in text
+
+
+def test_bv_report_preview_includes_foundation_evidence_path_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-foundation-evidence",
+        intake=intake,
+        extracted_fields=[
+            ExtractedField(
+                field_id="pile_diameter_mm",
+                name="Pile diameter",
+                candidate_value="300",
+                unit="mm",
+                source_document_id="calculation-report-c001",
+                page_or_section="Foundation input table",
+                quote="pile_diameter_mm = 300",
+                confidence=0.9,
+                is_confirmed=True,
+                confirmed_value="300",
+                confirmed_unit="mm",
+                include_in_calculation=True,
+            ),
+            ExtractedField(
+                field_id="bearing_capacity_characteristic_kpa",
+                name="Bearing capacity characteristic",
+                candidate_value="180",
+                unit="kPa",
+                source_document_id="geotechnical-report-g001",
+                page_or_section="Geotechnical parameter table",
+                quote="fak = 180 kPa",
+                confidence=0.88,
+                is_confirmed=False,
+                include_in_calculation=False,
+            ),
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "基础证据路径")
+    text = "\n".join(section.items)
+
+    assert "地勘参数证据 | 状态: 缺失" in text
+    assert "缺失资料: 地勘报告" in text
+    assert "未确认字段: bearing_capacity_characteristic_kpa" in text
+    assert "缺失字段: side_resistance_standard_kpa" in text
+    assert "阻塞基础计算: 是" in text
+    assert "基础最不利反力证据" in text
+
+
+def test_bv_markdown_report_includes_foundation_evidence_path_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(project_id="pv-report-foundation-evidence", intake=intake)
+
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "## 基础证据路径" in report
+    assert "地勘参数证据 | 状态: 缺失" in report
+    assert "阻塞基础计算: 是" in report
 
 
 def test_bv_markdown_report_includes_project_management_actions_when_state_is_provided() -> None:

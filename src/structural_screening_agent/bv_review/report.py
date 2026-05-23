@@ -13,6 +13,9 @@ from structural_screening_agent.bv_review.models import (
 from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan_from_closed_rfis,
 )
+from structural_screening_agent.bv_review.foundation_evidence import (
+    build_foundation_evidence_path,
+)
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.project_timeline import build_project_timeline_events
 from structural_screening_agent.bv_review.project_management import (
@@ -113,6 +116,9 @@ def build_bv_report_preview(
     )
     if quality_gate_section is not None:
         sections.insert(-1, quality_gate_section)
+    foundation_evidence_section = build_bv_foundation_evidence_section(project_state)
+    if foundation_evidence_section is not None:
+        sections.insert(-1, foundation_evidence_section)
     project_timeline_section = build_bv_project_timeline_section(project_state)
     if project_timeline_section is not None:
         sections.insert(-1, project_timeline_section)
@@ -355,6 +361,49 @@ def _report_gate_reason_label(reason: str) -> str:
     if reason == "No locked calculation interface run is ready for report drafting.":
         return "缺少可用于报告草稿的已锁定计算运行"
     return reason
+
+
+def build_bv_foundation_evidence_section(
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
+    if project_state is None:
+        return None
+
+    evidence_items = build_foundation_evidence_path(project_state)
+    if not evidence_items:
+        return None
+
+    return BVReportSection(
+        heading="基础证据路径",
+        items=[
+            (
+                f"{item.title} | "
+                f"状态: {_foundation_evidence_status_label(item.status)} | "
+                f"必要资料: {_document_key_list_label(item.required_document_keys)} | "
+                f"缺失资料: {_document_key_list_label(item.missing_document_keys)} | "
+                f"部分资料: {_document_key_list_label(item.partial_document_keys)} | "
+                f"已确认字段: {', '.join(item.confirmed_field_ids) or '无'} | "
+                f"未确认字段: {', '.join(item.unconfirmed_field_ids) or '无'} | "
+                f"缺失字段: {', '.join(item.missing_field_ids) or '无'} | "
+                f"阻塞基础计算: {'是' if item.blocks_calculation else '否'} | "
+                f"建议动作: {item.review_action}"
+            )
+            for item in evidence_items
+        ],
+    )
+
+
+def _foundation_evidence_status_label(status: str) -> str:
+    labels = {
+        "satisfied": "满足",
+        "partial": "部分满足",
+        "missing": "缺失",
+    }
+    return labels.get(status, status)
+
+
+def _document_key_list_label(document_keys: list[str]) -> str:
+    return "、".join(_document_key_label(key) for key in document_keys) or "无"
 
 
 def build_bv_project_timeline_section(
