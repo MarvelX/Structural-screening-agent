@@ -19,6 +19,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_field_diff_summary_rows,
     build_ground_fixed_human_gate_rows,
     build_incremental_recheck_summary_rows,
+    build_evidence_matrix_rows,
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
     build_project_timeline_rows,
@@ -36,6 +37,7 @@ from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
     CalculationRun,
     EngineerApproval,
+    ExtractedField,
     ProjectReviewState,
     ReportRevision,
     RFIItem,
@@ -883,6 +885,93 @@ def test_report_gate_evidence_rows_localize_structured_gate_ids() -> None:
     ]
     assert "Pending Agent Review" not in str(zh_rows)
     assert "待复核" not in str(en_rows)
+
+
+def test_evidence_matrix_rows_localize_finding_source_traceability() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-evidence-matrix",
+        intake=BVReviewIntake(
+            project_name="Evidence matrix UI",
+            country_or_region="China",
+            project_type="utility_pv",
+            design_stage="detailed_design",
+            standards_systems=["gb"],
+            review_objects=["foundation"],
+            documents={"geotechnical_report": "available"},
+        ),
+        extracted_fields=[
+            ExtractedField(
+                field_id="bearing_capacity_characteristic_kpa",
+                name="Bearing capacity characteristic value",
+                candidate_value="180",
+                unit="kPa",
+                source_document_id="geo-r1",
+                page_or_section="Section 4.2",
+                quote="fak = 180 kPa",
+                confidence=0.91,
+                is_confirmed=True,
+                confirmed_value="180",
+                include_in_calculation=True,
+            )
+        ],
+        risks=[
+            BVRiskItem(
+                risk_id="risk-geotech",
+                title="地勘参数证据不足",
+                severity="critical",
+                trigger_basis="地勘参数证据不足。",
+                linked_field_ids=[
+                    "bearing_capacity_characteristic_kpa",
+                    "side_resistance_standard_kpa",
+                ],
+                impact_scope="基础筛查级计算",
+                recommendation="补充地勘参数。",
+                blocks_report_issue=True,
+                category="nonconformity",
+            )
+        ],
+    )
+
+    zh_rows = build_evidence_matrix_rows(state, "zh")
+    en_rows = build_evidence_matrix_rows(state, "en")
+
+    assert zh_rows == [
+        {
+            "发现 ID": "risk-geotech",
+            "关联项": "bearing_capacity_characteristic_kpa",
+            "证据类型": "字段证据",
+            "来源资料": "geo-r1",
+            "位置": "Section 4.2",
+            "证据摘录": "fak = 180 kPa",
+            "状态": "已确认",
+            "置信度": "0.91",
+        },
+        {
+            "发现 ID": "risk-geotech",
+            "关联项": "side_resistance_standard_kpa",
+            "证据类型": "缺失证据",
+            "来源资料": "",
+            "位置": "",
+            "证据摘录": "未找到字段、资料版本或录入资料状态。",
+            "状态": "缺失",
+            "置信度": "",
+        },
+    ]
+    assert en_rows[0] == {
+        "Finding ID": "risk-geotech",
+        "Linked Item": "bearing_capacity_characteristic_kpa",
+        "Evidence Type": "Field Evidence",
+        "Source Document": "geo-r1",
+        "Location": "Section 4.2",
+        "Evidence Excerpt": "fak = 180 kPa",
+        "Status": "Confirmed",
+        "Confidence": "0.91",
+    }
+    assert en_rows[1]["Evidence Type"] == "Missing Evidence"
+    assert en_rows[1]["Evidence Excerpt"] == (
+        "No extracted field, document version, or intake document status is available."
+    )
+    assert "字段证据" not in str(en_rows)
 
 
 def test_quality_gate_status_rows_show_four_gates_in_chinese_and_english() -> None:

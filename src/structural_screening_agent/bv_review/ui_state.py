@@ -2,6 +2,7 @@ from structural_screening_agent.bv_review.agent_runner import PersistedWorkflowR
 from structural_screening_agent.bv_review.blocked_calculation_draft import (
     build_blocked_calculation_review_draft,
 )
+from structural_screening_agent.bv_review.evidence_matrix import build_evidence_matrix
 from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.field_diff import (
     FieldDiff,
@@ -1742,6 +1743,56 @@ def build_report_gate_evidence_rows(report_gate, language: Language) -> list[dic
     return rows
 
 
+def build_evidence_matrix_rows(
+    state: ProjectReviewState,
+    language: Language,
+) -> list[dict[str, str]]:
+    labels = (
+        {
+            "finding": "发现 ID",
+            "linked": "关联项",
+            "type": "证据类型",
+            "source": "来源资料",
+            "location": "位置",
+            "excerpt": "证据摘录",
+            "status": "状态",
+            "confidence": "置信度",
+        }
+        if language == "zh"
+        else {
+            "finding": "Finding ID",
+            "linked": "Linked Item",
+            "type": "Evidence Type",
+            "source": "Source Document",
+            "location": "Location",
+            "excerpt": "Evidence Excerpt",
+            "status": "Status",
+            "confidence": "Confidence",
+        }
+    )
+    rows: list[dict[str, str]] = []
+    for item in build_evidence_matrix(state):
+        rows.append(
+            {
+                labels["finding"]: item.finding_id,
+                labels["linked"]: item.linked_id,
+                labels["type"]: _evidence_matrix_source_type_label(
+                    item.source_type, language
+                ),
+                labels["source"]: item.source_document_id,
+                labels["location"]: item.source_location,
+                labels["excerpt"]: _evidence_matrix_excerpt(item.evidence_excerpt, language),
+                labels["status"]: _evidence_matrix_status_label(
+                    item.evidence_status, language
+                ),
+                labels["confidence"]: (
+                    f"{item.confidence:.2f}" if item.confidence is not None else ""
+                ),
+            }
+        )
+    return rows
+
+
 def localize_report_gate_reason(reason: str, language: Language) -> str:
     missing_documents_prefix = "Missing required document inputs block report draft input: "
     if reason.startswith(missing_documents_prefix):
@@ -1769,6 +1820,58 @@ def localize_report_gate_reason(reason: str, language: Language) -> str:
             rejected_agent_review_prefix
         )
     return reason
+
+
+def _evidence_matrix_source_type_label(source_type: str, language: Language) -> str:
+    labels = (
+        {
+            "field": "字段证据",
+            "document": "资料证据",
+            "missing": "缺失证据",
+        }
+        if language == "zh"
+        else {
+            "field": "Field Evidence",
+            "document": "Document Evidence",
+            "missing": "Missing Evidence",
+        }
+    )
+    return labels.get(source_type, source_type)
+
+
+def _evidence_matrix_status_label(status: str, language: Language) -> str:
+    labels = (
+        {
+            "confirmed": "已确认",
+            "unconfirmed": "未确认",
+            "excluded": "已确认但未入计算",
+            "available": "已提供",
+            "partial": "部分提供",
+            "missing": "缺失",
+            "not_applicable": "不适用",
+        }
+        if language == "zh"
+        else {
+            "confirmed": "Confirmed",
+            "unconfirmed": "Unconfirmed",
+            "excluded": "Confirmed but Excluded",
+            "available": "Available",
+            "partial": "Partial",
+            "missing": "Missing",
+            "not_applicable": "Not Applicable",
+        }
+    )
+    return labels.get(status, status)
+
+
+def _evidence_matrix_excerpt(excerpt: str, language: Language) -> str:
+    if (
+        language == "zh"
+        and excerpt
+        == "No extracted field, document version, or intake document status is available."
+    ):
+        return "未找到字段、资料版本或录入资料状态。"
+    return excerpt
 
 
 def _localized_recheck_reason(item, language: Language) -> str:

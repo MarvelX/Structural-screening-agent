@@ -30,6 +30,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_blocked_calculation_review_draft_rows,
     build_calculation_result_summary_rows,
     build_closed_rfi_incremental_recheck_rows,
+    build_evidence_matrix_rows,
     build_extracted_fields_from_human_gate_rows,
     build_bv_review_intake,
     build_field_diff_summary_rows,
@@ -1895,6 +1896,23 @@ with bv_review_tab:
                 "No structured report gate evidence is available."
                 if ui_language == "en"
                 else "当前没有结构化报告门禁证据。"
+            )
+        evidence_matrix_rows = build_evidence_matrix_rows(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown("##### Evidence Matrix" if ui_language == "en" else "证据矩阵")
+        if evidence_matrix_rows:
+            st.dataframe(
+                evidence_matrix_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No finding source evidence is available yet."
+                if ui_language == "en"
+                else "当前还没有发现项来源证据。"
             )
         closed_rfi_recheck_rows = build_closed_rfi_incremental_recheck_rows(
             reviewed_workflow_state,

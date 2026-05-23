@@ -66,6 +66,7 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "质量门禁状态" in source
     assert "Quality Gate Status" in source
     assert "build_report_gate_evidence_rows" in source
+    assert "build_evidence_matrix_rows" in source
     assert "resume_local_agent_workflow_after_review_decisions" in source
     assert "run_local_agent_workflow_until_blocked" in source
     assert "build_agent_workflow_phase_rows" in source
@@ -94,6 +95,8 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert 'translate(ui_language, "bv_review_warning_objects")' in source
     assert "报告门禁证据" in source
     assert "Report Gate Evidence" in source
+    assert "证据矩阵" in source
+    assert "Evidence Matrix" in source
     assert "No structured report gate evidence is available." in source
     assert "view.traceability_cards" in source
     assert "view.assessment_metric_cards" in source

@@ -81,6 +81,12 @@ Current result:
 
 Goal: add more deterministic calculators and stronger evidence handling.
 
+Status: started.
+
+Implemented:
+
+- Evidence matrix by finding and document source. Blocking risks and nonconformities can now be traced back to extracted fields, document versions, intake document status, or explicit missing evidence, and the workbench shows this as a localized evidence table.
+
 Candidate work:
 
 - foundation bearing capacity screening
@@ -88,7 +94,7 @@ Candidate work:
 - connection force path screening
 - wind / snow / seismic review basis routing
 - geotechnical report extraction checklist
-- evidence matrix by document source and finding
+- evidence matrix export into report packages
 
 Boundary:
 
