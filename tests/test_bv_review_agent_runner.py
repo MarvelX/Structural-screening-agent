@@ -285,7 +285,18 @@ def test_blocked_calculation_review_draft_includes_failed_runs() -> None:
     )
     state = ProjectReviewState(
         project_id="pv-001",
-        intake=_sample_intake(),
+        intake=BVReviewIntake(
+            project_name="Ground PV design review",
+            country_or_region="China",
+            project_type="utility_pv",
+            design_stage="detailed_design",
+            standards_systems=["gb"],
+            review_objects=["mounting_structure"],
+            documents={
+                "structural_drawings": "available",
+                "calculation_report": "partial",
+            },
+        ),
         current_phase="engineer_data_lock",
         calculation_runs=[blocked_run],
     )

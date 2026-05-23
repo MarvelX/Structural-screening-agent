@@ -1,6 +1,7 @@
 from structural_screening_agent.bv_review import (
     ProjectReviewState,
     build_foundation_evidence_path,
+    build_foundation_evidence_risks,
 )
 from structural_screening_agent.bv_review.models import BVReviewIntake
 from structural_screening_agent.bv_review.project_state import ExtractedField
@@ -110,3 +111,40 @@ def test_foundation_evidence_path_is_satisfied_when_documents_and_confirmed_fiel
         "side_resistance_standard_kpa",
     ]
     assert "基础筛查级计算" in path[-1].review_action
+
+
+def test_foundation_evidence_risks_are_traceable_blocking_drafts() -> None:
+    state = ProjectReviewState(
+        project_id="pv-foundation-evidence-risk",
+        intake=_foundation_intake(
+            {
+                "calculation_report": "partial",
+                "technical_specification": "available",
+                "geotechnical_report": "missing",
+            }
+        ),
+        extracted_fields=[
+            _field("pile_diameter_mm", "300"),
+            _field(
+                "bearing_capacity_characteristic_kpa",
+                "180",
+                confirmed=False,
+                include_in_calculation=False,
+            ),
+        ],
+    )
+
+    risks = build_foundation_evidence_risks(state)
+    risk = next(
+        item
+        for item in risks
+        if item.risk_id == "foundation_evidence_blocked_geotechnical_parameters"
+    )
+
+    assert risk.category == "nonconformity"
+    assert risk.severity == "critical"
+    assert risk.blocks_report_issue is True
+    assert "地勘参数证据" in risk.title
+    assert "geotechnical_report" in risk.linked_field_ids
+    assert "side_resistance_standard_kpa" in risk.linked_field_ids
+    assert "bearing_capacity_characteristic_kpa" in risk.linked_field_ids

@@ -2,6 +2,9 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from structural_screening_agent.bv_review.foundation_evidence import (
+    build_foundation_evidence_risks,
+)
 from structural_screening_agent.bv_review.models import BVRiskItem
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, RFIItem
 from structural_screening_agent.bv_review.report import build_bv_open_rfi_items
@@ -19,7 +22,10 @@ def build_blocked_calculation_review_draft(
     blocked_runs = [
         run for run in state.calculation_runs if run.status in {"blocked", "failed"}
     ]
-    risks = build_calculation_run_risks(blocked_runs)
+    risks = [
+        *build_calculation_run_risks(blocked_runs),
+        *build_foundation_evidence_risks(state),
+    ]
     return BlockedCalculationReviewDraft(
         risks=risks,
         rfi_items=build_bv_open_rfi_items(risks),

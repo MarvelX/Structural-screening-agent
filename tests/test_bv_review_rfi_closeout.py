@@ -249,3 +249,41 @@ def test_issue_blocked_calculation_draft_rfi_rejects_unknown_or_duplicate_rfi() 
             rfi_id="rfi-calculation_blocked_foundation_failed_001",
             reviewer="Engineer A",
         )
+
+
+def test_issue_foundation_evidence_draft_rfi_requires_engineer_review() -> None:
+    state = ProjectReviewState(
+        project_id="pv-rfi-foundation-evidence",
+        intake=BVReviewIntake(
+            project_name="Ground PV design review",
+            country_or_region="China",
+            project_type="utility_pv",
+            design_stage="detailed_design",
+            standards_systems=["gb"],
+            review_objects=["foundation"],
+            documents={
+                "calculation_report": "partial",
+                "geotechnical_report": "missing",
+            },
+        ),
+        current_phase="engineer_data_lock",
+    )
+
+    issued = issue_blocked_calculation_draft_rfi(
+        state,
+        rfi_id="rfi-foundation_evidence_blocked_geotechnical_parameters",
+        reviewer="Engineer A",
+        comment="Issue RFI to request geotechnical evidence before calculation.",
+    )
+
+    assert issued.current_phase == "issue_rfi_closeout"
+    assert issued.phase_statuses["issue_rfi_closeout"] == "waiting_for_client"
+    assert issued.rfi_items[0].rfi_id == "rfi-foundation_evidence_blocked_geotechnical_parameters"
+    assert issued.rfi_items[0].status == "open"
+    assert issued.rfi_items[0].triggers_incremental_recheck is True
+    assert "geotechnical_report" in issued.rfi_items[0].required_document_or_field
+    assert "side_resistance_standard_kpa" in issued.rfi_items[0].required_document_or_field
+    approval = issued.approvals[-1]
+    assert approval.target_type == "rfi"
+    assert approval.target_id == "rfi-foundation_evidence_blocked_geotechnical_parameters"
+    assert approval.locked is True

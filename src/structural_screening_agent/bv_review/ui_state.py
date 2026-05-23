@@ -1464,6 +1464,33 @@ def build_blocked_calculation_review_draft_rows(
                 labels["action"]: _blocked_calculation_draft_action(language),
             }
         )
+    for risk in draft.risks:
+        if not risk.risk_id.startswith("foundation_evidence_blocked_"):
+            continue
+        evidence_id = risk.risk_id.removeprefix("foundation_evidence_blocked_")
+        rfi = rfi_by_risk_id.get(risk.risk_id)
+        rows.append(
+            {
+                labels["run_id"]: f"foundation-evidence:{evidence_id}",
+                labels["engine"]: (
+                    "基础证据路径" if language == "zh" else "Foundation Evidence Path"
+                ),
+                labels["status"]: "阻塞" if language == "zh" else "Blocked",
+                labels["fields"]: ", ".join(risk.linked_field_ids),
+                labels["errors"]: (
+                    risk.trigger_basis
+                    if language == "zh"
+                    else "Foundation evidence is incomplete before screening-level calculation."
+                ),
+                labels["risk_id"]: risk.risk_id,
+                labels["rfi_id"]: rfi.rfi_id if rfi is not None else "",
+                labels["action"]: (
+                    risk.recommendation
+                    if language == "zh"
+                    else "Request missing foundation evidence and rerun the screening-level calculation after engineer review."
+                ),
+            }
+        )
     return rows
 
 

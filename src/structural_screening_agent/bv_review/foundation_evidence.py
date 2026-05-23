@@ -4,6 +4,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from structural_screening_agent.bv_review.models import BVRiskItem
 from structural_screening_agent.bv_review.project_state import (
     ExtractedField,
     ProjectReviewState,
@@ -84,6 +85,37 @@ def build_foundation_evidence_path(
     ]
 
 
+def build_foundation_evidence_risks(
+    state: ProjectReviewState,
+) -> list[BVRiskItem]:
+    risks: list[BVRiskItem] = []
+    for item in build_foundation_evidence_path(state):
+        if not item.blocks_calculation:
+            continue
+        linked_field_ids = _unique_preserving_order(
+            [
+                *item.missing_document_keys,
+                *item.partial_document_keys,
+                *item.missing_field_ids,
+                *item.unconfirmed_field_ids,
+            ]
+        )
+        risks.append(
+            BVRiskItem(
+                risk_id=f"foundation_evidence_blocked_{item.evidence_id}",
+                title=f"{item.title}不足，阻塞基础筛查级计算",
+                severity="critical" if item.status == "missing" else "high",
+                trigger_basis=_foundation_evidence_trigger_basis(item),
+                linked_field_ids=linked_field_ids,
+                impact_scope="基础证据路径、基础筛查级计算和相关 RFI/NCR 判断",
+                recommendation=item.review_action,
+                blocks_report_issue=True,
+                category="nonconformity" if item.status == "missing" else "risk",
+            )
+        )
+    return risks
+
+
 def _build_evidence_item(
     state: ProjectReviewState,
     fields_by_id: dict[str, ExtractedField],
@@ -153,3 +185,28 @@ def _resolve_evidence_status(
     if partial_document_keys or unconfirmed_field_ids:
         return "partial"
     return "satisfied"
+
+
+def _foundation_evidence_trigger_basis(item: FoundationEvidenceItem) -> str:
+    return (
+        f"基础证据路径 {item.evidence_id}: 状态={item.status}; "
+        f"缺失资料={_joined_or_na(item.missing_document_keys)}; "
+        f"部分资料={_joined_or_na(item.partial_document_keys)}; "
+        f"缺失字段={_joined_or_na(item.missing_field_ids)}; "
+        f"未确认字段={_joined_or_na(item.unconfirmed_field_ids)}."
+    )
+
+
+def _joined_or_na(values: list[str]) -> str:
+    return ", ".join(values) if values else "N/A"
+
+
+def _unique_preserving_order(values: list[str]) -> list[str]:
+    unique_values: list[str] = []
+    seen: set[str] = set()
+    for value in values:
+        if value in seen:
+            continue
+        seen.add(value)
+        unique_values.append(value)
+    return unique_values

@@ -635,7 +635,19 @@ def test_closed_rfi_incremental_recheck_rows_show_completed_evidence_without_mix
 def test_blocked_calculation_review_draft_rows_localize_engineer_visible_rfi_draft() -> None:
     state = ProjectReviewState(
         project_id="pv-ui-blocked-calculation",
-        intake=default_bv_review_intake(),
+        intake=BVReviewIntake(
+            project_name="BV rooftop PV design review demo",
+            country_or_region="China",
+            project_type="rooftop_pv",
+            design_stage="construction_drawing",
+            standards_systems=["gb", "iec"],
+            review_objects=["mounting_structure"],
+            documents={
+                "structural_drawings": "partial",
+                "calculation_report": "missing",
+                "technical_specification": "available",
+            },
+        ),
         current_phase="engineer_data_lock",
         calculation_runs=[
             CalculationRun(
@@ -687,10 +699,81 @@ def test_blocked_calculation_review_draft_rows_localize_engineer_visible_rfi_dra
     assert state.agent_events == []
 
 
+def test_blocked_calculation_review_draft_rows_include_foundation_evidence_drafts() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-foundation-evidence-draft",
+        intake=BVReviewIntake(
+            project_name="Ground PV foundation review",
+            country_or_region="China",
+            project_type="utility_pv",
+            design_stage="detailed_design",
+            standards_systems=["gb"],
+            review_objects=["foundation"],
+            documents={
+                "calculation_report": "partial",
+                "geotechnical_report": "missing",
+            },
+        ),
+    )
+
+    zh_rows = build_blocked_calculation_review_draft_rows(state, "zh")
+    en_rows = build_blocked_calculation_review_draft_rows(state, "en")
+
+    zh_geotech = next(
+        row
+        for row in zh_rows
+        if row["草稿 RFI ID"] == "rfi-foundation_evidence_blocked_geotechnical_parameters"
+    )
+    en_geotech = next(
+        row
+        for row in en_rows
+        if row["Draft RFI ID"]
+        == "rfi-foundation_evidence_blocked_geotechnical_parameters"
+    )
+
+    assert zh_geotech["计算运行 ID"] == "foundation-evidence:geotechnical_parameters"
+    assert zh_geotech["计算引擎"] == "基础证据路径"
+    assert zh_geotech["状态"] == "阻塞"
+    assert "geotechnical_report" in zh_geotech["待补字段"]
+    assert zh_geotech["草稿风险 ID"] == "foundation_evidence_blocked_geotechnical_parameters"
+    assert "补充或确认地勘报告" in zh_geotech["建议动作"]
+    assert en_geotech == {
+        "Calculation Run ID": "foundation-evidence:geotechnical_parameters",
+        "Calculation Engine": "Foundation Evidence Path",
+        "Status": "Blocked",
+        "Required Fields": (
+            "geotechnical_report, bearing_capacity_characteristic_kpa, "
+            "side_resistance_standard_kpa"
+        ),
+        "Structured Errors": (
+            "Foundation evidence is incomplete before screening-level calculation."
+        ),
+        "Draft Risk ID": "foundation_evidence_blocked_geotechnical_parameters",
+        "Draft RFI ID": "rfi-foundation_evidence_blocked_geotechnical_parameters",
+        "Suggested Action": (
+            "Request missing foundation evidence and rerun the screening-level "
+            "calculation after engineer review."
+        ),
+    }
+    assert "基础证据路径" not in str(en_rows)
+
+
 def test_blocked_calculation_review_draft_rows_are_empty_without_blocked_runs() -> None:
     state = ProjectReviewState(
         project_id="pv-ui-ready-calculation",
-        intake=default_bv_review_intake(),
+        intake=BVReviewIntake(
+            project_name="BV rooftop PV design review demo",
+            country_or_region="China",
+            project_type="rooftop_pv",
+            design_stage="construction_drawing",
+            standards_systems=["gb", "iec"],
+            review_objects=["mounting_structure"],
+            documents={
+                "structural_drawings": "partial",
+                "calculation_report": "available",
+                "technical_specification": "available",
+            },
+        ),
         calculation_runs=[
             CalculationRun(
                 run_id="foundation-run-001",

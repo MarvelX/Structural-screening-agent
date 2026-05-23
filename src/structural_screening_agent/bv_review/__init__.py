@@ -93,6 +93,7 @@ from structural_screening_agent.bv_review.field_diff import (
 from structural_screening_agent.bv_review.foundation_evidence import (
     FoundationEvidenceItem,
     build_foundation_evidence_path,
+    build_foundation_evidence_risks,
 )
 from structural_screening_agent.bv_review.models import (
     BVReviewIntake,
@@ -197,6 +198,7 @@ __all__ = [
     "build_agent_response_application_packet",
     "build_foundation_calculation_run",
     "build_foundation_evidence_path",
+    "build_foundation_evidence_risks",
     "build_agent_provider_invocation_request",
     "build_agent_provider_invocation_rows",
     "build_agent_response_application_plan",
