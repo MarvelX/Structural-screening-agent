@@ -85,7 +85,7 @@ Status: started.
 
 Implemented:
 
-- Evidence matrix by finding and document source. Blocking risks and nonconformities can now be traced back to extracted fields, document versions, intake document status, or explicit missing evidence, and the workbench shows this as a localized evidence table.
+- Evidence matrix by finding and document source. Blocking risks and nonconformities can now be traced back to extracted fields, document versions, intake document status, or explicit missing evidence; the workbench shows this as a localized evidence table and BV report packages include the same traceability section.
 
 Candidate work:
 
@@ -94,7 +94,7 @@ Candidate work:
 - connection force path screening
 - wind / snow / seismic review basis routing
 - geotechnical report extraction checklist
-- evidence matrix export into report packages
+- evidence matrix export refinements for Word / PDF formatting
 
 Boundary:
 

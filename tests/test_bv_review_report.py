@@ -10,6 +10,7 @@ from structural_screening_agent.bv_review.report import (
 from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
     CalculationRun,
+    DocumentVersion,
     EngineerApproval,
     ExtractedField,
     ProjectReviewState,
@@ -722,6 +723,102 @@ def test_bv_markdown_report_includes_foundation_evidence_path_when_state_is_prov
     assert "## 基础证据路径" in report
     assert "地勘参数证据 | 状态: 缺失" in report
     assert "阻塞基础计算: 是" in report
+
+
+def test_bv_report_preview_includes_evidence_matrix_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    risk = BVRiskItem(
+        risk_id="risk-geotechnical-evidence",
+        title="地勘参数证据不足",
+        severity="critical",
+        trigger_basis="地勘参数证据不足。",
+        linked_field_ids=[
+            "bearing_capacity_characteristic_kpa",
+            "geotechnical_report",
+            "side_resistance_standard_kpa",
+        ],
+        impact_scope="基础筛查级计算",
+        recommendation="补充地勘参数。",
+        blocks_report_issue=True,
+        category="nonconformity",
+    )
+    state = ProjectReviewState(
+        project_id="pv-report-evidence-matrix",
+        intake=intake,
+        document_versions=[
+            DocumentVersion(
+                document_id="geo-r1",
+                document_type="geotechnical_report",
+                revision="R1",
+                source_name="Geotechnical report package",
+                status="available",
+            )
+        ],
+        extracted_fields=[
+            ExtractedField(
+                field_id="bearing_capacity_characteristic_kpa",
+                name="Bearing capacity characteristic",
+                candidate_value="180",
+                unit="kPa",
+                source_document_id="geo-r1",
+                page_or_section="Section 4.2",
+                quote="fak = 180 kPa",
+                confidence=0.91,
+                is_confirmed=True,
+                confirmed_value="180",
+                include_in_calculation=True,
+            )
+        ],
+        risks=[risk],
+    )
+    result = result.model_copy(update={"risks": [*result.risks, risk]})
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "发现项证据矩阵")
+    text = "\n".join(section.items)
+
+    assert "发现项 risk-geotechnical-evidence" in text
+    assert "关联项: bearing_capacity_characteristic_kpa" in text
+    assert "证据类型: 字段证据" in text
+    assert "来源: geo-r1" in text
+    assert "位置: Section 4.2" in text
+    assert "摘录: fak = 180 kPa" in text
+    assert "状态: 已确认" in text
+    assert "置信度: 0.91" in text
+    assert "关联项: geotechnical_report" in text
+    assert "证据类型: 资料证据" in text
+    assert "位置: Revision R1" in text
+    assert "关联项: side_resistance_standard_kpa" in text
+    assert "证据类型: 缺失证据" in text
+
+
+def test_bv_markdown_report_includes_evidence_matrix_when_state_is_provided() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-evidence-matrix",
+        intake=intake,
+        risks=[
+            BVRiskItem(
+                risk_id="risk-missing-side-resistance",
+                title="侧阻力参数缺失",
+                severity="critical",
+                trigger_basis="侧阻力参数缺失。",
+                linked_field_ids=["side_resistance_standard_kpa"],
+                impact_scope="基础筛查级计算",
+                recommendation="补充侧阻力参数。",
+                blocks_report_issue=True,
+                category="nonconformity",
+            )
+        ],
+    )
+
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "## 发现项证据矩阵" in report
+    assert "发现项 risk-missing-side-resistance" in report
+    assert "证据类型: 缺失证据" in report
 
 
 def test_bv_markdown_report_includes_project_management_actions_when_state_is_provided() -> None:

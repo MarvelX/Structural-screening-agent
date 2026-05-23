@@ -13,6 +13,7 @@ from structural_screening_agent.bv_review.models import (
 from structural_screening_agent.bv_review.field_diff import (
     build_incremental_recheck_plan_from_closed_rfis,
 )
+from structural_screening_agent.bv_review.evidence_matrix import build_evidence_matrix
 from structural_screening_agent.bv_review.foundation_evidence import (
     build_foundation_evidence_path,
 )
@@ -119,6 +120,9 @@ def build_bv_report_preview(
     foundation_evidence_section = build_bv_foundation_evidence_section(project_state)
     if foundation_evidence_section is not None:
         sections.insert(-1, foundation_evidence_section)
+    evidence_matrix_section = build_bv_evidence_matrix_section(project_state)
+    if evidence_matrix_section is not None:
+        sections.insert(-1, evidence_matrix_section)
     project_timeline_section = build_bv_project_timeline_section(project_state)
     if project_timeline_section is not None:
         sections.insert(-1, project_timeline_section)
@@ -404,6 +408,70 @@ def _foundation_evidence_status_label(status: str) -> str:
 
 def _document_key_list_label(document_keys: list[str]) -> str:
     return "、".join(_document_key_label(key) for key in document_keys) or "无"
+
+
+def build_bv_evidence_matrix_section(
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
+    if project_state is None:
+        return None
+
+    matrix_items = build_evidence_matrix(project_state)
+    if not matrix_items:
+        return None
+
+    return BVReportSection(
+        heading="发现项证据矩阵",
+        items=[
+            (
+                f"发现项 {item.finding_id} | "
+                f"标题: {item.finding_title} | "
+                f"关联项: {item.linked_id} | "
+                f"证据类型: {_evidence_source_type_label(item.source_type)} | "
+                f"来源: {item.source_document_id or 'N/A'} | "
+                f"位置: {item.source_location or 'N/A'} | "
+                f"摘录: {_evidence_excerpt_label(item.evidence_excerpt)} | "
+                f"状态: {_evidence_status_label(item.evidence_status)} | "
+                f"置信度: {_evidence_confidence_label(item.confidence)}"
+            )
+            for item in matrix_items
+        ],
+    )
+
+
+def _evidence_source_type_label(source_type: str) -> str:
+    labels = {
+        "field": "字段证据",
+        "document": "资料证据",
+        "missing": "缺失证据",
+    }
+    return labels.get(source_type, source_type)
+
+
+def _evidence_status_label(status: str) -> str:
+    labels = {
+        "confirmed": "已确认",
+        "unconfirmed": "未确认",
+        "excluded": "已确认但未入计算",
+        "available": "已提供",
+        "partial": "部分提供",
+        "missing": "缺失",
+        "not_applicable": "不适用",
+    }
+    return labels.get(status, status)
+
+
+def _evidence_excerpt_label(excerpt: str) -> str:
+    if (
+        excerpt
+        == "No extracted field, document version, or intake document status is available."
+    ):
+        return "未找到字段、资料版本或录入资料状态。"
+    return excerpt
+
+
+def _evidence_confidence_label(confidence: Optional[float]) -> str:
+    return f"{confidence:.2f}" if confidence is not None else "N/A"
 
 
 def build_bv_project_timeline_section(
