@@ -107,6 +107,8 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "build_bv_gate_panel_text" in source
     assert "gate_panel_text.quality_gate_heading" in source
     assert "Quality Gate Status" not in source
+    assert "render_bv_report_gate_status" in source
+    assert "localize_report_gate_reason" not in source
     assert "build_report_gate_evidence_rows" in source
     assert "build_evidence_matrix_rows" in source
     assert "resume_local_agent_workflow_after_review_decisions" in source

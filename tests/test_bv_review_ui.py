@@ -6,8 +6,10 @@ from structural_screening_agent.bv_review.ui import (
     build_bv_project_management_dashboard_view,
     build_bv_report_preview_sections,
     format_bv_label,
+    render_bv_report_gate_status,
     render_bv_section,
 )
+from structural_screening_agent.bv_review.human_gate import ReportDraftGateResult
 from structural_screening_agent.bv_review.project_management import (
     build_project_management_actions,
 )
@@ -24,12 +26,24 @@ class _FakeStreamlit:
     def __init__(self) -> None:
         self.markdown_calls: list[str] = []
         self.write_calls: list[str] = []
+        self.success_calls: list[str] = []
+        self.warning_calls: list[str] = []
+        self.caption_calls: list[str] = []
 
     def markdown(self, text: str) -> None:
         self.markdown_calls.append(text)
 
     def write(self, text: str) -> None:
         self.write_calls.append(text)
+
+    def success(self, text: str) -> None:
+        self.success_calls.append(text)
+
+    def warning(self, text: str) -> None:
+        self.warning_calls.append(text)
+
+    def caption(self, text: str) -> None:
+        self.caption_calls.append(text)
 
 
 def test_bv_ui_helpers_import_without_streamlit_runtime() -> None:
@@ -79,6 +93,52 @@ def test_bv_gate_panel_text_localizes_quality_gate_heading() -> None:
     assert zh_text.quality_gate_heading == "质量门禁状态"
     assert en_text.quality_gate_heading == "Quality Gate Status"
     assert "Quality Gate Status" not in str(zh_text)
+
+
+def test_render_bv_report_gate_status_renders_ready_and_blocked_states() -> None:
+    ready_st = _FakeStreamlit()
+    render_bv_report_gate_status(
+        ready_st,
+        ReportDraftGateResult(
+            status="ready",
+            notes=["Calculation run is ready but not yet completed."],
+        ),
+        "en",
+        ready_message="Report draft gate ready.",
+        blocked_message="Report draft gate blocked.",
+    )
+
+    assert ready_st.success_calls == ["Report draft gate ready."]
+    assert ready_st.warning_calls == []
+    assert ready_st.write_calls == []
+    assert ready_st.caption_calls == ["Calculation run is ready but not yet completed."]
+
+    blocked_st = _FakeStreamlit()
+    render_bv_report_gate_status(
+        blocked_st,
+        ReportDraftGateResult(
+            status="blocked",
+            reasons=[
+                "Missing required document inputs block report draft input: geotechnical_report",
+                "Reason 2",
+                "Reason 3",
+                "Reason 4",
+                "Reason 5",
+                "Reason 6",
+            ],
+            notes=["Engineer closeout remains pending."],
+        ),
+        "zh",
+        ready_message="报告草稿输入门禁已满足。",
+        blocked_message="报告草稿输入门禁阻塞。",
+    )
+
+    assert blocked_st.success_calls == []
+    assert blocked_st.warning_calls == ["报告草稿输入门禁阻塞。"]
+    assert len(blocked_st.write_calls) == 5
+    assert blocked_st.write_calls[0].startswith("- 缺失必要资料：")
+    assert "Missing required document inputs" not in blocked_st.write_calls[0]
+    assert blocked_st.caption_calls == ["Engineer closeout remains pending."]
 
 
 def test_bv_report_preview_sections_support_chinese_and_english() -> None:

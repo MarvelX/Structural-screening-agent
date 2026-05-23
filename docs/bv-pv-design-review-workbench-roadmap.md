@@ -23,6 +23,7 @@ Already present in the repository:
 - BV label formatter extraction: BV form and calculation labels now share `format_bv_label` with language fallback behavior covered by unit tests.
 - BV evidence table text extraction: evidence table headings and empty states now share a tested bilingual text helper outside `app.py`.
 - BV gate panel text extraction: quality-gate panel headings now share a tested bilingual helper outside `app.py`.
+- BV report gate status renderer extraction: ready / blocked report-gate notices, localized reasons, and notes now render through a tested Streamlit-like helper outside `app.py`.
 - UI / report evidence matrix alignment: workbench rows and exported BV reports now trace final report findings to fields, document versions, intake document status, or missing evidence.
 - workspace cleanliness policy in `docs/workspace-cleanliness.md`, with tests that keep ignored local artifact rules documented.
 

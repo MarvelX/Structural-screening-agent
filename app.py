@@ -42,7 +42,6 @@ from structural_screening_agent.bv_review.ui_state import (
     build_quality_gate_status_rows,
     build_report_gate_evidence_rows,
     build_report_revision_history_rows,
-    localize_report_gate_reason,
     default_bv_review_intake,
 )
 from structural_screening_agent.bv_review.field_diff import (
@@ -119,6 +118,7 @@ from structural_screening_agent.bv_review.ui import (
     build_bv_report_preview_sections,
     build_bv_risk_items,
     format_bv_label,
+    render_bv_report_gate_status,
     render_bv_section,
 )
 from structural_screening_agent.bv_review import (
@@ -1874,14 +1874,13 @@ with bv_review_tab:
             hide_index=True,
             use_container_width=True,
         )
-        if report_draft_gate.status == "ready":
-            st.success(translate(ui_language, "report_draft_gate_ready"))
-        else:
-            st.warning(translate(ui_language, "report_draft_gate_blocked"))
-            for reason in report_draft_gate.reasons[:5]:
-                st.write(f"- {localize_report_gate_reason(reason, ui_language)}")
-        for note in report_draft_gate.notes:
-            st.caption(note)
+        render_bv_report_gate_status(
+            st,
+            report_draft_gate,
+            ui_language,
+            ready_message=translate(ui_language, "report_draft_gate_ready"),
+            blocked_message=translate(ui_language, "report_draft_gate_blocked"),
+        )
         foundation_evidence_rows = build_foundation_evidence_display_rows(
             reviewed_workflow_state,
             ui_language,

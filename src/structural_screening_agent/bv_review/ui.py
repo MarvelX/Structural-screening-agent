@@ -17,10 +17,12 @@ from structural_screening_agent.bv_review.foundation_evidence import (
     FoundationEvidenceItem,
     build_foundation_evidence_path,
 )
+from structural_screening_agent.bv_review.human_gate import ReportDraftGateResult
 from structural_screening_agent.bv_review.project_state import ProjectReviewState
 from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
+    localize_report_gate_reason,
 )
 from structural_screening_agent.localization import Language
 
@@ -55,6 +57,20 @@ class StreamlitSectionRenderer(Protocol):
         ...
 
 
+class StreamlitReportGateRenderer(Protocol):
+    def success(self, text: str) -> None:
+        ...
+
+    def warning(self, text: str) -> None:
+        ...
+
+    def write(self, text: str) -> None:
+        ...
+
+    def caption(self, text: str) -> None:
+        ...
+
+
 def render_bv_section(
     streamlit_api: StreamlitSectionRenderer,
     title: str,
@@ -65,6 +81,23 @@ def render_bv_section(
     visible_items = items if limit is None else items[:limit]
     for item in visible_items:
         streamlit_api.write(f"- {item}")
+
+
+def render_bv_report_gate_status(
+    streamlit_api: StreamlitReportGateRenderer,
+    report_gate: ReportDraftGateResult,
+    language: Language,
+    ready_message: str,
+    blocked_message: str,
+) -> None:
+    if report_gate.status == "ready":
+        streamlit_api.success(ready_message)
+    else:
+        streamlit_api.warning(blocked_message)
+        for reason in report_gate.reasons[:5]:
+            streamlit_api.write(f"- {localize_report_gate_reason(reason, language)}")
+    for note in report_gate.notes:
+        streamlit_api.caption(note)
 
 
 def format_bv_label(
