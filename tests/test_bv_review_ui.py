@@ -4,6 +4,7 @@ from structural_screening_agent.bv_review.ui import (
     build_bv_gate_panel_text,
     build_foundation_evidence_display_rows,
     build_bv_project_management_dashboard_view,
+    build_bv_report_revision_history_view,
     build_bv_report_preview_sections,
     format_bv_label,
     render_bv_report_gate_status,
@@ -17,6 +18,7 @@ from structural_screening_agent.bv_review.project_state import (
     ExtractedField,
     ProjectReviewState,
     RFIItem,
+    ReportRevision,
 )
 from structural_screening_agent.bv_review.ui_state import default_bv_review_intake
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
@@ -189,6 +191,43 @@ def test_bv_project_management_dashboard_view_localizes_summary_and_rows() -> No
     assert empty_view.summary_rows == []
     assert empty_view.action_rows == []
     assert empty_view.empty_caption == "No project management actions are currently open."
+
+
+def test_bv_report_revision_history_view_localizes_rows_and_empty_state() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-report-revisions",
+        intake=default_bv_review_intake(),
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-001",
+                source_phase="report_draft",
+                report_title="BV 光伏结构设计审查报告",
+                section_count=8,
+                rfi_count=1,
+                created_by="Engineer A",
+                created_at="2026-05-20T09:00:00+08:00",
+                revision_status="issued_for_review",
+                issue_purpose="Internal review package",
+            )
+        ],
+    )
+
+    zh_view = build_bv_report_revision_history_view(state, "zh")
+    en_view = build_bv_report_revision_history_view(state, "en")
+    empty_view = build_bv_report_revision_history_view(
+        ProjectReviewState(
+            project_id="pv-ui-empty-report-revisions",
+            intake=default_bv_review_intake(),
+        ),
+        "en",
+    )
+
+    assert zh_view.heading == "报告修订历史"
+    assert zh_view.summary_rows[0] == {"指标": "报告修订数", "数值": 1}
+    assert zh_view.revision_rows[0]["状态"] == "发给复核"
+    assert en_view.heading == "Report Revision History"
+    assert en_view.revision_rows[0]["Status"] == "Issued for Review"
+    assert empty_view.empty_caption == "No report revision snapshots have been recorded."
 
 
 def test_foundation_evidence_display_rows_localize_status_and_documents() -> None:

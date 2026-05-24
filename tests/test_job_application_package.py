@@ -204,11 +204,14 @@ def test_streamlit_bv_demo_exposes_explicit_persisted_workflow_resume_controls()
     assert "责任方待办与时限状态" in app_source
     assert "build_project_management_actions" in app_source
     assert "build_bv_project_management_dashboard_view" in app_source
+    assert "build_bv_report_revision_history_view" in app_source
     assert "build_project_management_action_summary" in ui_source
     assert "build_project_management_action_summary_rows" in ui_source
     assert "build_project_management_action_rows" in ui_source
     assert '"Project Management Action Dashboard"' in ui_source
     assert '"项目管理行动看板"' in ui_source
+    assert '"Report Revision History"' in ui_source
+    assert '"报告修订历史"' in ui_source
     assert "build_agent_prompt_packages" in app_source
     assert "build_agent_prompt_package_rows" in app_source
     assert "build_agent_provider_invocation_request" in app_source

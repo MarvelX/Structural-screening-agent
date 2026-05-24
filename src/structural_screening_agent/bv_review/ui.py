@@ -13,6 +13,10 @@ from structural_screening_agent.bv_review.project_management import (
     build_project_management_action_summary,
     build_project_management_action_summary_rows,
 )
+from structural_screening_agent.bv_review.report_revision_history import (
+    build_report_revision_history_rows,
+    build_report_revision_history_summary,
+)
 from structural_screening_agent.bv_review.foundation_evidence import (
     FoundationEvidenceItem,
     build_foundation_evidence_path,
@@ -31,6 +35,13 @@ class BVProjectManagementDashboardView(BaseModel):
     heading: str = Field(min_length=1)
     summary_rows: list[dict[str, object]] = Field(default_factory=list)
     action_rows: list[dict[str, object]] = Field(default_factory=list)
+    empty_caption: str = Field(min_length=1)
+
+
+class BVReportRevisionHistoryView(BaseModel):
+    heading: str = Field(min_length=1)
+    summary_rows: list[dict[str, object]] = Field(default_factory=list)
+    revision_rows: list[dict[str, object]] = Field(default_factory=list)
     empty_caption: str = Field(min_length=1)
 
 
@@ -259,6 +270,49 @@ def build_bv_project_management_dashboard_view(
         heading=heading,
         summary_rows=build_project_management_action_summary_rows(summary, language),
         action_rows=build_project_management_action_rows(actions, language),
+        empty_caption=empty_caption,
+    )
+
+
+def build_bv_report_revision_history_view(
+    state: ProjectReviewState,
+    language: Language,
+) -> BVReportRevisionHistoryView:
+    heading = "Report Revision History" if language == "en" else "报告修订历史"
+    empty_caption = (
+        "No report revision snapshots have been recorded."
+        if language == "en"
+        else "当前还没有报告修订快照。"
+    )
+    summary = build_report_revision_history_summary(state)
+    if language == "en":
+        summary_rows = [
+            {"Metric": "Report Revisions", "Value": summary.total_revision_count},
+            {"Metric": "Latest Revision", "Value": summary.latest_revision_id or "None"},
+            {"Metric": "Latest Status", "Value": summary.latest_revision_status or "None"},
+            {"Metric": "Open Revisions", "Value": summary.open_revision_count},
+            {
+                "Metric": "Superseded Revisions",
+                "Value": summary.superseded_revision_count,
+            },
+            {
+                "Metric": "Next Revision Action",
+                "Value": summary.next_revision_action or "None",
+            },
+        ]
+    else:
+        summary_rows = [
+            {"指标": "报告修订数", "数值": summary.total_revision_count},
+            {"指标": "最新修订", "数值": summary.latest_revision_id or "无"},
+            {"指标": "最新状态", "数值": summary.latest_revision_status or "无"},
+            {"指标": "打开修订", "数值": summary.open_revision_count},
+            {"指标": "已替代修订", "数值": summary.superseded_revision_count},
+            {"指标": "下一项修订行动", "数值": summary.next_revision_action or "无"},
+        ]
+    return BVReportRevisionHistoryView(
+        heading=heading,
+        summary_rows=summary_rows,
+        revision_rows=build_report_revision_history_rows(state, language),
         empty_caption=empty_caption,
     )
 

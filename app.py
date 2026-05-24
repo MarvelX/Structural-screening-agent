@@ -79,7 +79,10 @@ from structural_screening_agent.bv_review.project_management import (
     build_project_management_actions,
     build_responsible_party_status_rows,
 )
-from structural_screening_agent.bv_review.ui import build_bv_project_management_dashboard_view
+from structural_screening_agent.bv_review.ui import (
+    build_bv_project_management_dashboard_view,
+    build_bv_report_revision_history_view,
+)
 from structural_screening_agent.bv_review.agent_application import (
     AgentResponseApplicationPacket,
     apply_authorized_agent_response_to_state,
@@ -1701,6 +1704,24 @@ with bv_review_tab:
             )
         else:
             st.caption(project_management_view.empty_caption)
+        revision_history_view = build_bv_report_revision_history_view(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown(f"##### {revision_history_view.heading}")
+        if revision_history_view.revision_rows:
+            st.dataframe(
+                revision_history_view.summary_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+            st.dataframe(
+                revision_history_view.revision_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(revision_history_view.empty_caption)
         project_timeline_rows = build_project_timeline_rows(
             reviewed_workflow_state,
             ui_language,
