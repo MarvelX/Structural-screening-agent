@@ -127,6 +127,11 @@ from structural_screening_agent.bv_review.project_management import (
     build_project_management_actions,
 )
 from structural_screening_agent.bv_review.report import build_bv_open_rfi_items
+from structural_screening_agent.bv_review.report_revision_history import (
+    ReportRevisionHistorySummary,
+    build_report_revision_history_rows,
+    build_report_revision_history_summary,
+)
 from structural_screening_agent.bv_review.service_scope import (
     ServiceScopeRecommendation,
     build_service_scope_display_rows,
@@ -183,6 +188,7 @@ __all__ = [
     "REVIEW_PHASES",
     "RFIItem",
     "ReportRevision",
+    "ReportRevisionHistorySummary",
     "ReportComposerAgentOutput",
     "ReviewPlanAgentOutput",
     "RiskNCRAgentOutput",
@@ -231,6 +237,8 @@ __all__ = [
     "build_project_management_action_rows",
     "build_project_management_actions",
     "build_project_timeline_events",
+    "build_report_revision_history_rows",
+    "build_report_revision_history_summary",
     "build_review_basis",
     "build_service_scope_display_rows",
     "build_service_scope_recommendations",
