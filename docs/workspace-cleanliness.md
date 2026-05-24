@@ -2,6 +2,26 @@
 
 This repository is a long-running product workspace for the BV PV Design Review Workbench. Keep source changes small, tracked, and reviewable. Local runtime state and generated artifacts should stay out of Git.
 
+## P0 Audit Snapshot - 2026-05-24
+
+The P0 workspace cleanliness audit found the tracked worktree clean on `main`.
+The local `main` branch matches `origin/main` at `a385860` and is configured to
+track `origin/main`.
+
+No tracked source, test, or documentation diff was present during the audit.
+The protected portal-frame screening capability had no pending tracked changes.
+
+Ignored local artifacts were present and intentionally left in place:
+
+- Python/runtime caches such as `__pycache__/`, `.pytest_cache/`, and `.pycache-check/`
+- local dependency and runtime state such as `.venv/` and `.local_data/`
+- temporary render/export outputs under `tmp/`
+- macOS metadata files such as `.DS_Store`
+- known duplicate local copies matching `* 2.py`, `* 2.md`, and `* 2/`
+
+This audit is record-only. Do not use it as authorization to delete ignored
+artifacts, especially the known duplicate `* 2.*` files.
+
 ## Ignored Local Artifacts
 
 The following patterns are intentionally ignored:
