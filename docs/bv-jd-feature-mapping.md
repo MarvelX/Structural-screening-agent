@@ -22,7 +22,7 @@
 | 识别设计中的潜在风险、错误、遗漏及不经济之处，并提出优化建议 | `Risk & Nonconformity Register`、`Optimization Advisor`、report findings | 已生成风险 / 不符合项 / 优化建议，风险带等级、触发依据、影响范围、建议措施和是否阻塞报告签发 | 增加成本 / 施工可行性维度、典型错误库、优化建议分类和关闭验证要求 |
 | 对结构荷载计算、连接节点设计、地基承载力计算等进行校核 | 既有门式刚架屋面光伏 screening kernel、Foundation Engine、Superstructure Engine、Calculation Check Agent、基础证据路径 | 已有屋面光伏增载筛查；地面固定支架已接入基础抗拔 / 地基承载力筛查和上部构件强度、稳定、长细比筛查级计算接口；计算结果保留运行记录和结构化错误；基础证据路径会在地勘报告、地基承载力特征值或桩侧阻力标准值证据不足时阻止计算并生成草稿 RFI | 增加连接节点 force path、风 / 雪 / 地震荷载组合、基础抗倾覆、构件库和更强的单位校验 |
 | 独立就设计相关的技术问题做出判断和决策 | 工程师数据锁定、Agent review approve / reject、报告草稿门禁、签发边界声明 | 已实现人工确认字段、锁定计算输入、批准 / 驳回 Agent 产物、阻塞报告草稿和结构化 evidence；系统把独立技术判断保留给工程师，不让 Agent 直接作结构安全结论 | 增加多级 reviewer、判断依据备注、争议项记录和复核意见追踪 |
-| 向客户推广 BV 的服务与解决方案 | `Service Scope Recommendation` 方向、job application microsite、作品集 narrative | 当前 README、showcase 和 job application 页面已把工具定位为第三方光伏设计审核工作台，能展示 BV 服务与解决方案价值：资料审查、风险发现、RFI、报告交付 | 增加服务范围建议模块，把资料缺口和风险项映射到可建议的 BV 服务包，但避免变成 CRM |
+| 向客户推广 BV 的服务与解决方案 | `Service Scope Recommendation`、job application microsite、作品集 narrative | 已有服务范围建议模块，可把资料缺口、未关闭 RFI、blocked / failed / review-required 计算运行和优化类发现映射到 BV 服务与解决方案式 review-support 服务方向；建议带触发证据、客户价值和“不替代正式设计 / BV 官方签发”的边界声明 | 增加 fee discussion support 和更细的服务范围模板，但避免变成 CRM |
 | 负责设计项目管理工作 | `ProjectReviewState`、阶段状态、RFI 状态、calculation run history、agent event trace、责任方 SLA 视图、项目 inventory 摘要 | 已有项目状态、阶段流转、资料版本、RFI、工程师确认、Agent 事件追踪和报告门禁证据；RFI、增量复核和 Agent 复核待办已带打开时间，可在责任方视图中显示超期状态和最早到期日；项目 inventory 已汇总超期待办数、最早到期日和最早到期待办 ID，便于项目级 triage | 增加更完整的项目 dashboard、任务责任人、时间线、报告 revision history 和长期状态持久化视图 |
 
 ## 当前覆盖度总结

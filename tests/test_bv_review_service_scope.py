@@ -100,6 +100,49 @@ def test_service_scope_recommendations_do_not_create_unsupported_sales_items() -
     assert recommendations == []
 
 
+def test_service_scope_recommends_calculation_review_for_blocked_or_failed_runs() -> None:
+    intake = BVReviewIntake(
+        project_name="Blocked calculation review",
+        country_or_region="China",
+        project_type="utility_pv",
+        design_stage="detailed_design",
+        standards_systems=["gb"],
+        review_objects=["foundation"],
+        documents={
+            "calculation_report": "available",
+            "technical_specification": "available",
+            "geotechnical_report": "available",
+            "contract_requirements": "available",
+        },
+    )
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-blocked-calculation-service-scope",
+        intake=intake,
+        calculation_runs=[
+            CalculationRun(
+                run_id="foundation-run-blocked-001",
+                engine_name="foundation",
+                engine_version="phase1-deterministic-screening",
+                input_locked=False,
+                status="blocked",
+                structured_errors=["Missing pile uplift force."],
+            )
+        ],
+    )
+
+    recommendations = build_service_scope_recommendations(
+        intake,
+        result,
+        project_state=state,
+    )
+
+    assert [item.recommendation_id for item in recommendations] == [
+        "calculation_spot_check_follow_up"
+    ]
+    assert recommendations[0].trigger_evidence_ids == ["foundation-run-blocked-001"]
+
+
 def _sample_intake() -> BVReviewIntake:
     return BVReviewIntake(
         project_name="Ground PV design review",

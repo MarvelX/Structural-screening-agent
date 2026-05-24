@@ -253,6 +253,8 @@ def _calculation_evidence(
 
 
 def _calculation_run_requires_follow_up(run: CalculationRun) -> bool:
+    if run.status in {"blocked", "failed"}:
+        return True
     if run.status != "completed":
         return False
     if run.result_summary.get("screening_status") == "review_required":

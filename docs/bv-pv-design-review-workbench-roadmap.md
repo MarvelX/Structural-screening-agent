@@ -132,6 +132,7 @@ Implemented:
 - incremental-recheck RFI timestamps that start the responsible-party SLA clock when changed inputs generate follow-up clarification items.
 - agent-review event timestamps that start the engineer review SLA clock for agent-generated outputs.
 - project inventory SLA summary with overdue action count, earliest due date, and next due action id for dashboard-level triage.
+- service scope recommendations tied to document gaps, active RFI closeout, calculation follow-up, and optimization findings without turning the workbench into a CRM.
 
 Candidate work:
 
@@ -139,7 +140,7 @@ Candidate work:
 - clarification history
 - review dashboard
 - report revision history
-- service scope and fee discussion support
+- fee discussion support
 
 This phase should not turn the product into a CRM. Service scope recommendation should remain tied to engineering review findings and document gaps.
 

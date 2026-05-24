@@ -88,6 +88,7 @@ def test_bv_roadmap_reflects_current_traceability_and_clean_workspace_baseline()
         "incremental-recheck RFI timestamps",
         "agent-review event timestamps",
         "project inventory SLA summary",
+        "service scope recommendations",
         "default Pytest duplicate-copy exclusion",
         "workspace cleanliness policy",
         "UI / report evidence matrix alignment",
