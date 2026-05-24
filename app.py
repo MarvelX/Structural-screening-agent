@@ -81,6 +81,7 @@ from structural_screening_agent.bv_review.project_management import (
 )
 from structural_screening_agent.bv_review.ui import (
     build_bv_project_management_dashboard_view,
+    build_bv_report_reissue_gate_view,
     build_bv_report_revision_history_view,
 )
 from structural_screening_agent.bv_review.agent_application import (
@@ -1722,6 +1723,21 @@ with bv_review_tab:
             )
         else:
             st.caption(revision_history_view.empty_caption)
+        report_reissue_view = build_bv_report_reissue_gate_view(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown(f"##### {report_reissue_view.heading}")
+        st.dataframe(
+            report_reissue_view.summary_rows,
+            hide_index=True,
+            use_container_width=True,
+        )
+        if report_reissue_view.blocking_reasons:
+            for reason in report_reissue_view.blocking_reasons[:5]:
+                st.write(f"- {reason}")
+        else:
+            st.caption(report_reissue_view.empty_caption)
         project_timeline_rows = build_project_timeline_rows(
             reviewed_workflow_state,
             ui_language,

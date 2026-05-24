@@ -132,6 +132,11 @@ from structural_screening_agent.bv_review.report_revision_history import (
     build_report_revision_history_rows,
     build_report_revision_history_summary,
 )
+from structural_screening_agent.bv_review.report_reissue import (
+    ReportReissueGateSummary,
+    build_report_reissue_gate_rows,
+    build_report_reissue_gate_summary,
+)
 from structural_screening_agent.bv_review.service_scope import (
     ServiceScopeRecommendation,
     build_service_scope_display_rows,
@@ -189,6 +194,7 @@ __all__ = [
     "RFIItem",
     "ReportRevision",
     "ReportRevisionHistorySummary",
+    "ReportReissueGateSummary",
     "ReportComposerAgentOutput",
     "ReviewPlanAgentOutput",
     "RiskNCRAgentOutput",
@@ -239,6 +245,8 @@ __all__ = [
     "build_project_timeline_events",
     "build_report_revision_history_rows",
     "build_report_revision_history_summary",
+    "build_report_reissue_gate_rows",
+    "build_report_reissue_gate_summary",
     "build_review_basis",
     "build_service_scope_display_rows",
     "build_service_scope_recommendations",

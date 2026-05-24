@@ -134,6 +134,7 @@ Implemented:
 - project inventory SLA summary with overdue action count, earliest due date, and next due action id for dashboard-level triage.
 - service scope recommendations tied to document gaps, active RFI closeout, calculation follow-up, and optimization findings without turning the workbench into a CRM.
 - report revision history with traceable revision status, supersession lineage, related RFI references, latest revision summary, and next revision action.
+- report reissue gate that links RFI closeout, incremental recheck evidence, report gate approval, and latest revision coverage into a deterministic next action.
 
 Candidate work:
 

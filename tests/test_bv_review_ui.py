@@ -4,6 +4,7 @@ from structural_screening_agent.bv_review.ui import (
     build_bv_gate_panel_text,
     build_foundation_evidence_display_rows,
     build_bv_project_management_dashboard_view,
+    build_bv_report_reissue_gate_view,
     build_bv_report_revision_history_view,
     build_bv_report_preview_sections,
     format_bv_label,
@@ -19,6 +20,7 @@ from structural_screening_agent.bv_review.project_state import (
     ProjectReviewState,
     RFIItem,
     ReportRevision,
+    EngineerApproval,
 )
 from structural_screening_agent.bv_review.ui_state import default_bv_review_intake
 from structural_screening_agent.bv_review.workflow import evaluate_bv_review
@@ -228,6 +230,74 @@ def test_bv_report_revision_history_view_localizes_rows_and_empty_state() -> Non
     assert en_view.heading == "Report Revision History"
     assert en_view.revision_rows[0]["Status"] == "Issued for Review"
     assert empty_view.empty_caption == "No report revision snapshots have been recorded."
+
+
+def test_bv_report_reissue_gate_view_localizes_summary_rows() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-report-reissue",
+        intake=default_bv_review_intake(),
+        approvals=[
+            EngineerApproval(
+                approval_id="report-gate-approval",
+                target_type="report",
+                target_id="report",
+                status="approved",
+                reviewer="Engineer A",
+                locked=True,
+            )
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-001",
+                question="Please provide Rev B geotechnical response.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation evidence gap.",
+                required_document_or_field="geotechnical_report",
+                status="closed",
+                client_response="Rev B provided.\nCloseout: Engineer accepted.",
+                reopen_review_items=["bearing_capacity_characteristic_kpa"],
+                completed_recheck_items=["bearing_capacity_characteristic_kpa"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    zh_view = build_bv_report_reissue_gate_view(state, "zh")
+    en_view = build_bv_report_reissue_gate_view(state, "en")
+
+    assert zh_view.heading == "报告再签发门禁"
+    assert zh_view.summary_rows[0] == {"指标": "再签发状态", "数值": "可记录新版报告"}
+    assert "Reissue" not in str(zh_view)
+    assert en_view.heading == "Report Reissue Gate"
+    assert en_view.summary_rows[0] == {
+        "Metric": "Reissue Status",
+        "Value": "Ready to Record Reissue",
+    }
+
+    blocked_view = build_bv_report_reissue_gate_view(
+        ProjectReviewState(
+            project_id="pv-ui-report-reissue-blocked",
+            intake=default_bv_review_intake(),
+            rfi_items=[
+                RFIItem(
+                    rfi_id="rfi-foundation-002",
+                    question="Please provide Rev B geotechnical response.",
+                    responsible_party="client / designer",
+                    trigger_basis="Foundation evidence gap.",
+                    required_document_or_field="geotechnical_report",
+                    status="open",
+                    reopen_review_items=["bearing_capacity_characteristic_kpa"],
+                    triggers_incremental_recheck=True,
+                )
+            ],
+        ),
+        "zh",
+    )
+
+    assert blocked_view.blocking_reasons[0] == (
+        "待客户 / 设计院回复的澄清问题：rfi-foundation-002"
+    )
+    assert "Open or reopened" not in str(blocked_view)
 
 
 def test_foundation_evidence_display_rows_localize_status_and_documents() -> None:

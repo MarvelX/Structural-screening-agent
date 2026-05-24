@@ -17,6 +17,11 @@ from structural_screening_agent.bv_review.report_revision_history import (
     build_report_revision_history_rows,
     build_report_revision_history_summary,
 )
+from structural_screening_agent.bv_review.report_reissue import (
+    ReportReissueGateSummary,
+    build_report_reissue_gate_rows,
+    build_report_reissue_gate_summary,
+)
 from structural_screening_agent.bv_review.foundation_evidence import (
     FoundationEvidenceItem,
     build_foundation_evidence_path,
@@ -42,6 +47,13 @@ class BVReportRevisionHistoryView(BaseModel):
     heading: str = Field(min_length=1)
     summary_rows: list[dict[str, object]] = Field(default_factory=list)
     revision_rows: list[dict[str, object]] = Field(default_factory=list)
+    empty_caption: str = Field(min_length=1)
+
+
+class BVReportReissueGateView(BaseModel):
+    heading: str = Field(min_length=1)
+    summary_rows: list[dict[str, object]] = Field(default_factory=list)
+    blocking_reasons: list[str] = Field(default_factory=list)
     empty_caption: str = Field(min_length=1)
 
 
@@ -315,6 +327,49 @@ def build_bv_report_revision_history_view(
         revision_rows=build_report_revision_history_rows(state, language),
         empty_caption=empty_caption,
     )
+
+
+def build_bv_report_reissue_gate_view(
+    state: ProjectReviewState,
+    language: Language,
+) -> BVReportReissueGateView:
+    summary = build_report_reissue_gate_summary(state)
+    heading = "Report Reissue Gate" if language == "en" else "报告再签发门禁"
+    empty_caption = (
+        "No report reissue blockers are currently open."
+        if language == "en"
+        else "当前没有报告再签发阻塞项。"
+    )
+    return BVReportReissueGateView(
+        heading=heading,
+        summary_rows=build_report_reissue_gate_rows(summary, language),
+        blocking_reasons=_report_reissue_blocking_reasons(summary, language),
+        empty_caption=empty_caption,
+    )
+
+
+def _report_reissue_blocking_reasons(
+    summary: ReportReissueGateSummary,
+    language: Language,
+) -> list[str]:
+    if language == "en":
+        return summary.blocking_reasons
+    reasons: list[str] = []
+    if summary.open_rfi_ids:
+        reasons.append(
+            "待客户 / 设计院回复的澄清问题：" + ", ".join(summary.open_rfi_ids)
+        )
+    if summary.responded_rfi_ids:
+        reasons.append(
+            "待工程师复核关闭的澄清问题：" + ", ".join(summary.responded_rfi_ids)
+        )
+    if summary.pending_recheck_rfi_ids:
+        reasons.append(
+            "待完成增量复核的澄清问题：" + ", ".join(summary.pending_recheck_rfi_ids)
+        )
+    if not summary.report_gate_locked:
+        reasons.append("报告门禁尚未由工程师批准。")
+    return reasons
 
 
 def build_foundation_evidence_display_rows(
