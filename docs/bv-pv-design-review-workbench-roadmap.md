@@ -130,6 +130,7 @@ Implemented:
 - report-facing responsible-party SLA status so design review drafts can cite owner, overdue count, earliest due date, and next blocking action.
 - blocked-calculation RFI issue timestamps that start the responsible-party SLA clock from the engineer approval date.
 - incremental-recheck RFI timestamps that start the responsible-party SLA clock when changed inputs generate follow-up clarification items.
+- agent-review event timestamps that start the engineer review SLA clock for agent-generated outputs.
 
 Candidate work:
 

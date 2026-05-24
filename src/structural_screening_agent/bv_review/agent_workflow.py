@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
 from typing import Union
 
 from structural_screening_agent.bv_review.agent_contracts import (
@@ -208,6 +209,7 @@ def _build_agent_event(
         target_phase=phase,
         status="applied",
         output_schema_version=output.schema_version,
+        created_at=datetime.now(timezone.utc).isoformat(),
         requires_engineer_review=output.requires_engineer_review,
         summary_counts=_summary_counts_for_output(output),
     )

@@ -204,6 +204,7 @@ class AgentWorkflowEvent(BaseModel):
     target_phase: ReviewPhase
     status: Literal["applied"]
     output_schema_version: str = Field(min_length=1)
+    created_at: Optional[str] = None
     requires_engineer_review: bool = True
     summary_counts: Dict[str, int] = Field(default_factory=dict)
 

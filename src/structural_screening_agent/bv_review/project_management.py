@@ -342,6 +342,7 @@ def _agent_review_actions(state: ProjectReviewState) -> list[ProjectManagementAc
                 "engineering rationale."
             ),
             blocks_report_issue=True,
+            opened_at=event.created_at,
         )
         for event in state.agent_events
         if _agent_event_waits_for_engineer(state, event)

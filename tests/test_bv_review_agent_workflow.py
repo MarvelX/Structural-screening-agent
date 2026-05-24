@@ -58,6 +58,8 @@ def test_document_intake_agent_output_updates_state_and_waits_for_engineer_revie
     assert event.target_phase == "document_check"
     assert event.status == "applied"
     assert event.output_schema_version == output.schema_version
+    assert event.created_at is not None
+    assert "T" in event.created_at
     assert event.requires_engineer_review is True
     assert event.summary_counts == {
         "document_versions": 1,

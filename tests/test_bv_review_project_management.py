@@ -102,6 +102,62 @@ def test_project_management_actions_prioritize_rfi_agent_and_calculation_work() 
     assert actions[2].blocks_report_issue is True
 
 
+def test_agent_review_actions_inherit_event_created_at_for_sla_tracking() -> None:
+    state = ProjectReviewState(
+        project_id="pv-agent-review-sla",
+        intake=_sample_intake(),
+        phase_statuses={
+            "intake": "approved",
+            "document_check": "approved",
+            "basis_build": "approved",
+            "review_plan": "approved",
+            "engineer_data_lock": "approved",
+            "calculation_check": "waiting_for_engineer",
+            "risk_register": "pending",
+            "report_draft": "pending",
+            "engineer_approval": "pending",
+            "issue_rfi_closeout": "pending",
+        },
+        agent_events=[
+            AgentWorkflowEvent(
+                event_id="calculation-check-agent-001",
+                agent_role="calculation_check",
+                target_phase="calculation_check",
+                status="applied",
+                output_schema_version="phase1.local",
+                requires_engineer_review=True,
+                created_at="2026-05-20T09:00:00+08:00",
+            )
+        ],
+    )
+
+    actions = build_project_management_actions(state)
+
+    assert len(actions) == 1
+    agent_action = actions[0]
+    assert agent_action.action_id == "agent-review-calculation-check-agent-001"
+    assert agent_action.opened_at == "2026-05-20T09:00:00+08:00"
+
+    rows = build_responsible_party_status_rows(
+        actions,
+        "zh",
+        reference_date=date(2026, 5, 24),
+    )
+
+    assert rows == [
+        {
+            "责任方": "BV 结构审核工程师",
+            "待办数": 1,
+            "阻塞报告": 1,
+            "高优先级": 1,
+            "超期数": 1,
+            "SLA状态": "已超期",
+            "最早到期": "2026-05-22",
+            "下一项行动": "agent-review-calculation-check-agent-001",
+        }
+    ]
+
+
 def test_project_management_actions_include_open_blocking_finding_closeout() -> None:
     state = ProjectReviewState(
         project_id="pv-finding-closeout-actions",
