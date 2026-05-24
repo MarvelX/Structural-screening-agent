@@ -5,7 +5,7 @@ This repository is a long-running product workspace for the BV PV Design Review 
 ## P0 Audit Snapshot - 2026-05-24
 
 The P0 workspace cleanliness audit found the tracked worktree clean on `main`.
-The local `main` branch matches `origin/main` at `a385860` and is configured to
+The local `main` branch matches `origin/main` at `7d46329` and is configured to
 track `origin/main`.
 
 No tracked source, test, or documentation diff was present during the audit.
@@ -21,6 +21,10 @@ Ignored local artifacts were present and intentionally left in place:
 
 This audit is record-only. Do not use it as authorization to delete ignored
 artifacts, especially the known duplicate `* 2.*` files.
+
+The continuation audit on 2026-05-24 confirmed the same cleanup boundary: no
+ignored artifact was deleted or modified, and the only non-virtualenv local file
+larger than 5 MB was `.local_data/screening.db`.
 
 ## Ignored Local Artifacts
 
