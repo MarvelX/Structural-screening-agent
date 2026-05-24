@@ -7,6 +7,11 @@ from structural_screening_agent.bv_review.models import (
     BVReviewIntake,
     BVReviewResult,
 )
+from structural_screening_agent.bv_review.clarification_history import (
+    ClarificationHistorySummary,
+    build_clarification_history_rows,
+    build_clarification_history_summary,
+)
 from structural_screening_agent.bv_review.project_management import (
     ProjectManagementAction,
     build_project_management_action_rows,
@@ -40,6 +45,13 @@ class BVProjectManagementDashboardView(BaseModel):
     heading: str = Field(min_length=1)
     summary_rows: list[dict[str, object]] = Field(default_factory=list)
     action_rows: list[dict[str, object]] = Field(default_factory=list)
+    empty_caption: str = Field(min_length=1)
+
+
+class BVClarificationHistoryView(BaseModel):
+    heading: str = Field(min_length=1)
+    summary_rows: list[dict[str, object]] = Field(default_factory=list)
+    history_rows: list[dict[str, object]] = Field(default_factory=list)
     empty_caption: str = Field(min_length=1)
 
 
@@ -284,6 +296,87 @@ def build_bv_project_management_dashboard_view(
         action_rows=build_project_management_action_rows(actions, language),
         empty_caption=empty_caption,
     )
+
+
+def build_bv_clarification_history_view(
+    state: ProjectReviewState,
+    language: Language,
+) -> BVClarificationHistoryView:
+    heading = "Clarification History" if language == "en" else "澄清历史"
+    empty_caption = (
+        "No clarification items have been recorded."
+        if language == "en"
+        else "当前还没有澄清问题记录。"
+    )
+    summary = build_clarification_history_summary(state)
+    history_rows = build_clarification_history_rows(state, language)
+    return BVClarificationHistoryView(
+        heading=heading,
+        summary_rows=_clarification_history_summary_rows(summary, language),
+        history_rows=history_rows,
+        empty_caption=empty_caption,
+    )
+
+
+def _clarification_history_summary_rows(
+    summary: ClarificationHistorySummary,
+    language: Language,
+) -> list[dict[str, object]]:
+    if language == "en":
+        return [
+            {"Metric": "Clarification Items", "Value": summary.total_rfi_count},
+            {"Metric": "Awaiting Client Response", "Value": summary.open_rfi_count},
+            {
+                "Metric": "Awaiting Engineer Closeout",
+                "Value": summary.responded_rfi_count,
+            },
+            {"Metric": "Closed", "Value": summary.closed_rfi_count},
+            {
+                "Metric": "Pending Incremental Recheck",
+                "Value": ", ".join(summary.pending_recheck_rfi_ids) or "None",
+            },
+            {
+                "Metric": "Closed Items Not in Latest Revision",
+                "Value": ", ".join(summary.closed_uncovered_rfi_ids) or "None",
+            },
+            {
+                "Metric": "Latest Report Revision",
+                "Value": summary.latest_report_revision_id or "None",
+            },
+            {
+                "Metric": "Next Clarification Action",
+                "Value": summary.next_clarification_action,
+            },
+        ]
+    return [
+        {"指标": "澄清问题总数", "数值": summary.total_rfi_count},
+        {"指标": "待客户回复", "数值": summary.open_rfi_count},
+        {"指标": "待工程师关闭", "数值": summary.responded_rfi_count},
+        {"指标": "已关闭", "数值": summary.closed_rfi_count},
+        {
+            "指标": "待增量复核",
+            "数值": ", ".join(summary.pending_recheck_rfi_ids) or "无",
+        },
+        {
+            "指标": "未进入最新报告的已关闭澄清",
+            "数值": ", ".join(summary.closed_uncovered_rfi_ids) or "无",
+        },
+        {"指标": "最新报告修订", "数值": summary.latest_report_revision_id or "无"},
+        {
+            "指标": "下一步澄清动作",
+            "数值": _clarification_action_label(summary.next_clarification_action),
+        },
+    ]
+
+
+def _clarification_action_label(action: str) -> str:
+    labels = {
+        "collect_client_response": "跟进客户 / 设计院回复",
+        "close_rfi_after_engineer_review": "工程师复核并关闭",
+        "record_report_reissue_revision": "记录报告再签发修订",
+        "ready": "无需澄清动作",
+    }
+    return labels.get(action, action)
 
 
 def build_bv_report_revision_history_view(

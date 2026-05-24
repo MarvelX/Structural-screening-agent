@@ -80,6 +80,7 @@ from structural_screening_agent.bv_review.project_management import (
     build_responsible_party_status_rows,
 )
 from structural_screening_agent.bv_review.ui import (
+    build_bv_clarification_history_view,
     build_bv_project_management_dashboard_view,
     build_bv_report_reissue_gate_view,
     build_bv_report_revision_history_view,
@@ -1687,6 +1688,24 @@ with bv_review_tab:
                 if ui_language == "en"
                 else "当前没有责任方待办。"
             )
+        clarification_history_view = build_bv_clarification_history_view(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown(f"##### {clarification_history_view.heading}")
+        if clarification_history_view.history_rows:
+            st.dataframe(
+                clarification_history_view.summary_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+            st.dataframe(
+                clarification_history_view.history_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(clarification_history_view.empty_caption)
         project_management_view = build_bv_project_management_dashboard_view(
             project_management_actions,
             ui_language,

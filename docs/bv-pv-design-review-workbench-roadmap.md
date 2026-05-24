@@ -135,11 +135,11 @@ Implemented:
 - service scope recommendations tied to document gaps, active RFI closeout, calculation follow-up, and optimization findings without turning the workbench into a CRM.
 - report revision history with traceable revision status, supersession lineage, related RFI references, latest revision summary, and next revision action.
 - report reissue gate that links RFI closeout, incremental recheck evidence, report gate approval, and latest revision coverage into a deterministic next action.
+- clarification history view for RFI status, owner, opened date, incremental recheck state, latest report revision coverage, and next clarification action.
 
 Candidate work:
 
 - deeper finding lifecycle tracking
-- clarification history
 - review dashboard
 - fee discussion support
 

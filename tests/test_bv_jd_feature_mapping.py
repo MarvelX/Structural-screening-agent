@@ -91,6 +91,7 @@ def test_bv_roadmap_reflects_current_traceability_and_clean_workspace_baseline()
         "service scope recommendations",
         "report revision history with traceable revision status",
         "report reissue gate",
+        "clarification history view",
         "default Pytest duplicate-copy exclusion",
         "workspace cleanliness policy",
         "UI / report evidence matrix alignment",

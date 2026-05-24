@@ -82,6 +82,11 @@ from structural_screening_agent.bv_review.calculation_workflow import (
     build_incremental_calculation_recheck_runs_for_rfi,
     run_incremental_calculation_recheck_for_rfi,
 )
+from structural_screening_agent.bv_review.clarification_history import (
+    ClarificationHistorySummary,
+    build_clarification_history_rows,
+    build_clarification_history_summary,
+)
 from structural_screening_agent.bv_review.field_diff import (
     AffectedReviewItem,
     FieldDiff,
@@ -174,6 +179,7 @@ __all__ = [
     "BlockedCalculationReviewDraft",
     "CalculationRun",
     "CalculationCheckAgentOutput",
+    "ClarificationHistorySummary",
     "DocumentVersion",
     "DocumentIntakeAgentOutput",
     "EngineerApproval",
@@ -233,6 +239,8 @@ __all__ = [
     "default_agent_provider_model",
     "build_foundation_calculation_run_from_fields",
     "build_bv_open_rfi_items",
+    "build_clarification_history_rows",
+    "build_clarification_history_summary",
     "build_blocked_calculation_review_draft",
     "build_evidence_matrix",
     "build_incremental_calculation_recheck_runs_for_rfi",

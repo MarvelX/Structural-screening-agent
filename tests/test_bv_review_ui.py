@@ -1,5 +1,6 @@
 from structural_screening_agent.bv_review.ui import (
     build_bv_basis_items,
+    build_bv_clarification_history_view,
     build_bv_evidence_table_text,
     build_bv_gate_panel_text,
     build_foundation_evidence_display_rows,
@@ -298,6 +299,38 @@ def test_bv_report_reissue_gate_view_localizes_summary_rows() -> None:
         "待客户 / 设计院回复的澄清问题：rfi-foundation-002"
     )
     assert "Open or reopened" not in str(blocked_view)
+
+
+def test_bv_clarification_history_view_localizes_summary_and_rows() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-clarification-history",
+        intake=default_bv_review_intake(),
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-foundation-001",
+                question="Please provide foundation evidence.",
+                responsible_party="client / designer",
+                trigger_basis="Foundation evidence gap.",
+                required_document_or_field="geotechnical_report",
+                status="responded",
+                opened_at="2026-05-20",
+                client_response="Rev B provided.",
+                reopen_review_items=["bearing_capacity_characteristic_kpa"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    zh_view = build_bv_clarification_history_view(state, "zh")
+    en_view = build_bv_clarification_history_view(state, "en")
+
+    assert zh_view.heading == "澄清历史"
+    assert zh_view.summary_rows[0] == {"指标": "澄清问题总数", "数值": 1}
+    assert zh_view.history_rows[0]["下一步"] == "工程师复核并关闭"
+    assert "Clarification" not in str(zh_view)
+    assert en_view.heading == "Clarification History"
+    assert en_view.summary_rows[0] == {"Metric": "Clarification Items", "Value": 1}
+    assert en_view.history_rows[0]["Next Action"] == "Engineer review and closeout"
 
 
 def test_foundation_evidence_display_rows_localize_status_and_documents() -> None:
