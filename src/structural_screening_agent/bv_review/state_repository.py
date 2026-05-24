@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from re import fullmatch
-from typing import Literal, Union
+from typing import Literal, Optional, Union
 
 from pydantic import BaseModel, ValidationError
 
@@ -13,6 +13,7 @@ from structural_screening_agent.bv_review.field_diff import (
 )
 from structural_screening_agent.bv_review.project_management import (
     build_project_management_actions,
+    build_project_management_sla_summary,
 )
 from structural_screening_agent.bv_review.project_state import ProjectReviewState, ReviewPhase
 from structural_screening_agent.bv_review.project_timeline import build_project_timeline_events
@@ -36,6 +37,8 @@ class ProjectReviewStateSummary(BaseModel):
     open_quality_gate_ids: list[str] = []
     management_action_count: int = 0
     blocking_action_count: int = 0
+    overdue_action_count: int = 0
+    earliest_due_date: Optional[str] = None
     workflow_status: ProjectInventoryWorkflowStatus = "ready"
     next_action_ids: list[str] = []
     next_action_categories: list[str] = []
@@ -118,6 +121,7 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
         1 for item in state.risks if item.status in {"open", "under_review"}
     )
     management_actions = build_project_management_actions(state)
+    sla_summary = build_project_management_sla_summary(management_actions)
     blocking_action_count = sum(
         1 for action in management_actions if action.blocks_report_issue
     )
@@ -144,6 +148,8 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
         open_quality_gate_ids=open_quality_gate_ids,
         management_action_count=len(management_actions),
         blocking_action_count=blocking_action_count,
+        overdue_action_count=sla_summary.overdue_action_count,
+        earliest_due_date=sla_summary.earliest_due_date,
         workflow_status=_project_inventory_workflow_status(
             management_action_count=len(management_actions),
             blocking_action_count=blocking_action_count,
