@@ -133,13 +133,13 @@ Implemented:
 - agent-review event timestamps that start the engineer review SLA clock for agent-generated outputs.
 - project inventory SLA summary with overdue action count, earliest due date, and next due action id for dashboard-level triage.
 - service scope recommendations tied to document gaps, active RFI closeout, calculation follow-up, and optimization findings without turning the workbench into a CRM.
+- report revision history with traceable revision status, supersession lineage, related RFI references, latest revision summary, and next revision action.
 
 Candidate work:
 
 - deeper finding lifecycle tracking
 - clarification history
 - review dashboard
-- report revision history
 - fee discussion support
 
 This phase should not turn the product into a CRM. Service scope recommendation should remain tied to engineering review findings and document gaps.
