@@ -306,3 +306,38 @@ def test_report_revision_records_traceable_report_snapshot_metadata() -> None:
             rfi_count=0,
             created_by="Engineer A",
         )
+
+
+def test_report_revision_carries_status_lineage_and_issue_metadata() -> None:
+    revision = ReportRevision(
+        revision_id="report-rev-002",
+        source_phase="engineer_approval",
+        report_title="BV 光伏结构设计审查报告",
+        section_count=10,
+        rfi_count=0,
+        created_by="Engineer B",
+        created_at="2026-05-24T10:30:00+08:00",
+        revision_status="issued_for_client_response",
+        supersedes_revision_id="report-rev-001",
+        issue_purpose="Client RFI closeout package",
+        related_rfi_ids=["rfi-foundation-001"],
+    )
+
+    assert revision.revision_status == "issued_for_client_response"
+    assert revision.supersedes_revision_id == "report-rev-001"
+    assert revision.issue_purpose == "Client RFI closeout package"
+    assert revision.related_rfi_ids == ["rfi-foundation-001"]
+
+
+def test_report_revision_cannot_supersede_itself() -> None:
+    with pytest.raises(ValidationError):
+        ReportRevision(
+            revision_id="report-rev-003",
+            source_phase="engineer_approval",
+            report_title="BV 光伏结构设计审查报告",
+            section_count=10,
+            rfi_count=0,
+            created_by="Engineer B",
+            revision_status="issued_for_review",
+            supersedes_revision_id="report-rev-003",
+        )

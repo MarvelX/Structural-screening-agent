@@ -36,6 +36,13 @@ ReviewPhaseStatus = Literal[
     "approved",
     "rejected",
 ]
+ReportRevisionStatus = Literal[
+    "draft",
+    "issued_for_review",
+    "issued_for_client_response",
+    "superseded",
+    "finalized",
+]
 REVIEW_PHASES: tuple[ReviewPhase, ...] = (
     "intake",
     "document_check",
@@ -196,6 +203,18 @@ class ReportRevision(BaseModel):
     created_by: str = Field(min_length=1)
     created_at: Optional[str] = None
     note: Optional[str] = None
+    revision_status: ReportRevisionStatus = "draft"
+    supersedes_revision_id: Optional[str] = None
+    issue_purpose: Optional[str] = None
+    related_rfi_ids: List[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def reject_self_supersession(self) -> "ReportRevision":
+        if self.supersedes_revision_id == self.revision_id:
+            raise ValueError(
+                "ReportRevision.supersedes_revision_id cannot reference the same revision_id."
+            )
+        return self
 
 
 class AgentWorkflowEvent(BaseModel):
