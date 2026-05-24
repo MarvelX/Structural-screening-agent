@@ -184,6 +184,7 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[0].blocking_action_count == 3
     assert summaries[0].overdue_action_count == 1
     assert summaries[0].earliest_due_date == "2020-01-08"
+    assert summaries[0].next_due_action_id == "rfi-client-response-rfi-001"
     assert summaries[0].workflow_status == "blocked"
     assert summaries[0].next_action_ids == [
         "rfi-client-response-rfi-001",
@@ -214,6 +215,7 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[1].blocking_action_count == 2
     assert summaries[1].overdue_action_count == 0
     assert summaries[1].earliest_due_date is None
+    assert summaries[1].next_due_action_id is None
     assert summaries[1].workflow_status == "blocked"
     assert summaries[1].next_action_ids == [
         "quality-gate-follow-up-basis",

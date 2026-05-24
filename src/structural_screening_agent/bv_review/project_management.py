@@ -52,6 +52,7 @@ class ProjectManagementActionSummary(BaseModel):
 class ProjectManagementSlaSummary(BaseModel):
     overdue_action_count: int = Field(ge=0)
     earliest_due_date: Optional[str] = None
+    next_due_action_id: Optional[str] = None
 
 
 class FindingLifecycleSummary(BaseModel):
@@ -239,14 +240,16 @@ def build_project_management_sla_summary(
     reference_date: Optional[date] = None,
 ) -> ProjectManagementSlaSummary:
     current_date = reference_date or date.today()
-    due_dates = [
-        due_date
-        for due_date in (_action_due_date(action) for action in actions)
-        if due_date is not None
+    due_actions = [
+        (due_date, action)
+        for action in actions
+        if (due_date := _action_due_date(action)) is not None
     ]
+    next_due = min(due_actions, key=lambda item: (item[0], item[1].action_id), default=None)
     return ProjectManagementSlaSummary(
         overdue_action_count=_overdue_action_count(actions, current_date),
-        earliest_due_date=min(due_dates).isoformat() if due_dates else None,
+        earliest_due_date=next_due[0].isoformat() if next_due else None,
+        next_due_action_id=next_due[1].action_id if next_due else None,
     )
 
 

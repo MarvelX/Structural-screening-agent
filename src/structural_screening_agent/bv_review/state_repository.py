@@ -39,6 +39,7 @@ class ProjectReviewStateSummary(BaseModel):
     blocking_action_count: int = 0
     overdue_action_count: int = 0
     earliest_due_date: Optional[str] = None
+    next_due_action_id: Optional[str] = None
     workflow_status: ProjectInventoryWorkflowStatus = "ready"
     next_action_ids: list[str] = []
     next_action_categories: list[str] = []
@@ -150,6 +151,7 @@ def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSum
         blocking_action_count=blocking_action_count,
         overdue_action_count=sla_summary.overdue_action_count,
         earliest_due_date=sla_summary.earliest_due_date,
+        next_due_action_id=sla_summary.next_due_action_id,
         workflow_status=_project_inventory_workflow_status(
             management_action_count=len(management_actions),
             blocking_action_count=blocking_action_count,

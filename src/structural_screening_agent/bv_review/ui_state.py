@@ -708,6 +708,7 @@ def build_project_review_state_summary_rows(
             "blocking_action_count": "阻塞待办",
             "overdue_action_count": "超期待办",
             "earliest_due_date": "最早到期",
+            "next_due_action_id": "最早到期待办",
             "workflow_status": "工作流状态",
             "next_action_ids": "下一步行动",
             "next_action_categories": "下一步类型",
@@ -731,6 +732,7 @@ def build_project_review_state_summary_rows(
             "blocking_action_count": "Blocking Actions",
             "overdue_action_count": "Overdue Actions",
             "earliest_due_date": "Earliest Due",
+            "next_due_action_id": "Next Due Action",
             "workflow_status": "Workflow Status",
             "next_action_ids": "Next Actions",
             "next_action_categories": "Next Action Types",
@@ -764,6 +766,8 @@ def build_project_review_state_summary_rows(
             labels["overdue_action_count"]: summary.overdue_action_count,
             labels["earliest_due_date"]: summary.earliest_due_date
             or ("未跟踪" if language == "zh" else "Not Tracked"),
+            labels["next_due_action_id"]: summary.next_due_action_id
+            or ("无" if language == "zh" else "None"),
             labels["workflow_status"]: _project_inventory_workflow_status_label(
                 summary.workflow_status,
                 language,
