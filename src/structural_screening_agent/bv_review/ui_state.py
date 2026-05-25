@@ -872,6 +872,61 @@ def build_project_review_state_snapshot_rows(
     return [{labels["key"]: key, labels["value"]: value} for key, value in rows]
 
 
+def build_project_communication_rows(
+    state: ProjectReviewState,
+    language: Language,
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "communication_id": "沟通 ID",
+            "communication_type": "类型",
+            "occurred_at": "时间",
+            "participants": "参与方",
+            "subject": "主题",
+            "summary": "摘要",
+            "linked_rfi_ids": "关联澄清",
+            "linked_risk_ids": "关联发现项",
+            "action_items": "行动项",
+            "none": "无",
+        }
+        if language == "zh"
+        else {
+            "communication_id": "Communication ID",
+            "communication_type": "Type",
+            "occurred_at": "Occurred At",
+            "participants": "Participants",
+            "subject": "Subject",
+            "summary": "Summary",
+            "linked_rfi_ids": "Linked RFIs",
+            "linked_risk_ids": "Linked Findings",
+            "action_items": "Action Items",
+            "none": "None",
+        }
+    )
+    return [
+        {
+            labels["communication_id"]: record.communication_id,
+            labels["communication_type"]: _communication_type_label(
+                record.communication_type,
+                language,
+            ),
+            labels["occurred_at"]: record.occurred_at or labels["none"],
+            labels["participants"]: _participant_list_value(
+                record.participants,
+                language,
+            ),
+            labels["subject"]: record.subject,
+            labels["summary"]: record.summary,
+            labels["linked_rfi_ids"]: ", ".join(record.linked_rfi_ids)
+            or labels["none"],
+            labels["linked_risk_ids"]: ", ".join(record.linked_risk_ids)
+            or labels["none"],
+            labels["action_items"]: "; ".join(record.action_items) or labels["none"],
+        }
+        for record in state.communication_records
+    ]
+
+
 def _project_inventory_workflow_status_label(status: str, language: Language) -> str:
     labels = {
         "blocked": {"zh": "阻塞", "en": "Blocked"},
@@ -879,6 +934,22 @@ def _project_inventory_workflow_status_label(status: str, language: Language) ->
         "ready": {"zh": "可继续", "en": "Ready"},
     }
     return labels.get(status, {}).get(language, status)
+
+
+def _communication_type_label(communication_type: str, language: Language) -> str:
+    labels = {
+        "meeting": {"zh": "会议", "en": "Meeting"},
+        "email": {"zh": "邮件", "en": "Email"},
+        "technical_query": {"zh": "技术澄清", "en": "Technical Query"},
+        "client_call": {"zh": "客户电话", "en": "Client Call"},
+    }
+    return labels.get(communication_type, {}).get(language, communication_type)
+
+
+def _participant_list_value(participants: list[str], language: Language) -> str:
+    if not participants:
+        return "无" if language == "zh" else "None"
+    return ", ".join(_project_action_owner_label(participant, language) for participant in participants)
 
 
 def _quality_gate_list_value(gate_ids: list[str], language: Language) -> str:
@@ -1295,6 +1366,7 @@ def _finding_status_label(status: str, language: Language) -> str:
 def _timeline_event_type_label(event_type: str, language: Language) -> str:
     labels = {
         "agent_event": {"zh": "Agent 事件", "en": "Agent Event"},
+        "communication": {"zh": "沟通记录", "en": "Communication"},
         "rfi": {"zh": "RFI", "en": "RFI"},
         "finding": {"zh": "发现项", "en": "Finding"},
         "report_revision": {"zh": "报告版本", "en": "Report Revision"},
@@ -1314,6 +1386,8 @@ def _timeline_status_label(event_type: str, status: str, language: Language) -> 
         return BV_REVIEW_PHASE_LABELS.get(status, {}).get(language, status)
     if event_type == "engineer_approval":
         return _agent_review_decision_label(status, language)
+    if event_type == "communication":
+        return _communication_type_label(status, language)
     return status
 
 
@@ -1322,7 +1396,12 @@ def _timeline_owner_label(owner: str, language: Language) -> str:
         return "工程师" if language == "zh" else "Engineer"
     if owner in BV_AGENT_ROLE_LABELS:
         return BV_AGENT_ROLE_LABELS[owner][language]
-    return owner
+    if "," in owner:
+        return ", ".join(
+            _project_action_owner_label(part.strip(), language)
+            for part in owner.split(",")
+        )
+    return _project_action_owner_label(owner, language)
 
 
 def _timeline_linked_object_label(linked_object: str, language: Language) -> str:
@@ -1389,6 +1468,10 @@ def _timeline_suggested_action_label(suggested_action: str, language: Language) 
         if language == "zh":
             return "保留工程师判断记录作为门禁证据"
         return "Keep engineer decision as gate evidence"
+    if suggested_action == "communication_follow_up":
+        if language == "zh":
+            return "跟进沟通行动项并保留记录"
+        return "Follow up communication action items and keep the record"
     return suggested_action
 
 

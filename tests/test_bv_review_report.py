@@ -10,6 +10,7 @@ from structural_screening_agent.bv_review.report import (
 from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
     CalculationRun,
+    CommunicationRecord,
     DocumentVersion,
     EngineerApproval,
     ExtractedField,
@@ -440,7 +441,7 @@ def test_bv_report_preview_includes_project_timeline_when_state_is_provided() ->
 
     assert "01-RFI-rfi-foundation-input" in text
     assert "类型: RFI" in text
-    assert "责任方: client / designer" in text
+    assert "责任方: 客户 / 设计院" in text
     assert "建议动作: 工程师复核客户回复并保留关闭证据" in text
     assert "02-FINDING-risk-foundation-input" in text
     assert "类型: 发现项" in text
@@ -522,6 +523,40 @@ def test_bv_report_project_timeline_includes_agent_and_engineer_gate_events() ->
     assert "状态: 已批准" in text
     assert "关联对象: 门禁: calculation" in text
     assert "证据: 2026-05-21T11:30:00+08:00; 已锁定" in text
+
+
+def test_bv_report_project_timeline_includes_communication_records() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-communication-timeline",
+        intake=intake,
+        communication_records=[
+            CommunicationRecord(
+                communication_id="comm-meeting-001",
+                communication_type="meeting",
+                occurred_at="2026-05-24T10:00:00+08:00",
+                participants=[
+                    "BV structural review engineer",
+                    "client / designer",
+                ],
+                subject="Foundation evidence closeout meeting",
+                summary="Designer agreed to submit Rev B geotechnical note.",
+                linked_rfi_ids=["rfi-foundation-input"],
+                action_items=["Client to submit Rev B note."],
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(section for section in preview.sections if section.heading == "项目时间线")
+    text = "\n".join(section.items)
+
+    assert "05-COMM-comm-meeting-001" in text
+    assert "类型: 沟通记录" in text
+    assert "状态: 会议" in text
+    assert "责任方: BV 结构审核工程师, 客户 / 设计院" in text
+    assert "建议动作: 跟进沟通行动项并保留记录" in text
 
 
 def test_bv_report_preview_includes_active_rfi_register_when_state_is_provided() -> None:

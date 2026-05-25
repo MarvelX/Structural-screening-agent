@@ -39,6 +39,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
     build_project_review_state_snapshot_rows,
+    build_project_communication_rows,
     build_project_timeline_rows,
     build_quality_gate_status_rows,
     build_report_gate_evidence_rows,
@@ -1791,6 +1792,27 @@ with bv_review_tab:
                 st.write(f"- {reason}")
         else:
             st.caption(report_reissue_view.empty_caption)
+        communication_rows = build_project_communication_rows(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown(
+            "##### Project Communication Log"
+            if ui_language == "en"
+            else "项目沟通记录"
+        )
+        if communication_rows:
+            st.dataframe(
+                communication_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No project communication records are available."
+                if ui_language == "en"
+                else "当前没有项目沟通记录。"
+            )
         project_timeline_rows = build_project_timeline_rows(
             reviewed_workflow_state,
             ui_language,

@@ -228,6 +228,18 @@ class AgentWorkflowEvent(BaseModel):
     summary_counts: Dict[str, int] = Field(default_factory=dict)
 
 
+class CommunicationRecord(BaseModel):
+    communication_id: str = Field(min_length=1)
+    communication_type: Literal["meeting", "email", "technical_query", "client_call"]
+    occurred_at: Optional[str] = None
+    participants: List[str] = Field(default_factory=list)
+    subject: str = Field(min_length=1)
+    summary: str = Field(min_length=1)
+    linked_rfi_ids: List[str] = Field(default_factory=list)
+    linked_risk_ids: List[str] = Field(default_factory=list)
+    action_items: List[str] = Field(default_factory=list)
+
+
 def _default_phase_statuses() -> dict[ReviewPhase, ReviewPhaseStatus]:
     return {phase: "pending" for phase in REVIEW_PHASES}
 
@@ -252,6 +264,7 @@ class ProjectReviewState(BaseModel):
     report_sections: List[BVReportSection] = Field(default_factory=list)
     report_revisions: List[ReportRevision] = Field(default_factory=list)
     agent_events: List[AgentWorkflowEvent] = Field(default_factory=list)
+    communication_records: List[CommunicationRecord] = Field(default_factory=list)
 
     def locked_calculation_fields(self) -> list[ExtractedField]:
         return [

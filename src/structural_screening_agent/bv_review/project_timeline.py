@@ -9,6 +9,7 @@ from structural_screening_agent.bv_review.project_state import ProjectReviewStat
 
 TimelineEventType = Literal[
     "agent_event",
+    "communication",
     "rfi",
     "finding",
     "report_revision",
@@ -20,6 +21,7 @@ TimelineSuggestedAction = Literal[
     "finding_closeout_record",
     "report_revision_review",
     "engineer_approval_record",
+    "communication_follow_up",
 ]
 
 
@@ -118,6 +120,24 @@ def build_project_timeline_events(
                 suggested_action="engineer_approval_record",
             )
         )
+
+    for communication in state.communication_records:
+        events.append(
+            ProjectTimelineEvent(
+                sort_key=f"05-COMM-{communication.communication_id}",
+                event_type="communication",
+                item_id=communication.communication_id,
+                status=communication.communication_type,
+                owner=", ".join(communication.participants) or "project team",
+                linked_object=_format_communication_links(
+                    communication.linked_rfi_ids,
+                    communication.linked_risk_ids,
+                ),
+                description=communication.subject,
+                evidence=communication.summary,
+                suggested_action="communication_follow_up",
+            )
+        )
     return events
 
 
@@ -130,4 +150,16 @@ def _format_approval_evidence(*, approved_at: Optional[str], locked: bool) -> st
     if approved_at:
         parts.append(approved_at)
     parts.append(f"locked={locked}")
+    return "; ".join(parts)
+
+
+def _format_communication_links(
+    linked_rfi_ids: list[str],
+    linked_risk_ids: list[str],
+) -> str:
+    parts: list[str] = []
+    if linked_rfi_ids:
+        parts.append("RFI: " + ", ".join(linked_rfi_ids))
+    if linked_risk_ids:
+        parts.append("Risk: " + ", ".join(linked_risk_ids))
     return "; ".join(parts)

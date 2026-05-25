@@ -110,6 +110,7 @@ from structural_screening_agent.bv_review.models import (
 )
 from structural_screening_agent.bv_review.project_state import (
     CalculationRun,
+    CommunicationRecord,
     DocumentVersion,
     EngineerApproval,
     ExtractedField,
@@ -186,6 +187,7 @@ __all__ = [
     "CalculationRun",
     "CalculationCheckAgentOutput",
     "ClarificationHistorySummary",
+    "CommunicationRecord",
     "DocumentVersion",
     "DocumentIntakeAgentOutput",
     "EngineerApproval",

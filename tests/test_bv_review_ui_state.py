@@ -25,6 +25,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_incremental_recheck_summary_rows,
     build_evidence_matrix_rows,
     build_persisted_workflow_run_summary_rows,
+    build_project_communication_rows,
     build_project_review_state_summary_rows,
     build_project_review_state_snapshot_rows,
     build_project_timeline_rows,
@@ -41,6 +42,7 @@ from structural_screening_agent.bv_review.field_diff import (
 from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
     CalculationRun,
+    CommunicationRecord,
     EngineerApproval,
     ExtractedField,
     ProjectReviewState,
@@ -491,6 +493,62 @@ def test_project_review_state_snapshot_rows_localize_single_saved_project() -> N
     assert {"Item": "Active RFIs", "Value": 1} in en_rows
 
 
+def test_project_communication_rows_localize_review_communications() -> None:
+    state = ProjectReviewState(
+        project_id="pv-communication-ui",
+        intake=default_bv_review_intake(),
+        communication_records=[
+            CommunicationRecord(
+                communication_id="comm-email-001",
+                communication_type="email",
+                occurred_at="2026-05-24T15:30:00+08:00",
+                participants=["client / designer", "BV structural review engineer"],
+                subject="Updated load table response",
+                summary="Designer confirmed Rev B load table will replace Rev A.",
+                linked_rfi_ids=["rfi-load-001"],
+                action_items=["Engineer to check Rev B load table before report issue."],
+            )
+        ],
+    )
+
+    zh_rows = build_project_communication_rows(state, "zh")
+    en_rows = build_project_communication_rows(state, "en")
+
+    assert zh_rows == [
+        {
+            "沟通 ID": "comm-email-001",
+            "类型": "邮件",
+            "时间": "2026-05-24T15:30:00+08:00",
+            "参与方": "客户 / 设计院, BV 结构审核工程师",
+            "主题": "Updated load table response",
+            "摘要": "Designer confirmed Rev B load table will replace Rev A.",
+            "关联澄清": "rfi-load-001",
+            "关联发现项": "无",
+            "行动项": "Engineer to check Rev B load table before report issue.",
+        }
+    ]
+    assert en_rows[0]["Type"] == "Email"
+    assert en_rows[0]["Participants"] == (
+        "Client / Designer, BV Structural Review Engineer"
+    )
+    assert en_rows[0]["Linked RFIs"] == "rfi-load-001"
+    assert "Email" not in str(zh_rows)
+    assert "邮件" not in str(en_rows)
+
+    zh_timeline_rows = build_project_timeline_rows(state, "zh")
+    en_timeline_rows = build_project_timeline_rows(state, "en")
+
+    assert zh_timeline_rows[0]["类型"] == "沟通记录"
+    assert zh_timeline_rows[0]["状态"] == "邮件"
+    assert zh_timeline_rows[0]["责任方"] == "客户 / 设计院, BV 结构审核工程师"
+    assert zh_timeline_rows[0]["建议动作"] == "跟进沟通行动项并保留记录"
+    assert en_timeline_rows[0]["Type"] == "Communication"
+    assert en_timeline_rows[0]["Status"] == "Email"
+    assert en_timeline_rows[0]["Suggested Action"] == (
+        "Follow up communication action items and keep the record"
+    )
+
+
 def test_project_timeline_rows_combine_rfi_finding_and_report_revision_events() -> None:
     state = ProjectReviewState(
         project_id="pv-ui-project-timeline",
@@ -548,7 +606,7 @@ def test_project_timeline_rows_combine_rfi_finding_and_report_revision_events() 
             "类型": "RFI",
             "项目 ID": "rfi-foundation-input",
             "状态": "已关闭",
-            "责任方": "client / designer",
+            "责任方": "客户 / 设计院",
             "关联对象": "pile_length_m",
             "说明": "Foundation input changed in Rev B.",
             "证据": "Designer confirmed Rev B pile length.",
@@ -583,7 +641,7 @@ def test_project_timeline_rows_combine_rfi_finding_and_report_revision_events() 
             "Type": "RFI",
             "Item ID": "rfi-foundation-input",
             "Status": "Closed",
-            "Owner": "client / designer",
+            "Owner": "Client / Designer",
             "Linked Object": "pile_length_m",
             "Description": "Foundation input changed in Rev B.",
             "Evidence": "Designer confirmed Rev B pile length.",

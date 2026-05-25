@@ -1,6 +1,7 @@
 from structural_screening_agent.bv_review.models import BVRiskItem
 from structural_screening_agent.bv_review.project_state import (
     AgentWorkflowEvent,
+    CommunicationRecord,
     EngineerApproval,
     ProjectReviewState,
     RFIItem,
@@ -179,3 +180,40 @@ def test_project_timeline_events_include_agent_and_engineer_gate_records() -> No
 
     assert events[2].event_type == "engineer_approval"
     assert events[2].linked_object == "gate:calculation"
+
+
+def test_project_timeline_events_include_project_communication_records() -> None:
+    state = ProjectReviewState(
+        project_id="pv-project-communication-timeline",
+        intake=default_bv_review_intake(),
+        communication_records=[
+            CommunicationRecord(
+                communication_id="comm-design-meeting-001",
+                communication_type="meeting",
+                occurred_at="2026-05-24T10:00:00+08:00",
+                participants=[
+                    "BV structural review engineer",
+                    "client / designer",
+                ],
+                subject="Foundation evidence closeout meeting",
+                summary="Designer agreed to submit Rev B geotechnical note.",
+                linked_rfi_ids=["rfi-foundation-input"],
+                linked_risk_ids=["risk-foundation-input"],
+                action_items=["Client to submit Rev B note before report issue."],
+            )
+        ],
+    )
+
+    events = build_project_timeline_events(state)
+
+    assert [event.sort_key for event in events] == [
+        "05-COMM-comm-design-meeting-001"
+    ]
+    assert events[0].event_type == "communication"
+    assert events[0].item_id == "comm-design-meeting-001"
+    assert events[0].status == "meeting"
+    assert events[0].owner == "BV structural review engineer, client / designer"
+    assert events[0].linked_object == "RFI: rfi-foundation-input; Risk: risk-foundation-input"
+    assert events[0].description == "Foundation evidence closeout meeting"
+    assert events[0].evidence == "Designer agreed to submit Rev B geotechnical note."
+    assert events[0].suggested_action == "communication_follow_up"

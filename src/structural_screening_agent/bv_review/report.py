@@ -567,6 +567,7 @@ def build_bv_project_management_actions_section(
 def _timeline_event_type_label(event_type: str) -> str:
     labels = {
         "agent_event": "Agent 事件",
+        "communication": "沟通记录",
         "rfi": "RFI",
         "finding": "发现项",
         "report_revision": "报告版本",
@@ -586,6 +587,8 @@ def _timeline_status_label(event_type: str, status: str) -> str:
         return _review_phase_label(status)
     if event_type == "engineer_approval":
         return _engineer_approval_status_label(status)
+    if event_type == "communication":
+        return _communication_type_label(status)
     return status
 
 
@@ -603,7 +606,15 @@ def _timeline_owner_label(owner: str) -> str:
     }
     if owner in agent_role_labels:
         return agent_role_labels[owner]
-    return owner
+    if "," in owner:
+        return ", ".join(_timeline_owner_label(part.strip()) for part in owner.split(","))
+    owner_labels = {
+        "BV structural review engineer": "BV 结构审核工程师",
+        "BV project review lead": "BV 项目审核负责人",
+        "client / designer": "客户 / 设计院",
+        "client": "客户",
+    }
+    return owner_labels.get(owner, owner)
 
 
 def _timeline_linked_object_label(linked_object: str) -> str:
@@ -648,8 +659,19 @@ def _timeline_suggested_action_label(suggested_action: str) -> str:
         "finding_closeout_record": "保留发现项关闭证据并进入报告",
         "report_revision_review": "按报告版本记录继续内部复核",
         "engineer_approval_record": "保留工程师判断记录作为门禁证据",
+        "communication_follow_up": "跟进沟通行动项并保留记录",
     }
     return labels.get(suggested_action, suggested_action)
+
+
+def _communication_type_label(communication_type: str) -> str:
+    labels = {
+        "meeting": "会议",
+        "email": "邮件",
+        "technical_query": "技术澄清",
+        "client_call": "客户电话",
+    }
+    return labels.get(communication_type, communication_type)
 
 
 def _agent_event_status_label(status: str) -> str:
