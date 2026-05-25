@@ -1,7 +1,11 @@
 import pytest
 from pydantic import ValidationError
 
-from structural_screening_agent.bv_review.models import BVReviewIntake, BVRiskItem
+from structural_screening_agent.bv_review.models import (
+    BVBasisReference,
+    BVReviewIntake,
+    BVRiskItem,
+)
 from structural_screening_agent.bv_review.ui_state import (
     BV_DOCUMENT_LABELS,
     BV_REVIEW_OBJECT_LABELS,
@@ -22,6 +26,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_evidence_matrix_rows,
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
+    build_project_review_state_snapshot_rows,
     build_project_timeline_rows,
     build_quality_gate_status_rows,
     build_report_gate_evidence_rows,
@@ -396,6 +401,94 @@ def test_report_revision_history_rows_are_empty_without_revisions() -> None:
 
     assert build_report_revision_history_rows(state, "zh") == []
     assert build_report_revision_history_rows(state, "en") == []
+
+
+def test_project_review_state_snapshot_rows_localize_single_saved_project() -> None:
+    state = ProjectReviewState(
+        project_id="pv-snapshot-001",
+        intake=BVReviewIntake(
+            project_name="Ground PV saved review",
+            country_or_region="China",
+            project_type="utility_pv",
+            design_stage="construction_drawing",
+            standards_systems=["gb", "iec"],
+            review_objects=["mounting_structure", "foundation"],
+            documents={"structural_drawings": "available"},
+        ),
+        current_phase="report_draft",
+        basis_references=[
+            BVBasisReference(
+                basis_id="gb-50797",
+                title="PV station design basis",
+                source_type="code",
+                review_actions=["Use as review basis."],
+            )
+        ],
+        approvals=[
+            EngineerApproval(
+                approval_id="calculation-gate-approval",
+                target_type="gate",
+                target_id="calculation",
+                status="approved",
+                reviewer="Engineer A",
+                locked=True,
+            ),
+            EngineerApproval(
+                approval_id="report-gate-approval",
+                target_type="gate",
+                target_id="report",
+                status="approved",
+                reviewer="Engineer A",
+                locked=True,
+            ),
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-load-001",
+                question="Please confirm updated load table.",
+                responsible_party="client / designer",
+                trigger_basis="Client replied with Rev B load table.",
+                required_document_or_field="uplift_force_kn",
+                status="responded",
+                client_response="Rev B load table submitted.",
+            )
+        ],
+        risks=[
+            BVRiskItem(
+                risk_id="foundation-open",
+                title="Foundation evidence remains open",
+                severity="critical",
+                trigger_basis="Missing geotechnical report.",
+                impact_scope="Foundation review",
+                recommendation="Request evidence.",
+                blocks_report_issue=True,
+                category="nonconformity",
+            )
+        ],
+    )
+
+    zh_rows = build_project_review_state_snapshot_rows(state, "zh")
+    en_rows = build_project_review_state_snapshot_rows(state, "en")
+
+    assert zh_rows[:4] == [
+        {"项目": "项目 ID", "内容": "pv-snapshot-001"},
+        {"项目": "项目名称", "内容": "Ground PV saved review"},
+        {"项目": "当前阶段", "内容": "报告草稿"},
+        {"项目": "工作流状态", "内容": "阻塞"},
+    ]
+    assert {"项目": "未关闭澄清", "内容": 1} in zh_rows
+    assert {"项目": "已锁定质量门禁", "内容": "计算门禁, 签发门禁"} in zh_rows
+    assert {
+        "项目": "下一步行动",
+        "内容": (
+            "rfi-engineer-closeout-rfi-load-001, "
+            "finding-closeout-foundation-open, record-report-revision-snapshot"
+        ),
+    } in zh_rows
+    assert "RFI" not in str(zh_rows)
+    assert en_rows[0] == {"Item": "Project ID", "Value": "pv-snapshot-001"}
+    assert {"Item": "Workflow Status", "Value": "Blocked"} in en_rows
+    assert {"Item": "Active RFIs", "Value": 1} in en_rows
 
 
 def test_project_timeline_rows_combine_rfi_finding_and_report_revision_events() -> None:

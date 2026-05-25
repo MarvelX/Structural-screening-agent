@@ -23,7 +23,7 @@
 | 对结构荷载计算、连接节点设计、地基承载力计算等进行校核 | 既有门式刚架屋面光伏 screening kernel、Foundation Engine、Superstructure Engine、Calculation Check Agent、基础证据路径 | 已有屋面光伏增载筛查；地面固定支架已接入基础抗拔 / 地基承载力筛查和上部构件强度、稳定、长细比筛查级计算接口；计算结果保留运行记录和结构化错误；基础证据路径会在地勘报告、地基承载力特征值或桩侧阻力标准值证据不足时阻止计算并生成草稿 RFI | 增加连接节点 force path、风 / 雪 / 地震荷载组合、基础抗倾覆、构件库和更强的单位校验 |
 | 独立就设计相关的技术问题做出判断和决策 | 工程师数据锁定、Agent review approve / reject、报告草稿门禁、签发边界声明 | 已实现人工确认字段、锁定计算输入、批准 / 驳回 Agent 产物、阻塞报告草稿和结构化 evidence；系统把独立技术判断保留给工程师，不让 Agent 直接作结构安全结论 | 增加多级 reviewer、判断依据备注、争议项记录和复核意见追踪 |
 | 向客户推广 BV 的服务与解决方案 | `Service Scope Recommendation`、job application microsite、作品集 narrative | 已有服务范围建议模块，可把资料缺口、未关闭 RFI、blocked / failed / review-required 计算运行和优化类发现映射到 BV 服务与解决方案式 review-support 服务方向；建议带触发证据、客户价值和“不替代正式设计 / BV 官方签发”的边界声明 | 增加 fee discussion support 和更细的服务范围模板，但避免变成 CRM |
-| 负责设计项目管理工作 | `ProjectReviewState`、阶段状态、RFI 状态、澄清历史、calculation run history、agent event trace、责任方 SLA 视图、project review dashboard、报告再签发门禁 | 已有项目状态、阶段流转、资料版本、RFI、工程师确认、Agent 事件追踪和报告门禁证据；RFI、增量复核和 Agent 复核待办已带打开时间，可在责任方视图中显示超期状态和最早到期日；澄清历史可逐项显示 RFI 状态、责任方、打开日期、增量复核状态和最新报告覆盖情况；project review dashboard 已汇总项目待办、阻塞报告待办、超期待办、待关闭发现项、澄清关闭状态、待增量复核、报告再签发状态和下一项项目行动；报告再签发门禁可判断未关闭 RFI、增量复核、报告门禁批准和最新 report revision 覆盖范围 | 增加任务责任人、会议时间线和长期状态持久化视图 |
+| 负责设计项目管理工作 | `ProjectReviewState`、阶段状态、RFI 状态、澄清历史、calculation run history、agent event trace、责任方 SLA 视图、project review dashboard、selected saved project state snapshot、报告再签发门禁 | 已有项目状态、阶段流转、资料版本、RFI、工程师确认、Agent 事件追踪和报告门禁证据；RFI、增量复核和 Agent 复核待办已带打开时间，可在责任方视图中显示超期状态和最早到期日；澄清历史可逐项显示 RFI 状态、责任方、打开日期、增量复核状态和最新报告覆盖情况；project review dashboard 已汇总项目待办、阻塞报告待办、超期待办、待关闭发现项、澄清关闭状态、待增量复核、报告再签发状态和下一项项目行动；selected saved project state snapshot 可针对所选已保存项目展示当前阶段、工作流状态、质量门禁、未关闭澄清、发现项、时间线事件和下一步行动；报告再签发门禁可判断未关闭 RFI、增量复核、报告门禁批准和最新 report revision 覆盖范围 | 增加任务责任人、会议时间线和项目备注 |
 
 ## 当前覆盖度总结
 
@@ -38,7 +38,8 @@
 7. 确定性计算：屋面门刚筛查、基础筛查、上部支架构件筛查，均保留输入和运行记录。
 8. RFI 闭环：客户补资、澄清历史、版本差分、增量复核、未关闭 RFI 阻塞报告草稿；RFI closeout 后可通过报告再签发门禁判断是否需要记录新版 report revision；基础证据路径可生成 `foundation_evidence_blocked_geotechnical_parameters` 等草稿 RFI。
 9. 项目审核总览：project review dashboard 把项目待办、超期、发现项、澄清、增量复核、报告再签发状态和下一项项目行动合并为一个项目级摘要。
-10. 报告输出：BV 风格报告预览，Markdown / Word / PDF 导出。
+10. 长周期项目台账：selected saved project state snapshot 可从已保存 JSON 项目中读取单项目状态快照，展示当前阶段、工作流状态、质量门禁和下一步行动。
+11. 报告输出：BV 风格报告预览，Markdown / Word / PDF 导出。
 
 ## 面试表达建议
 

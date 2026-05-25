@@ -38,6 +38,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_incremental_recheck_summary_rows,
     build_persisted_workflow_run_summary_rows,
     build_project_review_state_summary_rows,
+    build_project_review_state_snapshot_rows,
     build_project_timeline_rows,
     build_quality_gate_status_rows,
     build_report_gate_evidence_rows,
@@ -1012,6 +1013,27 @@ with bv_review_tab:
                 saved_project_ids,
                 key="bv_selected_saved_project_id",
             )
+            try:
+                selected_project_snapshot_rows = build_project_review_state_snapshot_rows(
+                    persisted_repository.load(str(selected_saved_project_id)),
+                    ui_language,
+                )
+                st.markdown(
+                    "##### Selected Project State Snapshot"
+                    if ui_language == "en"
+                    else "所选项目状态快照"
+                )
+                st.dataframe(
+                    selected_project_snapshot_rows,
+                    hide_index=True,
+                    use_container_width=True,
+                )
+            except (FileNotFoundError, ValueError):
+                st.caption(
+                    "Selected saved project could not be loaded."
+                    if ui_language == "en"
+                    else "无法加载所选已保存项目。"
+                )
         else:
             selected_saved_project_id = None
         persisted_workflow_result = None

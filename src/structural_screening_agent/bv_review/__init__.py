@@ -150,7 +150,10 @@ from structural_screening_agent.bv_review.service_scope import (
     build_service_scope_display_rows,
     build_service_scope_recommendations,
 )
-from structural_screening_agent.bv_review.state_repository import JsonProjectReviewStateRepository
+from structural_screening_agent.bv_review.state_repository import (
+    JsonProjectReviewStateRepository,
+    summarize_project_review_state,
+)
 from structural_screening_agent.bv_review.state_machine import advance_project_phase
 from structural_screening_agent.bv_review.human_gate import (
     close_rfi_after_engineer_review,
@@ -266,6 +269,7 @@ __all__ = [
     "build_service_scope_recommendations",
     "build_superstructure_calculation_run",
     "build_superstructure_calculation_run_from_fields",
+    "summarize_project_review_state",
     "close_rfi_after_engineer_review",
     "diff_extracted_fields",
     "evaluate_bv_review",

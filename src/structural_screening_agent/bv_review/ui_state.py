@@ -13,7 +13,10 @@ from structural_screening_agent.bv_review.field_diff import (
 )
 from structural_screening_agent.bv_review.project_state import ExtractedField, ProjectReviewState
 from structural_screening_agent.bv_review.project_timeline import build_project_timeline_events
-from structural_screening_agent.bv_review.state_repository import ProjectReviewStateSummary
+from structural_screening_agent.bv_review.state_repository import (
+    ProjectReviewStateSummary,
+    summarize_project_review_state,
+)
 from structural_screening_agent.localization import Language
 
 
@@ -786,6 +789,89 @@ def build_project_review_state_summary_rows(
     ]
 
 
+def build_project_review_state_snapshot_rows(
+    state: ProjectReviewState,
+    language: Language,
+) -> list[dict[str, object]]:
+    summary = summarize_project_review_state(state)
+    labels = (
+        {
+            "key": "项目",
+            "value": "内容",
+            "project_id": "项目 ID",
+            "project_name": "项目名称",
+            "current_phase": "当前阶段",
+            "workflow_status": "工作流状态",
+            "management_action_count": "项目待办",
+            "blocking_action_count": "阻塞待办",
+            "overdue_action_count": "超期待办",
+            "active_rfi_count": "未关闭澄清",
+            "open_finding_count": "未关闭发现项",
+            "pending_agent_review_count": "待工程师复核",
+            "report_revision_count": "报告修订",
+            "timeline_event_count": "时间线事件",
+            "locked_quality_gate_ids": "已锁定质量门禁",
+            "open_quality_gate_ids": "未通过质量门禁",
+            "next_action_ids": "下一步行动",
+            "none": "无",
+        }
+        if language == "zh"
+        else {
+            "key": "Item",
+            "value": "Value",
+            "project_id": "Project ID",
+            "project_name": "Project Name",
+            "current_phase": "Current Phase",
+            "workflow_status": "Workflow Status",
+            "management_action_count": "Project Actions",
+            "blocking_action_count": "Blocking Actions",
+            "overdue_action_count": "Overdue Actions",
+            "active_rfi_count": "Active RFIs",
+            "open_finding_count": "Open Findings",
+            "pending_agent_review_count": "Pending Engineer Reviews",
+            "report_revision_count": "Report Revisions",
+            "timeline_event_count": "Timeline Events",
+            "locked_quality_gate_ids": "Locked Quality Gates",
+            "open_quality_gate_ids": "Open Quality Gates",
+            "next_action_ids": "Next Actions",
+            "none": "None",
+        }
+    )
+    rows = [
+        (labels["project_id"], summary.project_id),
+        (labels["project_name"], summary.project_name),
+        (
+            labels["current_phase"],
+            BV_REVIEW_PHASE_LABELS[summary.current_phase][language],
+        ),
+        (
+            labels["workflow_status"],
+            _project_inventory_workflow_status_label(summary.workflow_status, language),
+        ),
+        (labels["management_action_count"], summary.management_action_count),
+        (labels["blocking_action_count"], summary.blocking_action_count),
+        (labels["overdue_action_count"], summary.overdue_action_count),
+        (labels["active_rfi_count"], summary.active_rfi_count),
+        (labels["open_finding_count"], summary.open_finding_count),
+        (labels["pending_agent_review_count"], summary.pending_agent_review_count),
+        (labels["report_revision_count"], summary.report_revision_count),
+        (labels["timeline_event_count"], summary.timeline_event_count),
+        (
+            labels["locked_quality_gate_ids"],
+            _quality_gate_list_value(summary.locked_quality_gate_ids, language),
+        ),
+        (
+            labels["open_quality_gate_ids"],
+            _quality_gate_list_value(summary.open_quality_gate_ids, language),
+        ),
+        (
+            labels["next_action_ids"],
+            ", ".join(summary.next_action_ids) or labels["none"],
+        ),
+    ]
+    return [{labels["key"]: key, labels["value"]: value} for key, value in rows]
+
+
 def _project_inventory_workflow_status_label(status: str, language: Language) -> str:
     labels = {
         "blocked": {"zh": "阻塞", "en": "Blocked"},
@@ -793,6 +879,12 @@ def _project_inventory_workflow_status_label(status: str, language: Language) ->
         "ready": {"zh": "可继续", "en": "Ready"},
     }
     return labels.get(status, {}).get(language, status)
+
+
+def _quality_gate_list_value(gate_ids: list[str], language: Language) -> str:
+    if not gate_ids:
+        return "无" if language == "zh" else "None"
+    return ", ".join(_quality_gate_label(gate_id, language) for gate_id in gate_ids)
 
 
 def _quality_gate_label(gate_id: str, language: Language) -> str:

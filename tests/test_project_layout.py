@@ -111,6 +111,10 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "build_responsible_party_status_rows" in source
     assert "责任方待办与时限状态" in source
     assert "Responsible Party Status and SLA" in source
+    assert "build_project_review_state_snapshot_rows" in source
+    assert "selected_project_snapshot_rows" in source
+    assert "所选项目状态快照" in source
+    assert "Selected Project State Snapshot" in source
     assert "build_bv_clarification_history_view" in source
     assert "build_bv_project_review_dashboard_view" in source
     assert "build_bv_report_reissue_gate_view" in source

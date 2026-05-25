@@ -137,11 +137,13 @@ Implemented:
 - report reissue gate that links RFI closeout, incremental recheck evidence, report gate approval, and latest revision coverage into a deterministic next action.
 - clarification history view for RFI status, owner, opened date, incremental recheck state, latest report revision coverage, and next clarification action.
 - project review dashboard that aggregates open actions, blocking actions, overdue actions, findings, clarification closeout, pending rechecks, report reissue status, and the next project action into one deterministic project-level summary.
+- selected saved project state snapshot for long-running review work, showing the chosen persisted project's phase, workflow status, open actions, blockers, overdue count, active clarifications, findings, locked quality gates, open quality gates, timeline count, and next actions.
 
 Candidate work:
 
 - deeper finding lifecycle tracking
 - fee discussion support
+- project notes and meeting timeline
 
 This phase should not turn the product into a CRM. Service scope recommendation should remain tied to engineering review findings and document gaps.
 

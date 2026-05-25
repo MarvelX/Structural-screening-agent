@@ -13,7 +13,10 @@ from structural_screening_agent.bv_review.project_state import (
     RFIItem,
     ReportRevision,
 )
-from structural_screening_agent.bv_review.state_repository import JsonProjectReviewStateRepository
+from structural_screening_agent.bv_review.state_repository import (
+    JsonProjectReviewStateRepository,
+    summarize_project_review_state,
+)
 
 
 def _sample_state() -> ProjectReviewState:
@@ -228,6 +231,31 @@ def test_json_state_repository_lists_project_summaries(tmp_path: Path) -> None:
     assert summaries[1].next_action_owner_roles == [
         "BV project review lead",
         "BV project review lead",
+    ]
+
+
+def test_summarize_project_review_state_returns_inventory_summary_without_repository() -> None:
+    state = _sample_state().model_copy(
+        update={
+            "current_phase": "document_check",
+            "phase_statuses": {
+                **_sample_state().phase_statuses,
+                "document_check": "waiting_for_engineer",
+            },
+        }
+    )
+
+    summary = summarize_project_review_state(state)
+
+    assert summary.project_id == "pv-ground-001"
+    assert summary.current_phase == "document_check"
+    assert summary.pending_agent_review_count == 1
+    assert summary.active_rfi_count == 1
+    assert summary.open_finding_count == 1
+    assert summary.workflow_status == "blocked"
+    assert summary.next_action_ids[:2] == [
+        "rfi-client-response-rfi-001",
+        "finding-closeout-foundation-bearing-capacity-open",
     ]
 
 

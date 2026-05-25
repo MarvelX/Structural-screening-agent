@@ -99,7 +99,7 @@ class JsonProjectReviewStateRepository:
         invalid_project_ids: list[str] = []
         for project_id in self.list_project_ids():
             try:
-                summaries.append(_summarize_project_state(self.load(project_id)))
+                summaries.append(summarize_project_review_state(self.load(project_id)))
             except (FileNotFoundError, OSError, ValueError, ValidationError):
                 invalid_project_ids.append(project_id)
         return ProjectReviewStateInventory(
@@ -108,7 +108,9 @@ class JsonProjectReviewStateRepository:
         )
 
 
-def _summarize_project_state(state: ProjectReviewState) -> ProjectReviewStateSummary:
+def summarize_project_review_state(
+    state: ProjectReviewState,
+) -> ProjectReviewStateSummary:
     pending_agent_review_count = sum(
         1
         for event in state.agent_events
