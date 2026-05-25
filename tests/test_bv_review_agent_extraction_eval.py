@@ -234,3 +234,17 @@ def test_build_extraction_eval_markdown_summary_is_portfolio_ready() -> None:
     assert "Field recall" in markdown
     assert "No-hallucination rate" in markdown
     assert "pv-cn-no-specific-values-010" in markdown
+
+
+def test_agent_extraction_eval_models_are_publicly_exported() -> None:
+    from structural_screening_agent.bv_review import (
+        AgentExtractionCase,
+        AgentExtractionCaseScore,
+        AgentExtractionEvaluationSummary,
+        ExpectedExtractedField,
+    )
+
+    assert AgentExtractionCase is not None
+    assert AgentExtractionCaseScore is not None
+    assert AgentExtractionEvaluationSummary is not None
+    assert ExpectedExtractedField is not None

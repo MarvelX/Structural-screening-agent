@@ -12,9 +12,9 @@
 
 | JD 条款 | 产品模块 | 当前覆盖度 | 下一步补强项 |
 |---|---|---|---|
-| 负责对光伏电站项目的土建、钢结构、支架及基础工程设计图纸、计算书和技术规格书进行独立、全面的审核 | `Project Review Intake`、`Design Document Checklist`、`Structural Review Path`、地面固定支架人工确认表、既有屋面门式刚架筛查模块 | 已覆盖资料状态录入、结构图纸 / 计算书 / 技术规格书 / 地勘报告 / 厂家资料 / 合同要求的完整性检查；已按支架、钢结构、混凝土、基础、连接、荷载、既有屋面增载拆分审核路径 | 增加更细的支架构件、基础、连接节点、腐蚀耐久和施工可行性 checklist；后续接入解析脚本或 OCR，但不做完整 CAD 自动审图 |
-| 根据公司质量体系、客户要求和相关标准，确保设计审核工作的质量 | `ProjectReviewState`、阶段状态机、工程师确认门禁、报告草稿门禁、Agent engineer review queue、project notes / engineering judgment records | 已有资料门禁、计算门禁、Agent 产物复核、报告草稿阻塞理由和结构化 evidence；客户要求可进入 intake 并影响审查范围；project notes 可记录内部复核、审核边界、客户要求和剩余风险，并进入报告追溯 | 增加质量体系模板、审核人 / 复核人角色和更完整的项目级审批日志 |
-| 解读设计规范、国家和国际标准（如 GB, IEC, AS/NZS, Eurocode 等）并应用于审核实践 | `Review Basis Builder`、标准体系选择、basis traceability、`GB / IEC / AS/NZS / Eurocode` 映射 | 已支持 GB、IEC、AS/NZS、Eurocode 标准体系选择，并把适用依据映射到 review objects 和报告依据章节 | 增加条文级 clause reference、风 / 雪 / 地震荷载路径和地区化规范适用性提示 |
+| 负责对光伏电站项目的土建、钢结构、支架及基础工程设计图纸、计算书和技术规格书进行独立、全面的审核 | `Project Review Intake`、`Design Document Checklist`、`Structural Review Path`、地面固定支架人工确认表、既有屋面门式刚架筛查模块 | 已覆盖资料状态录入、结构图纸 / 计算书 / 技术规格书 / 地勘报告 / 厂家资料 / 合同要求的完整性检查；已按支架、钢结构、混凝土、基础、连接、荷载、既有屋面增载拆分审核路径；agent extraction reliability evaluation 已用 curated cases 测试提交资料和计算片段中的参数抽取、单位、证据和缺失资料识别 | 增加更细的支架构件、基础、连接节点、腐蚀耐久和施工可行性 checklist；后续接入解析脚本或 OCR，但不做完整 CAD 自动审图 |
+| 根据公司质量体系、客户要求和相关标准，确保设计审核工作的质量 | `ProjectReviewState`、阶段状态机、工程师确认门禁、报告草稿门禁、Agent engineer review queue、project notes / engineering judgment records | 已有资料门禁、计算门禁、Agent 产物复核、报告草稿阻塞理由和结构化 evidence；客户要求可进入 intake 并影响审查范围；project notes 可记录内部复核、审核边界、客户要求和剩余风险，并进入报告追溯；Agent 文档接收输出已有可量化的抽取可靠性指标，包括 recall、precision、evidence completeness、missing-document accuracy 和 no-hallucination rate | 增加质量体系模板、审核人 / 复核人角色和更完整的项目级审批日志 |
+| 解读设计规范、国家和国际标准（如 GB, IEC, AS/NZS, Eurocode 等）并应用于审核实践 | `Review Basis Builder`、标准体系选择、basis traceability、`GB / IEC / AS/NZS / Eurocode` 映射 | 已支持 GB、IEC、AS/NZS、Eurocode 标准体系选择，并把适用依据映射到 review objects 和报告依据章节；抽取可靠性评测的第一版聚焦 Document Intake，后续可扩展到标准和条文抽取，但不会把未验证的标准解释直接变成工程结论 | 增加条文级 clause reference、风 / 雪 / 地震荷载路径和地区化规范适用性提示 |
 | 审查并理解适用的合同要求、法规、技术标准和项目规范 | `Project Review Intake`、客户要求输入、`Review Basis Builder`、合同资料 checklist | 已把合同技术要求作为资料项，支持客户要求文本进入项目 intake；basis builder 可把项目规范和合同要求作为审核依据的一部分 | 增加合同条款摘录、法规清单、项目规范差异记录和合同优先级冲突提示 |
 | 定义和审查项目特定设计审核计划、检查与测试计划及相关程序 | `ITP & Review Plan Generator`、`ReviewPlanAgentOutput`、review plan 表 | 已根据项目阶段、资料状态和审核对象生成 ITP / review plan，包含方法、责任角色、交付物和阻塞条件 | 增加公司程序模板、hold / witness / review point 分类和可导出的 ITP 表格 |
 | 执行或监督设计审核工作，并出具专业的设计审查报告 | `Local Agent Workflow Runner`、`Risk & NCR Agent`、`Design Review Report Composer`、Markdown / Word / PDF 导出 | 已支持本地 deterministic agent workflow、工程师复核队列、报告草稿门禁、报告修订历史、RFI closeout 后报告再签发门禁、BV 风格报告预览及 Markdown / Word / PDF 导出 | 增加审核人签名状态和外部交付版本水印；继续声明不替代 BV 官方签发 |
@@ -42,6 +42,7 @@
 11. 项目审核总览：project review dashboard 把项目待办、超期、发现项、澄清、增量复核、报告再签发状态和下一项项目行动合并为一个项目级摘要。
 12. 长周期项目台账：selected saved project state snapshot 可从已保存 JSON 项目中读取单项目状态快照，展示当前阶段、工作流状态、质量门禁和下一步行动。
 13. 报告输出：BV 风格报告预览，Markdown / Word / PDF 导出。
+14. Agent 抽取可靠性评测：agent extraction reliability evaluation 用 curated golden cases 衡量资料参数抽取、单位、证据、缺失资料和反幻觉表现。
 
 ## 面试表达建议
 

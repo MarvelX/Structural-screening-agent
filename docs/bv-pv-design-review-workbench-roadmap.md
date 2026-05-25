@@ -148,6 +148,20 @@ Candidate work:
 
 This phase should not turn the product into a CRM. Service scope recommendation should remain tied to engineering review findings and document gaps.
 
+## Phase 5: Agent Reliability and Evaluation
+
+Goal: make Agent-assisted document intake measurable before it is used in broader review-support workflows.
+
+Status: started.
+
+Implemented:
+
+- agent extraction reliability evaluation for offline scoring of `DocumentIntakeAgentOutput` against curated PV review golden cases, including field recall, field precision, value accuracy, unit accuracy, evidence completeness, missing-document accuracy, no-hallucination rate, and calculation-readiness accuracy.
+
+Boundary:
+
+The first evaluation set is fully offline and deterministic. It scores extraction behavior against fixture outputs only; it does not call a live LLM provider and does not create engineering conclusions.
+
 ## Near-Term Development Steps
 
 Recommended next three small, verifiable steps:
