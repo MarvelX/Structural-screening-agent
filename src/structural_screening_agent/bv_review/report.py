@@ -127,6 +127,9 @@ def build_bv_report_preview(
     )
     if evidence_matrix_section is not None:
         sections.insert(-1, evidence_matrix_section)
+    project_note_section = build_bv_project_note_section(project_state)
+    if project_note_section is not None:
+        sections.insert(-1, project_note_section)
     project_timeline_section = build_bv_project_timeline_section(project_state)
     if project_timeline_section is not None:
         sections.insert(-1, project_timeline_section)
@@ -508,6 +511,32 @@ def build_bv_project_timeline_section(
     return BVReportSection(heading="项目时间线", items=items)
 
 
+def build_bv_project_note_section(
+    project_state: Optional[ProjectReviewState],
+) -> Optional[BVReportSection]:
+    if project_state is None or not project_state.project_notes:
+        return None
+
+    return BVReportSection(
+        heading="项目备注与工程判断",
+        items=[
+            (
+                f"备注 {note.note_id} | "
+                f"类型: {_project_note_type_label(note.note_type)} | "
+                f"记录人: {_timeline_owner_label(note.author)} | "
+                f"记录时间: {note.created_at or 'N/A'} | "
+                f"标题: {note.title} | "
+                f"内容: {note.content} | "
+                f"关联澄清: {', '.join(note.linked_rfi_ids) or 'N/A'} | "
+                f"关联发现项: {', '.join(note.linked_risk_ids) or 'N/A'} | "
+                f"关联计算: {', '.join(note.linked_calculation_run_ids) or 'N/A'} | "
+                f"阻塞报告: {'是' if note.blocks_report_issue else '否'}"
+            )
+            for note in project_state.project_notes
+        ],
+    )
+
+
 def build_bv_project_management_actions_section(
     project_state: Optional[ProjectReviewState],
 ) -> Optional[BVReportSection]:
@@ -672,6 +701,17 @@ def _communication_type_label(communication_type: str) -> str:
         "client_call": "客户电话",
     }
     return labels.get(communication_type, communication_type)
+
+
+def _project_note_type_label(note_type: str) -> str:
+    labels = {
+        "engineering_judgment": "工程判断",
+        "review_boundary": "审核边界",
+        "internal_review": "内部复核",
+        "client_requirement": "客户要求",
+        "residual_risk": "剩余风险",
+    }
+    return labels.get(note_type, note_type)
 
 
 def _agent_event_status_label(status: str) -> str:

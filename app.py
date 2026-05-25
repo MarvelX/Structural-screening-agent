@@ -40,6 +40,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_project_review_state_summary_rows,
     build_project_review_state_snapshot_rows,
     build_project_communication_rows,
+    build_project_note_rows,
     build_project_timeline_rows,
     build_quality_gate_status_rows,
     build_report_gate_evidence_rows,
@@ -1812,6 +1813,27 @@ with bv_review_tab:
                 "No project communication records are available."
                 if ui_language == "en"
                 else "当前没有项目沟通记录。"
+            )
+        project_note_rows = build_project_note_rows(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown(
+            "##### Project Notes / Engineering Judgments"
+            if ui_language == "en"
+            else "项目备注 / 工程判断"
+        )
+        if project_note_rows:
+            st.dataframe(
+                project_note_rows,
+                hide_index=True,
+                use_container_width=True,
+            )
+        else:
+            st.caption(
+                "No project notes or engineering judgment records are available."
+                if ui_language == "en"
+                else "当前没有项目备注或工程判断记录。"
             )
         project_timeline_rows = build_project_timeline_rows(
             reviewed_workflow_state,

@@ -240,6 +240,25 @@ class CommunicationRecord(BaseModel):
     action_items: List[str] = Field(default_factory=list)
 
 
+class ProjectNote(BaseModel):
+    note_id: str = Field(min_length=1)
+    note_type: Literal[
+        "engineering_judgment",
+        "review_boundary",
+        "internal_review",
+        "client_requirement",
+        "residual_risk",
+    ]
+    author: str = Field(min_length=1)
+    created_at: Optional[str] = None
+    title: str = Field(min_length=1)
+    content: str = Field(min_length=1)
+    linked_rfi_ids: List[str] = Field(default_factory=list)
+    linked_risk_ids: List[str] = Field(default_factory=list)
+    linked_calculation_run_ids: List[str] = Field(default_factory=list)
+    blocks_report_issue: bool = False
+
+
 def _default_phase_statuses() -> dict[ReviewPhase, ReviewPhaseStatus]:
     return {phase: "pending" for phase in REVIEW_PHASES}
 
@@ -265,6 +284,7 @@ class ProjectReviewState(BaseModel):
     report_revisions: List[ReportRevision] = Field(default_factory=list)
     agent_events: List[AgentWorkflowEvent] = Field(default_factory=list)
     communication_records: List[CommunicationRecord] = Field(default_factory=list)
+    project_notes: List[ProjectNote] = Field(default_factory=list)
 
     def locked_calculation_fields(self) -> list[ExtractedField]:
         return [

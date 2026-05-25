@@ -14,6 +14,7 @@ from structural_screening_agent.bv_review.project_state import (
     DocumentVersion,
     EngineerApproval,
     ExtractedField,
+    ProjectNote,
     ProjectReviewState,
     ReportRevision,
     RFIItem,
@@ -557,6 +558,47 @@ def test_bv_report_project_timeline_includes_communication_records() -> None:
     assert "状态: 会议" in text
     assert "责任方: BV 结构审核工程师, 客户 / 设计院" in text
     assert "建议动作: 跟进沟通行动项并保留记录" in text
+
+
+def test_bv_report_preview_and_markdown_include_project_notes() -> None:
+    intake = _sample_intake()
+    result = evaluate_bv_review(intake)
+    state = ProjectReviewState(
+        project_id="pv-report-project-notes",
+        intake=intake,
+        project_notes=[
+            ProjectNote(
+                note_id="note-boundary-001",
+                note_type="review_boundary",
+                author="BV project review lead",
+                created_at="2026-05-25",
+                title="Report issue boundary",
+                content="Final report issue remains blocked until Rev B geotechnical note is reviewed.",
+                linked_rfi_ids=["rfi-geotech-001"],
+                linked_risk_ids=["risk-foundation-001"],
+                linked_calculation_run_ids=["calc-foundation-001"],
+                blocks_report_issue=True,
+            )
+        ],
+    )
+
+    preview = build_bv_report_preview(intake, result, project_state=state)
+    section = next(
+        section for section in preview.sections if section.heading == "项目备注与工程判断"
+    )
+    text = "\n".join(section.items)
+    report = build_bv_markdown_report(intake, result, project_state=state)
+
+    assert "备注 note-boundary-001" in text
+    assert "类型: 审核边界" in text
+    assert "记录人: BV 项目审核负责人" in text
+    assert "标题: Report issue boundary" in text
+    assert "关联澄清: rfi-geotech-001" in text
+    assert "关联发现项: risk-foundation-001" in text
+    assert "关联计算: calc-foundation-001" in text
+    assert "阻塞报告: 是" in text
+    assert "## 项目备注与工程判断" in report
+    assert "Final report issue remains blocked" in report
 
 
 def test_bv_report_preview_includes_active_rfi_register_when_state_is_provided() -> None:

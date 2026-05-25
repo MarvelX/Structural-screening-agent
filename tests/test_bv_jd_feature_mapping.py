@@ -95,6 +95,7 @@ def test_bv_roadmap_reflects_current_traceability_and_clean_workspace_baseline()
         "project review dashboard",
         "selected saved project state snapshot",
         "project communication log",
+        "project notes / engineering judgment records",
         "default Pytest duplicate-copy exclusion",
         "workspace cleanliness policy",
         "UI / report evidence matrix alignment",

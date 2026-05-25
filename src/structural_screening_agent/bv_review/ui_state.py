@@ -927,6 +927,64 @@ def build_project_communication_rows(
     ]
 
 
+def build_project_note_rows(
+    state: ProjectReviewState,
+    language: Language,
+) -> list[dict[str, object]]:
+    labels = (
+        {
+            "note_id": "备注 ID",
+            "note_type": "类型",
+            "author": "记录人",
+            "created_at": "记录时间",
+            "title": "标题",
+            "content": "内容",
+            "linked_rfi_ids": "关联澄清",
+            "linked_risk_ids": "关联发现项",
+            "linked_calculation_run_ids": "关联计算",
+            "blocks_report_issue": "阻塞报告",
+            "none": "无",
+        }
+        if language == "zh"
+        else {
+            "note_id": "Note ID",
+            "note_type": "Type",
+            "author": "Author",
+            "created_at": "Created At",
+            "title": "Title",
+            "content": "Content",
+            "linked_rfi_ids": "Linked RFIs",
+            "linked_risk_ids": "Linked Findings",
+            "linked_calculation_run_ids": "Linked Calculations",
+            "blocks_report_issue": "Blocks Report",
+            "none": "None",
+        }
+    )
+    return [
+        {
+            labels["note_id"]: note.note_id,
+            labels["note_type"]: _project_note_type_label(note.note_type, language),
+            labels["author"]: _project_action_owner_label(note.author, language),
+            labels["created_at"]: note.created_at or labels["none"],
+            labels["title"]: note.title,
+            labels["content"]: note.content,
+            labels["linked_rfi_ids"]: ", ".join(note.linked_rfi_ids)
+            or labels["none"],
+            labels["linked_risk_ids"]: ", ".join(note.linked_risk_ids)
+            or labels["none"],
+            labels["linked_calculation_run_ids"]: ", ".join(
+                note.linked_calculation_run_ids
+            )
+            or labels["none"],
+            labels["blocks_report_issue"]: _localized_bool(
+                note.blocks_report_issue,
+                language,
+            ),
+        }
+        for note in state.project_notes
+    ]
+
+
 def _project_inventory_workflow_status_label(status: str, language: Language) -> str:
     labels = {
         "blocked": {"zh": "阻塞", "en": "Blocked"},
@@ -944,6 +1002,20 @@ def _communication_type_label(communication_type: str, language: Language) -> st
         "client_call": {"zh": "客户电话", "en": "Client Call"},
     }
     return labels.get(communication_type, {}).get(language, communication_type)
+
+
+def _project_note_type_label(note_type: str, language: Language) -> str:
+    labels = {
+        "engineering_judgment": {
+            "zh": "工程判断",
+            "en": "Engineering Judgment",
+        },
+        "review_boundary": {"zh": "审核边界", "en": "Review Boundary"},
+        "internal_review": {"zh": "内部复核", "en": "Internal Review"},
+        "client_requirement": {"zh": "客户要求", "en": "Client Requirement"},
+        "residual_risk": {"zh": "剩余风险", "en": "Residual Risk"},
+    }
+    return labels.get(note_type, {}).get(language, note_type)
 
 
 def _participant_list_value(participants: list[str], language: Language) -> str:

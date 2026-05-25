@@ -8,6 +8,7 @@ from structural_screening_agent.bv_review import (
     FoundationEngineInput,
     PersistedWorkflowRunResult,
     PersistedWorkflowRunSummary,
+    ProjectNote,
     ProjectReviewState,
     ReportRevision,
     SuperstructureEngineInput,
@@ -52,6 +53,36 @@ def test_project_review_state_defaults_include_all_review_phases() -> None:
     assert state.current_phase == "intake"
     assert tuple(state.phase_statuses) == REVIEW_PHASES
     assert set(state.phase_statuses.values()) == {"pending"}
+
+
+def test_project_review_state_carries_project_notes_for_engineering_judgment() -> None:
+    state = ProjectReviewState(
+        project_id="pv-engineering-notes",
+        intake=_sample_intake(),
+        project_notes=[
+            ProjectNote(
+                note_id="note-judgment-001",
+                note_type="engineering_judgment",
+                author="BV structural review engineer",
+                created_at="2026-05-25",
+                title="Foundation calculation boundary",
+                content="Accept screening-level pile uplift check only after geotechnical parameters are confirmed.",
+                linked_rfi_ids=["rfi-geotech-001"],
+                linked_risk_ids=["risk-foundation-001"],
+                linked_calculation_run_ids=["calc-foundation-001"],
+                blocks_report_issue=True,
+            )
+        ],
+    )
+
+    restored = ProjectReviewState.model_validate(state.model_dump())
+
+    assert restored.project_notes[0].note_id == "note-judgment-001"
+    assert restored.project_notes[0].note_type == "engineering_judgment"
+    assert restored.project_notes[0].linked_rfi_ids == ["rfi-geotech-001"]
+    assert restored.project_notes[0].linked_risk_ids == ["risk-foundation-001"]
+    assert restored.project_notes[0].linked_calculation_run_ids == ["calc-foundation-001"]
+    assert restored.project_notes[0].blocks_report_issue is True
 
 
 def test_extracted_field_cannot_enter_calculation_before_confirmation() -> None:

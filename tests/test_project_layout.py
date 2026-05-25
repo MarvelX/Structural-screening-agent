@@ -121,6 +121,9 @@ def test_app_py_uses_tabbed_information_architecture() -> None:
     assert "build_project_communication_rows" in source
     assert "Project Communication Log" in source
     assert "项目沟通记录" in source
+    assert "build_project_note_rows" in source
+    assert "Project Notes / Engineering Judgments" in source
+    assert "项目备注 / 工程判断" in source
     assert "project_review_dashboard_view.heading" in source
     assert "Project Review Dashboard" not in source
     assert "项目审核总览" not in source

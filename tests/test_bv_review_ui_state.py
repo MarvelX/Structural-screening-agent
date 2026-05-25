@@ -26,6 +26,7 @@ from structural_screening_agent.bv_review.ui_state import (
     build_evidence_matrix_rows,
     build_persisted_workflow_run_summary_rows,
     build_project_communication_rows,
+    build_project_note_rows,
     build_project_review_state_summary_rows,
     build_project_review_state_snapshot_rows,
     build_project_timeline_rows,
@@ -45,6 +46,7 @@ from structural_screening_agent.bv_review.project_state import (
     CommunicationRecord,
     EngineerApproval,
     ExtractedField,
+    ProjectNote,
     ProjectReviewState,
     ReportRevision,
     RFIItem,
@@ -547,6 +549,61 @@ def test_project_communication_rows_localize_review_communications() -> None:
     assert en_timeline_rows[0]["Suggested Action"] == (
         "Follow up communication action items and keep the record"
     )
+
+
+def test_project_note_rows_localize_engineering_judgment_records() -> None:
+    state = ProjectReviewState(
+        project_id="pv-project-note-ui",
+        intake=default_bv_review_intake(),
+        project_notes=[
+            ProjectNote(
+                note_id="note-judgment-001",
+                note_type="engineering_judgment",
+                author="BV structural review engineer",
+                created_at="2026-05-25",
+                title="Foundation review boundary",
+                content="Only screening-level pile uplift check is covered before designer confirmation.",
+                linked_rfi_ids=["rfi-geotech-001"],
+                linked_risk_ids=["risk-foundation-001"],
+                linked_calculation_run_ids=["calc-foundation-001"],
+                blocks_report_issue=True,
+            )
+        ],
+    )
+
+    zh_rows = build_project_note_rows(state, "zh")
+    en_rows = build_project_note_rows(state, "en")
+
+    assert zh_rows == [
+        {
+            "备注 ID": "note-judgment-001",
+            "类型": "工程判断",
+            "记录人": "BV 结构审核工程师",
+            "记录时间": "2026-05-25",
+            "标题": "Foundation review boundary",
+            "内容": "Only screening-level pile uplift check is covered before designer confirmation.",
+            "关联澄清": "rfi-geotech-001",
+            "关联发现项": "risk-foundation-001",
+            "关联计算": "calc-foundation-001",
+            "阻塞报告": "是",
+        }
+    ]
+    assert en_rows == [
+        {
+            "Note ID": "note-judgment-001",
+            "Type": "Engineering Judgment",
+            "Author": "BV Structural Review Engineer",
+            "Created At": "2026-05-25",
+            "Title": "Foundation review boundary",
+            "Content": "Only screening-level pile uplift check is covered before designer confirmation.",
+            "Linked RFIs": "rfi-geotech-001",
+            "Linked Findings": "risk-foundation-001",
+            "Linked Calculations": "calc-foundation-001",
+            "Blocks Report": "Yes",
+        }
+    ]
+    assert "Engineering Judgment" not in str(zh_rows)
+    assert "工程判断" not in str(en_rows)
 
 
 def test_project_timeline_rows_combine_rfi_finding_and_report_revision_events() -> None:
