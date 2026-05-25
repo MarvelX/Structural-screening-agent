@@ -1,0 +1,350 @@
+{
+  "pv-cn-ground-fixed-foundation-001": {
+    "project_id": "pv-cn-ground-fixed-foundation-001",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [
+      {
+        "field_id": "tilt_angle_deg",
+        "name": "Tilt angle",
+        "candidate_value": 25,
+        "unit": "deg",
+        "source_document_id": "project-description",
+        "page_or_section": "source text",
+        "quote": "支架倾角25度",
+        "confidence": 0.94,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "pile_diameter_mm",
+        "name": "Pile diameter",
+        "candidate_value": 300,
+        "unit": "mm",
+        "source_document_id": "project-description",
+        "page_or_section": "source text",
+        "quote": "PHC桩径300mm",
+        "confidence": 0.93,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "pile_length_m",
+        "name": "Pile length",
+        "candidate_value": 3.5,
+        "unit": "m",
+        "source_document_id": "project-description",
+        "page_or_section": "source text",
+        "quote": "桩长3.5m",
+        "confidence": 0.93,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "bearing_capacity_characteristic_kpa",
+        "name": "Bearing capacity characteristic",
+        "candidate_value": 180,
+        "unit": "kPa",
+        "source_document_id": "project-description",
+        "page_or_section": "source text",
+        "quote": "地基承载力特征值fak=180kPa",
+        "confidence": 0.9,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      }
+    ],
+    "document_versions": [],
+    "missing_document_keys": ["calculation_report"],
+    "notes": []
+  },
+  "pv-en-ground-fixed-wind-002": {
+    "project_id": "pv-en-ground-fixed-wind-002",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [
+      {
+        "field_id": "tilt_angle_deg",
+        "name": "Tilt angle",
+        "candidate_value": 25,
+        "unit": "deg",
+        "source_document_id": "project-description",
+        "page_or_section": "source text",
+        "quote": "25 deg tilt",
+        "confidence": 0.94,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "basic_wind_pressure_kpa",
+        "name": "Basic wind pressure",
+        "candidate_value": 0.45,
+        "unit": "kPa",
+        "source_document_id": "project-description",
+        "page_or_section": "source text",
+        "quote": "Basic wind pressure is 0.45 kPa",
+        "confidence": 0.91,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "snow_load_kpa",
+        "name": "Snow load",
+        "candidate_value": 0.35,
+        "unit": "kPa",
+        "source_document_id": "project-description",
+        "page_or_section": "source text",
+        "quote": "snow load is 0.35 kPa",
+        "confidence": 0.9,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      }
+    ],
+    "document_versions": [],
+    "missing_document_keys": ["geotechnical_report"],
+    "notes": []
+  },
+  "pv-bilingual-member-003": {
+    "project_id": "pv-bilingual-member-003",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [
+      {
+        "field_id": "post_section",
+        "name": "Post section",
+        "candidate_value": "C160",
+        "unit": null,
+        "source_document_id": "member-schedule",
+        "page_or_section": "source text",
+        "quote": "post section C160",
+        "confidence": 0.91,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "beam_section",
+        "name": "Beam section",
+        "candidate_value": "H200x100",
+        "unit": null,
+        "source_document_id": "member-schedule",
+        "page_or_section": "source text",
+        "quote": "beam section H200x100",
+        "confidence": 0.91,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "purlin_section",
+        "name": "Purlin section",
+        "candidate_value": "C80",
+        "unit": null,
+        "source_document_id": "member-schedule",
+        "page_or_section": "source text",
+        "quote": "purlin section C80",
+        "confidence": 0.9,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "steel_grade",
+        "name": "Steel grade",
+        "candidate_value": "Q355B",
+        "unit": null,
+        "source_document_id": "member-schedule",
+        "page_or_section": "source text",
+        "quote": "Steel grade is Q355B",
+        "confidence": 0.92,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      }
+    ],
+    "document_versions": [],
+    "missing_document_keys": [],
+    "notes": []
+  },
+  "pv-cn-reaction-table-004": {
+    "project_id": "pv-cn-reaction-table-004",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [
+      {
+        "field_id": "worst_axial_force_kn",
+        "name": "Worst axial force",
+        "candidate_value": 38,
+        "unit": "kN",
+        "source_document_id": "reaction-table",
+        "page_or_section": "source text",
+        "quote": "最不利轴力38kN",
+        "confidence": 0.92,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "worst_bending_moment_knm",
+        "name": "Worst bending moment",
+        "candidate_value": 12.5,
+        "unit": "kN.m",
+        "source_document_id": "reaction-table",
+        "page_or_section": "source text",
+        "quote": "最不利弯矩12.5kN.m",
+        "confidence": 0.91,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "worst_shear_force_kn",
+        "name": "Worst shear force",
+        "candidate_value": 6.2,
+        "unit": "kN",
+        "source_document_id": "reaction-table",
+        "page_or_section": "source text",
+        "quote": "最不利剪力6.2kN",
+        "confidence": 0.91,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      }
+    ],
+    "document_versions": [],
+    "missing_document_keys": [],
+    "notes": []
+  },
+  "pv-cn-missing-geotech-005": {
+    "project_id": "pv-cn-missing-geotech-005",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [],
+    "document_versions": [],
+    "missing_document_keys": ["geotechnical_report"],
+    "notes": []
+  },
+  "pv-en-contract-standard-006": {
+    "project_id": "pv-en-contract-standard-006",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [],
+    "document_versions": [],
+    "missing_document_keys": ["calculation_report"],
+    "notes": []
+  },
+  "pv-cn-unit-expression-007": {
+    "project_id": "pv-cn-unit-expression-007",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [
+      {
+        "field_id": "pile_diameter_mm",
+        "name": "Pile diameter",
+        "candidate_value": 300,
+        "unit": "mm",
+        "source_document_id": "foundation-table",
+        "page_or_section": "source text",
+        "quote": "PHC管桩 D=300mm",
+        "confidence": 0.92,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "pile_length_m",
+        "name": "Pile length",
+        "candidate_value": 3.5,
+        "unit": "m",
+        "source_document_id": "foundation-table",
+        "page_or_section": "source text",
+        "quote": "L=3500mm",
+        "confidence": 0.87,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      },
+      {
+        "field_id": "pile_spacing_m",
+        "name": "Pile spacing",
+        "candidate_value": 4.2,
+        "unit": "m",
+        "source_document_id": "foundation-table",
+        "page_or_section": "source text",
+        "quote": "桩间距4.2m",
+        "confidence": 0.91,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      }
+    ],
+    "document_versions": [],
+    "missing_document_keys": [],
+    "notes": []
+  },
+  "pv-cn-revision-conflict-008": {
+    "project_id": "pv-cn-revision-conflict-008",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [
+      {
+        "field_id": "pile_diameter_mm",
+        "name": "Pile diameter",
+        "candidate_value": 350,
+        "unit": "mm",
+        "source_document_id": "foundation-table-rev-b",
+        "page_or_section": "source text",
+        "quote": "Rev B 基础表桩径350mm，Rev B 替代 Rev A",
+        "confidence": 0.9,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      }
+    ],
+    "document_versions": [],
+    "missing_document_keys": [],
+    "notes": []
+  },
+  "pv-cn-rooftop-added-load-009": {
+    "project_id": "pv-cn-rooftop-added-load-009",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [
+      {
+        "field_id": "pv_added_dead_load_kpa",
+        "name": "PV added dead load",
+        "candidate_value": 0.18,
+        "unit": "kPa",
+        "source_document_id": "rooftop-load-review",
+        "page_or_section": "source text",
+        "quote": "新增恒载0.18kPa",
+        "confidence": 0.9,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      }
+    ],
+    "document_versions": [],
+    "missing_document_keys": ["calculation_report"],
+    "notes": []
+  },
+  "pv-cn-no-specific-values-010": {
+    "project_id": "pv-cn-no-specific-values-010",
+    "schema_version": "phase2-agent-contracts-v1",
+    "requires_engineer_review": true,
+    "agent_role": "document_intake",
+    "extracted_fields": [
+      {
+        "field_id": "steel_grade",
+        "name": "Steel grade",
+        "candidate_value": "Q355B",
+        "unit": null,
+        "source_document_id": "design-note",
+        "page_or_section": "source text",
+        "quote": "设计说明称支架、基础和连接均满足现行规范要求",
+        "confidence": 0.2,
+        "is_confirmed": false,
+        "include_in_calculation": false
+      }
+    ],
+    "document_versions": [],
+    "missing_document_keys": ["calculation_report"],
+    "notes": ["Intentional flawed output for hallucination scoring."]
+  }
+}

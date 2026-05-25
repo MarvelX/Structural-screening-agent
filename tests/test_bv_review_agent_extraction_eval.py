@@ -5,8 +5,11 @@ from structural_screening_agent.bv_review.project_state import ExtractedField
 from structural_screening_agent.bv_review.agent_extraction_eval import (
     AgentExtractionCase,
     ExpectedExtractedField,
+    build_extraction_eval_markdown_summary,
     evaluate_document_intake_output,
+    evaluate_extraction_case_outputs,
     load_extraction_cases,
+    load_mock_document_intake_outputs,
 )
 
 
@@ -189,3 +192,44 @@ def test_evidence_completeness_ignores_value_matches_with_wrong_unit() -> None:
     assert score.value_accuracy == 1.0
     assert score.unit_accuracy == 0.0
     assert score.evidence_completeness == 0.0
+
+
+def test_load_mock_document_intake_outputs_reads_document_intake_contracts() -> None:
+    outputs = load_mock_document_intake_outputs(
+        FIXTURE_DIR / "bv_agent_extraction_outputs.json"
+    )
+
+    assert "pv-cn-ground-fixed-foundation-001" in outputs
+    assert outputs["pv-cn-ground-fixed-foundation-001"].agent_role == "document_intake"
+    assert outputs["pv-cn-ground-fixed-foundation-001"].requires_engineer_review is True
+
+
+def test_evaluate_extraction_case_outputs_summarizes_fixture_performance() -> None:
+    cases = load_extraction_cases(FIXTURE_DIR / "bv_agent_extraction_cases.json")
+    outputs = load_mock_document_intake_outputs(
+        FIXTURE_DIR / "bv_agent_extraction_outputs.json"
+    )
+
+    summary = evaluate_extraction_case_outputs(cases, outputs)
+
+    assert summary.case_count == 10
+    assert summary.average_field_recall >= 0.7
+    assert summary.average_field_precision >= 0.7
+    assert summary.average_no_hallucination_rate >= 0.8
+    assert summary.failing_case_ids == ["pv-cn-no-specific-values-010"]
+
+
+def test_build_extraction_eval_markdown_summary_is_portfolio_ready() -> None:
+    cases = load_extraction_cases(FIXTURE_DIR / "bv_agent_extraction_cases.json")
+    outputs = load_mock_document_intake_outputs(
+        FIXTURE_DIR / "bv_agent_extraction_outputs.json"
+    )
+    summary = evaluate_extraction_case_outputs(cases, outputs)
+
+    markdown = build_extraction_eval_markdown_summary(summary)
+
+    assert markdown.startswith("## Agent Extraction Reliability Evaluation")
+    assert "Case count: 10" in markdown
+    assert "Field recall" in markdown
+    assert "No-hallucination rate" in markdown
+    assert "pv-cn-no-specific-values-010" in markdown

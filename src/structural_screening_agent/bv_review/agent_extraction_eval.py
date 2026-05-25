@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Literal, Optional, Union
+from typing import Iterable, Literal, Optional, Union
 
 from pydantic import BaseModel, Field
 
@@ -51,6 +51,31 @@ class AgentExtractionCaseScore(BaseModel):
     missing_field_ids: list[str] = Field(default_factory=list)
     extra_field_ids: list[str] = Field(default_factory=list)
     hallucinated_field_ids: list[str] = Field(default_factory=list)
+
+
+class AgentExtractionEvaluationSummary(BaseModel):
+    case_count: int = Field(ge=0)
+    average_field_recall: float = Field(ge=0, le=1)
+    average_field_precision: float = Field(ge=0, le=1)
+    average_value_accuracy: float = Field(ge=0, le=1)
+    average_unit_accuracy: float = Field(ge=0, le=1)
+    average_evidence_completeness: float = Field(ge=0, le=1)
+    average_missing_document_recall: float = Field(ge=0, le=1)
+    average_missing_document_precision: float = Field(ge=0, le=1)
+    average_no_hallucination_rate: float = Field(ge=0, le=1)
+    average_calculation_readiness_accuracy: float = Field(ge=0, le=1)
+    failing_case_ids: list[str] = Field(default_factory=list)
+    case_scores: list[AgentExtractionCaseScore] = Field(default_factory=list)
+
+
+def load_mock_document_intake_outputs(
+    path: Path,
+) -> dict[str, DocumentIntakeAgentOutput]:
+    raw_outputs = json.loads(path.read_text(encoding="utf-8"))
+    return {
+        case_id: DocumentIntakeAgentOutput.model_validate(raw_output)
+        for case_id, raw_output in raw_outputs.items()
+    }
 
 
 def evaluate_document_intake_output(
@@ -137,6 +162,71 @@ def evaluate_document_intake_output(
     )
 
 
+def evaluate_extraction_case_outputs(
+    cases: list[AgentExtractionCase],
+    outputs_by_case_id: dict[str, DocumentIntakeAgentOutput],
+) -> AgentExtractionEvaluationSummary:
+    scores = [
+        evaluate_document_intake_output(case, outputs_by_case_id[case.case_id])
+        for case in cases
+    ]
+    failing_case_ids = [
+        score.case_id
+        for score in scores
+        if min(
+            score.field_recall,
+            score.field_precision,
+            score.no_hallucination_rate,
+        )
+        < 1.0
+    ]
+    return AgentExtractionEvaluationSummary(
+        case_count=len(scores),
+        average_field_recall=_average(score.field_recall for score in scores),
+        average_field_precision=_average(score.field_precision for score in scores),
+        average_value_accuracy=_average(score.value_accuracy for score in scores),
+        average_unit_accuracy=_average(score.unit_accuracy for score in scores),
+        average_evidence_completeness=_average(
+            score.evidence_completeness for score in scores
+        ),
+        average_missing_document_recall=_average(
+            score.missing_document_recall for score in scores
+        ),
+        average_missing_document_precision=_average(
+            score.missing_document_precision for score in scores
+        ),
+        average_no_hallucination_rate=_average(
+            score.no_hallucination_rate for score in scores
+        ),
+        average_calculation_readiness_accuracy=_average(
+            score.calculation_readiness_accuracy for score in scores
+        ),
+        failing_case_ids=failing_case_ids,
+        case_scores=scores,
+    )
+
+
+def build_extraction_eval_markdown_summary(
+    summary: AgentExtractionEvaluationSummary,
+) -> str:
+    lines = [
+        "## Agent Extraction Reliability Evaluation",
+        "",
+        f"- Case count: {summary.case_count}",
+        f"- Field recall: {summary.average_field_recall:.2f}",
+        f"- Field precision: {summary.average_field_precision:.2f}",
+        f"- Value accuracy: {summary.average_value_accuracy:.2f}",
+        f"- Unit accuracy: {summary.average_unit_accuracy:.2f}",
+        f"- Evidence completeness: {summary.average_evidence_completeness:.2f}",
+        f"- Missing document recall: {summary.average_missing_document_recall:.2f}",
+        f"- Missing document precision: {summary.average_missing_document_precision:.2f}",
+        f"- No-hallucination rate: {summary.average_no_hallucination_rate:.2f}",
+        f"- Calculation readiness accuracy: {summary.average_calculation_readiness_accuracy:.2f}",
+        f"- Failing cases: {', '.join(summary.failing_case_ids) or 'None'}",
+    ]
+    return "\n".join(lines) + "\n"
+
+
 def _ratio(numerator: int, denominator: int) -> float:
     if denominator == 0:
         return 1.0
@@ -174,3 +264,10 @@ def _has_complete_evidence(field: ExtractedField) -> bool:
             bool(field.quote.strip()),
         ]
     )
+
+
+def _average(values: Iterable[float]) -> float:
+    materialized = list(values)
+    if not materialized:
+        return 1.0
+    return sum(materialized) / len(materialized)
