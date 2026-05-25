@@ -2,6 +2,8 @@ from datetime import date
 
 from structural_screening_agent.bv_review.project_management import (
     ProjectManagementAction,
+    build_project_review_dashboard_rows,
+    build_project_review_dashboard_summary,
     build_finding_lifecycle_summary,
     build_finding_lifecycle_summary_rows,
     build_project_management_action_summary,
@@ -722,6 +724,154 @@ def test_project_management_actions_skip_quality_gate_follow_up_at_intake() -> N
     )
 
     assert build_project_management_actions(state) == []
+
+
+def test_project_review_dashboard_summary_combines_actions_sla_clarifications_and_reissue() -> None:
+    state = ProjectReviewState(
+        project_id="pv-review-dashboard",
+        intake=_sample_intake(),
+        current_phase="report_draft",
+        basis_references=[
+            BVBasisReference(
+                basis_id="gb-50797",
+                title="PV station design basis",
+                source_type="code",
+                review_actions=["Use as review basis."],
+            )
+        ],
+        phase_statuses={
+            "intake": "approved",
+            "document_check": "approved",
+            "basis_build": "approved",
+            "review_plan": "approved",
+            "engineer_data_lock": "approved",
+            "calculation_check": "waiting_for_engineer",
+            "risk_register": "approved",
+            "report_draft": "running",
+            "engineer_approval": "pending",
+            "issue_rfi_closeout": "waiting_for_engineer",
+        },
+        agent_events=[
+            AgentWorkflowEvent(
+                event_id="calculation-agent-001",
+                agent_role="calculation_check",
+                target_phase="calculation_check",
+                status="applied",
+                output_schema_version="phase1.local",
+                created_at="2026-05-20T09:00:00+08:00",
+                requires_engineer_review=True,
+            )
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-load-001",
+                question="Please confirm updated load table.",
+                responsible_party="client / designer",
+                trigger_basis="Client replied with Rev B load table.",
+                required_document_or_field="uplift_force_kn",
+                status="responded",
+                opened_at="2026-05-20",
+                client_response="Rev B load table submitted.",
+                reopen_review_items=["uplift_force_kn"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+        risks=[
+            BVRiskItem(
+                risk_id="foundation-open",
+                title="Foundation evidence remains open",
+                severity="critical",
+                trigger_basis="Missing geotechnical report.",
+                impact_scope="Foundation review",
+                recommendation="Request evidence.",
+                blocks_report_issue=True,
+                category="nonconformity",
+            )
+        ],
+    )
+
+    summary = build_project_review_dashboard_summary(
+        state,
+        reference_date=date(2026, 5, 24),
+    )
+    zh_rows = build_project_review_dashboard_rows(summary, "zh")
+    en_rows = build_project_review_dashboard_rows(summary, "en")
+
+    assert summary.dashboard_status == "blocked"
+    assert summary.total_action_count == 5
+    assert summary.blocking_action_count == 5
+    assert summary.overdue_action_count == 2
+    assert summary.open_finding_count == 1
+    assert summary.open_clarification_count == 0
+    assert summary.responded_clarification_count == 1
+    assert summary.pending_recheck_count == 1
+    assert summary.report_reissue_status == "blocked"
+    assert summary.next_project_action_id == "rfi-engineer-closeout-rfi-load-001"
+    assert zh_rows[0] == {"指标": "项目看板状态", "数值": "阻塞"}
+    assert zh_rows[-1] == {
+        "指标": "下一项项目行动",
+        "数值": "rfi-engineer-closeout-rfi-load-001",
+    }
+    assert "Blocked" not in str(zh_rows)
+    assert en_rows[0] == {"Metric": "Project Dashboard Status", "Value": "Blocked"}
+    assert en_rows[-1] == {
+        "Metric": "Next Project Action",
+        "Value": "rfi-engineer-closeout-rfi-load-001",
+    }
+
+
+def test_project_review_dashboard_summary_marks_ready_when_no_actions_or_reissue_blockers() -> None:
+    state = ProjectReviewState(
+        project_id="pv-review-dashboard-ready",
+        intake=_sample_intake(),
+        approvals=[
+            EngineerApproval(
+                approval_id="report-gate-approval",
+                target_type="report",
+                target_id="report",
+                status="approved",
+                reviewer="Engineer A",
+                locked=True,
+            )
+        ],
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-closed-001",
+                question="Please confirm closed foundation evidence.",
+                responsible_party="client / designer",
+                trigger_basis="Closed RFI evidence.",
+                required_document_or_field="geotechnical_report",
+                status="closed",
+                opened_at="2026-05-20",
+                client_response="Rev B evidence accepted.",
+            )
+        ],
+        report_revisions=[
+            ReportRevision(
+                revision_id="report-rev-002",
+                source_phase="report_draft",
+                report_title="PV Design Review Report",
+                section_count=6,
+                rfi_count=1,
+                created_by="Engineer A",
+                created_at="2026-05-24T11:00:00+08:00",
+                revision_status="issued_for_client_response",
+                related_rfi_ids=["rfi-closed-001"],
+            )
+        ],
+    )
+
+    summary = build_project_review_dashboard_summary(
+        state,
+        reference_date=date(2026, 5, 24),
+    )
+
+    assert summary.dashboard_status == "ready"
+    assert summary.total_action_count == 0
+    assert summary.blocking_action_count == 0
+    assert summary.overdue_action_count == 0
+    assert summary.report_reissue_status == "ready"
+    assert summary.next_project_action_id is None
 
 
 def test_project_management_actions_ignore_locked_quality_gates() -> None:

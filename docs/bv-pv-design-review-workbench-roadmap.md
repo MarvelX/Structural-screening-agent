@@ -136,11 +136,11 @@ Implemented:
 - report revision history with traceable revision status, supersession lineage, related RFI references, latest revision summary, and next revision action.
 - report reissue gate that links RFI closeout, incremental recheck evidence, report gate approval, and latest revision coverage into a deterministic next action.
 - clarification history view for RFI status, owner, opened date, incremental recheck state, latest report revision coverage, and next clarification action.
+- project review dashboard that aggregates open actions, blocking actions, overdue actions, findings, clarification closeout, pending rechecks, report reissue status, and the next project action into one deterministic project-level summary.
 
 Candidate work:
 
 - deeper finding lifecycle tracking
-- review dashboard
 - fee discussion support
 
 This phase should not turn the product into a CRM. Service scope recommendation should remain tied to engineering review findings and document gaps.

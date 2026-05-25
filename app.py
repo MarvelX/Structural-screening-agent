@@ -82,6 +82,7 @@ from structural_screening_agent.bv_review.project_management import (
 from structural_screening_agent.bv_review.ui import (
     build_bv_clarification_history_view,
     build_bv_project_management_dashboard_view,
+    build_bv_project_review_dashboard_view,
     build_bv_report_reissue_gate_view,
     build_bv_report_revision_history_view,
 )
@@ -1667,6 +1668,17 @@ with bv_review_tab:
         project_management_actions = build_project_management_actions(
             reviewed_workflow_state
         )
+        project_review_dashboard_view = build_bv_project_review_dashboard_view(
+            reviewed_workflow_state,
+            ui_language,
+        )
+        st.markdown(f"##### {project_review_dashboard_view.heading}")
+        st.dataframe(
+            project_review_dashboard_view.summary_rows,
+            hide_index=True,
+            use_container_width=True,
+        )
+        st.caption(project_review_dashboard_view.empty_caption)
         responsible_party_rows = build_responsible_party_status_rows(
             project_management_actions,
             ui_language,

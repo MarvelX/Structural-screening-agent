@@ -126,10 +126,13 @@ from structural_screening_agent.bv_review.project_timeline import (
 from structural_screening_agent.bv_review.project_management import (
     ProjectManagementAction,
     ProjectManagementActionSummary,
+    ProjectReviewDashboardSummary,
     build_project_management_action_summary,
     build_project_management_action_summary_rows,
     build_project_management_action_rows,
     build_project_management_actions,
+    build_project_review_dashboard_rows,
+    build_project_review_dashboard_summary,
 )
 from structural_screening_agent.bv_review.report import build_bv_open_rfi_items
 from structural_screening_agent.bv_review.report_revision_history import (
@@ -193,6 +196,7 @@ __all__ = [
     "ProjectTimelineEvent",
     "ProjectManagementAction",
     "ProjectManagementActionSummary",
+    "ProjectReviewDashboardSummary",
     "PVStructuralSpec",
     "PersistedWorkflowRunResult",
     "PersistedWorkflowRunSummary",
@@ -250,6 +254,8 @@ __all__ = [
     "build_project_management_action_summary_rows",
     "build_project_management_action_rows",
     "build_project_management_actions",
+    "build_project_review_dashboard_rows",
+    "build_project_review_dashboard_summary",
     "build_project_timeline_events",
     "build_report_revision_history_rows",
     "build_report_revision_history_summary",

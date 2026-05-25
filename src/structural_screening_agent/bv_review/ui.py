@@ -17,6 +17,8 @@ from structural_screening_agent.bv_review.project_management import (
     build_project_management_action_rows,
     build_project_management_action_summary,
     build_project_management_action_summary_rows,
+    build_project_review_dashboard_rows,
+    build_project_review_dashboard_summary,
 )
 from structural_screening_agent.bv_review.report_revision_history import (
     build_report_revision_history_rows,
@@ -45,6 +47,12 @@ class BVProjectManagementDashboardView(BaseModel):
     heading: str = Field(min_length=1)
     summary_rows: list[dict[str, object]] = Field(default_factory=list)
     action_rows: list[dict[str, object]] = Field(default_factory=list)
+    empty_caption: str = Field(min_length=1)
+
+
+class BVProjectReviewDashboardView(BaseModel):
+    heading: str = Field(min_length=1)
+    summary_rows: list[dict[str, object]] = Field(default_factory=list)
     empty_caption: str = Field(min_length=1)
 
 
@@ -294,6 +302,24 @@ def build_bv_project_management_dashboard_view(
         heading=heading,
         summary_rows=build_project_management_action_summary_rows(summary, language),
         action_rows=build_project_management_action_rows(actions, language),
+        empty_caption=empty_caption,
+    )
+
+
+def build_bv_project_review_dashboard_view(
+    state: ProjectReviewState,
+    language: Language,
+) -> BVProjectReviewDashboardView:
+    heading = "Project Review Dashboard" if language == "en" else "项目审核总览"
+    empty_caption = (
+        "Project review dashboard is ready."
+        if language == "en"
+        else "项目审核总览已就绪。"
+    )
+    summary = build_project_review_dashboard_summary(state)
+    return BVProjectReviewDashboardView(
+        heading=heading,
+        summary_rows=build_project_review_dashboard_rows(summary, language),
         empty_caption=empty_caption,
     )
 

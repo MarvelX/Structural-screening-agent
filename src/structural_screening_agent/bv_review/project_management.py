@@ -12,6 +12,12 @@ from structural_screening_agent.bv_review.project_state import (
     REVIEW_PHASES,
 )
 from structural_screening_agent.bv_review.models import BVRiskItem
+from structural_screening_agent.bv_review.clarification_history import (
+    build_clarification_history_summary,
+)
+from structural_screening_agent.bv_review.report_reissue import (
+    build_report_reissue_gate_summary,
+)
 
 
 ProjectActionCategory = Literal[
@@ -25,6 +31,7 @@ ProjectActionCategory = Literal[
 ]
 ProjectActionPriority = Literal["high", "medium", "low"]
 ProjectActionLanguage = Literal["zh", "en"]
+ProjectDashboardStatus = Literal["blocked", "attention", "ready"]
 
 
 class ProjectManagementAction(BaseModel):
@@ -63,6 +70,19 @@ class FindingLifecycleSummary(BaseModel):
     responded_rfi_count: int = Field(ge=0)
     closed_rfi_count: int = Field(ge=0)
     next_lifecycle_action_id: Optional[str] = None
+
+
+class ProjectReviewDashboardSummary(BaseModel):
+    dashboard_status: ProjectDashboardStatus
+    total_action_count: int = Field(ge=0)
+    blocking_action_count: int = Field(ge=0)
+    overdue_action_count: int = Field(ge=0)
+    open_finding_count: int = Field(ge=0)
+    open_clarification_count: int = Field(ge=0)
+    responded_clarification_count: int = Field(ge=0)
+    pending_recheck_count: int = Field(ge=0)
+    report_reissue_status: str = Field(min_length=1)
+    next_project_action_id: Optional[str] = None
 
 
 def build_project_management_actions(
@@ -111,6 +131,95 @@ def build_finding_lifecycle_summary(
             lifecycle_actions[0].action_id if lifecycle_actions else None
         ),
     )
+
+
+def build_project_review_dashboard_summary(
+    state: ProjectReviewState,
+    reference_date: Optional[date] = None,
+) -> ProjectReviewDashboardSummary:
+    actions = build_project_management_actions(state)
+    action_summary = build_project_management_action_summary(actions)
+    sla_summary = build_project_management_sla_summary(actions, reference_date)
+    lifecycle_summary = build_finding_lifecycle_summary(state)
+    clarification_summary = build_clarification_history_summary(state)
+    reissue_summary = build_report_reissue_gate_summary(state)
+
+    return ProjectReviewDashboardSummary(
+        dashboard_status=_project_dashboard_status(
+            action_summary,
+            sla_summary,
+            reissue_summary.status,
+        ),
+        total_action_count=action_summary.total_action_count,
+        blocking_action_count=action_summary.blocking_action_count,
+        overdue_action_count=sla_summary.overdue_action_count,
+        open_finding_count=lifecycle_summary.open_finding_count,
+        open_clarification_count=(
+            clarification_summary.open_rfi_count
+            + clarification_summary.reopened_rfi_count
+        ),
+        responded_clarification_count=clarification_summary.responded_rfi_count,
+        pending_recheck_count=len(clarification_summary.pending_recheck_rfi_ids),
+        report_reissue_status=reissue_summary.status,
+        next_project_action_id=(
+            action_summary.next_blocking_action_id or sla_summary.next_due_action_id
+        ),
+    )
+
+
+def build_project_review_dashboard_rows(
+    summary: ProjectReviewDashboardSummary,
+    language: ProjectActionLanguage,
+) -> list[dict[str, object]]:
+    if language == "zh":
+        return [
+            {"指标": "项目看板状态", "数值": _dashboard_status_label(summary, "zh")},
+            {"指标": "项目待办", "数值": summary.total_action_count},
+            {"指标": "阻塞报告待办", "数值": summary.blocking_action_count},
+            {"指标": "超期待办", "数值": summary.overdue_action_count},
+            {"指标": "待关闭发现项", "数值": summary.open_finding_count},
+            {"指标": "待客户回复澄清", "数值": summary.open_clarification_count},
+            {
+                "指标": "待工程师关闭澄清",
+                "数值": summary.responded_clarification_count,
+            },
+            {"指标": "待增量复核", "数值": summary.pending_recheck_count},
+            {
+                "指标": "报告再签发状态",
+                "数值": _report_reissue_status_label(summary.report_reissue_status, "zh"),
+            },
+            {
+                "指标": "下一项项目行动",
+                "数值": summary.next_project_action_id or "无",
+            },
+        ]
+    return [
+        {
+            "Metric": "Project Dashboard Status",
+            "Value": _dashboard_status_label(summary, "en"),
+        },
+        {"Metric": "Project Actions", "Value": summary.total_action_count},
+        {"Metric": "Blocking Actions", "Value": summary.blocking_action_count},
+        {"Metric": "Overdue Actions", "Value": summary.overdue_action_count},
+        {"Metric": "Open Findings", "Value": summary.open_finding_count},
+        {
+            "Metric": "Clarifications Awaiting Client Response",
+            "Value": summary.open_clarification_count,
+        },
+        {
+            "Metric": "Clarifications Awaiting Engineer Closeout",
+            "Value": summary.responded_clarification_count,
+        },
+        {"Metric": "Pending Incremental Rechecks", "Value": summary.pending_recheck_count},
+        {
+            "Metric": "Report Reissue Status",
+            "Value": _report_reissue_status_label(summary.report_reissue_status, "en"),
+        },
+        {
+            "Metric": "Next Project Action",
+            "Value": summary.next_project_action_id or "None",
+        },
+    ]
 
 
 def build_finding_lifecycle_summary_rows(
@@ -715,6 +824,41 @@ def _localized_recommended_action(
         "report_revision": "报告门禁批准后记录可追踪的报告修订快照。",
     }
     return labels[action.category]
+
+
+def _project_dashboard_status(
+    action_summary: ProjectManagementActionSummary,
+    sla_summary: ProjectManagementSlaSummary,
+    report_reissue_status: str,
+) -> ProjectDashboardStatus:
+    if action_summary.blocking_action_count > 0 or report_reissue_status == "blocked":
+        return "blocked"
+    if action_summary.total_action_count > 0 or sla_summary.overdue_action_count > 0:
+        return "attention"
+    return "ready"
+
+
+def _dashboard_status_label(
+    summary: ProjectReviewDashboardSummary,
+    language: ProjectActionLanguage,
+) -> str:
+    labels = {
+        "blocked": {"zh": "阻塞", "en": "Blocked"},
+        "attention": {"zh": "需关注", "en": "Needs Attention"},
+        "ready": {"zh": "就绪", "en": "Ready"},
+    }
+    return labels[summary.dashboard_status][language]
+
+
+def _report_reissue_status_label(
+    status: str,
+    language: ProjectActionLanguage,
+) -> str:
+    labels = {
+        "blocked": {"zh": "阻塞", "en": "Blocked"},
+        "ready": {"zh": "就绪", "en": "Ready"},
+    }
+    return labels.get(status, {}).get(language, status)
 
 
 _CLOSED_FINDING_STATUSES = {"closed", "accepted_with_comment"}

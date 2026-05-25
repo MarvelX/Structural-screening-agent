@@ -3,6 +3,7 @@ from structural_screening_agent.bv_review.ui import (
     build_bv_clarification_history_view,
     build_bv_evidence_table_text,
     build_bv_gate_panel_text,
+    build_bv_project_review_dashboard_view,
     build_foundation_evidence_display_rows,
     build_bv_project_management_dashboard_view,
     build_bv_report_reissue_gate_view,
@@ -194,6 +195,43 @@ def test_bv_project_management_dashboard_view_localizes_summary_and_rows() -> No
     assert empty_view.summary_rows == []
     assert empty_view.action_rows == []
     assert empty_view.empty_caption == "No project management actions are currently open."
+
+
+def test_bv_project_review_dashboard_view_localizes_project_level_summary() -> None:
+    state = ProjectReviewState(
+        project_id="pv-ui-project-review-dashboard",
+        intake=default_bv_review_intake(),
+        rfi_items=[
+            RFIItem(
+                rfi_id="rfi-load-001",
+                question="Please confirm updated load table.",
+                responsible_party="client / designer",
+                trigger_basis="Client replied with Rev B load table.",
+                required_document_or_field="uplift_force_kn",
+                status="responded",
+                client_response="Rev B load table submitted.",
+                reopen_review_items=["uplift_force_kn"],
+                triggers_incremental_recheck=True,
+            )
+        ],
+    )
+
+    zh_view = build_bv_project_review_dashboard_view(state, "zh")
+    en_view = build_bv_project_review_dashboard_view(state, "en")
+
+    assert zh_view.heading == "项目审核总览"
+    assert zh_view.summary_rows[0] == {"指标": "项目看板状态", "数值": "阻塞"}
+    assert zh_view.summary_rows[-1] == {
+        "指标": "下一项项目行动",
+        "数值": "rfi-engineer-closeout-rfi-load-001",
+    }
+    assert "Blocked" not in str(zh_view)
+    assert en_view.heading == "Project Review Dashboard"
+    assert en_view.summary_rows[0] == {
+        "Metric": "Project Dashboard Status",
+        "Value": "Blocked",
+    }
+    assert en_view.empty_caption == "Project review dashboard is ready."
 
 
 def test_bv_report_revision_history_view_localizes_rows_and_empty_state() -> None:
