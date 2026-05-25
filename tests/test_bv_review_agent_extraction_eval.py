@@ -216,6 +216,7 @@ def test_evaluate_extraction_case_outputs_summarizes_fixture_performance() -> No
     assert summary.average_field_recall >= 0.7
     assert summary.average_field_precision >= 0.7
     assert summary.average_no_hallucination_rate >= 0.8
+    assert summary.average_calculation_readiness_accuracy == 1.0
     assert summary.failing_case_ids == ["pv-cn-no-specific-values-010"]
 
 

@@ -26,8 +26,10 @@
         "page_or_section": "source text",
         "quote": "PHC桩径300mm",
         "confidence": 0.93,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 300,
+        "confirmed_unit": "mm",
+        "include_in_calculation": true
       },
       {
         "field_id": "pile_length_m",
@@ -38,8 +40,10 @@
         "page_or_section": "source text",
         "quote": "桩长3.5m",
         "confidence": 0.93,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 3.5,
+        "confirmed_unit": "m",
+        "include_in_calculation": true
       },
       {
         "field_id": "bearing_capacity_characteristic_kpa",
@@ -50,8 +54,10 @@
         "page_or_section": "source text",
         "quote": "地基承载力特征值fak=180kPa",
         "confidence": 0.9,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 180,
+        "confirmed_unit": "kPa",
+        "include_in_calculation": true
       }
     ],
     "document_versions": [],
@@ -85,8 +91,10 @@
         "page_or_section": "source text",
         "quote": "Basic wind pressure is 0.45 kPa",
         "confidence": 0.91,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 0.45,
+        "confirmed_unit": "kPa",
+        "include_in_calculation": true
       },
       {
         "field_id": "snow_load_kpa",
@@ -97,8 +105,10 @@
         "page_or_section": "source text",
         "quote": "snow load is 0.35 kPa",
         "confidence": 0.9,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 0.35,
+        "confirmed_unit": "kPa",
+        "include_in_calculation": true
       }
     ],
     "document_versions": [],
@@ -179,8 +189,10 @@
         "page_or_section": "source text",
         "quote": "最不利轴力38kN",
         "confidence": 0.92,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 38,
+        "confirmed_unit": "kN",
+        "include_in_calculation": true
       },
       {
         "field_id": "worst_bending_moment_knm",
@@ -191,8 +203,10 @@
         "page_or_section": "source text",
         "quote": "最不利弯矩12.5kN.m",
         "confidence": 0.91,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 12.5,
+        "confirmed_unit": "kN.m",
+        "include_in_calculation": true
       },
       {
         "field_id": "worst_shear_force_kn",
@@ -203,8 +217,10 @@
         "page_or_section": "source text",
         "quote": "最不利剪力6.2kN",
         "confidence": 0.91,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 6.2,
+        "confirmed_unit": "kN",
+        "include_in_calculation": true
       }
     ],
     "document_versions": [],
@@ -246,8 +262,10 @@
         "page_or_section": "source text",
         "quote": "PHC管桩 D=300mm",
         "confidence": 0.92,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 300,
+        "confirmed_unit": "mm",
+        "include_in_calculation": true
       },
       {
         "field_id": "pile_length_m",
@@ -258,8 +276,10 @@
         "page_or_section": "source text",
         "quote": "L=3500mm",
         "confidence": 0.87,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 3.5,
+        "confirmed_unit": "m",
+        "include_in_calculation": true
       },
       {
         "field_id": "pile_spacing_m",
@@ -293,8 +313,10 @@
         "page_or_section": "source text",
         "quote": "Rev B 基础表桩径350mm，Rev B 替代 Rev A",
         "confidence": 0.9,
-        "is_confirmed": false,
-        "include_in_calculation": false
+        "is_confirmed": true,
+        "confirmed_value": 350,
+        "confirmed_unit": "mm",
+        "include_in_calculation": true
       }
     ],
     "document_versions": [],
