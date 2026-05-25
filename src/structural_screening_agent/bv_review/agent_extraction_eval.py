@@ -100,7 +100,7 @@ def evaluate_document_intake_output(
     ]
     evidence_ready_ids = [
         field_id
-        for field_id in value_matched_ids
+        for field_id in fully_matched_ids
         if _has_complete_evidence(extracted_by_id[field_id])
     ]
     expected_missing = set(case.expected_missing_document_keys)
@@ -112,7 +112,11 @@ def evaluate_document_intake_output(
         field_precision=_ratio(len(fully_matched_ids), len(extracted_by_id)),
         value_accuracy=_ratio(len(value_matched_ids), len(expected_by_id)),
         unit_accuracy=_ratio(len(unit_matched_ids), len(expected_by_id)),
-        evidence_completeness=_ratio(len(evidence_ready_ids), len(value_matched_ids)),
+        evidence_completeness=_evidence_ratio(
+            len(evidence_ready_ids),
+            len(fully_matched_ids),
+            len(expected_by_id),
+        ),
         missing_document_recall=_ratio(
             len(expected_missing & actual_missing),
             len(expected_missing),
@@ -137,6 +141,18 @@ def _ratio(numerator: int, denominator: int) -> float:
     if denominator == 0:
         return 1.0
     return numerator / denominator
+
+
+def _evidence_ratio(
+    evidence_ready_count: int,
+    fully_matched_count: int,
+    expected_field_count: int,
+) -> float:
+    if expected_field_count == 0:
+        return 1.0
+    if fully_matched_count == 0:
+        return 0.0
+    return evidence_ready_count / fully_matched_count
 
 
 def _value_matches(expected: ExpectedValue, actual: object) -> bool:

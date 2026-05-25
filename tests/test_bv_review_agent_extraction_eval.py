@@ -155,3 +155,37 @@ def test_evaluate_document_intake_output_penalizes_wrong_units_and_hallucination
     assert score.no_hallucination_rate == 0.0
     assert score.calculation_readiness_accuracy == 0.0
     assert score.hallucinated_field_ids == ["steel_grade"]
+
+
+def test_evidence_completeness_ignores_value_matches_with_wrong_unit() -> None:
+    case = AgentExtractionCase(
+        case_id="case-wrong-unit-complete-evidence",
+        language="zh",
+        scenario="foundation",
+        source_text="桩径300mm。",
+        expected_fields=[
+            ExpectedExtractedField(
+                field_id="pile_diameter_mm",
+                expected_value=300,
+                unit="mm",
+            )
+        ],
+    )
+    output = _output(
+        "case-wrong-unit-complete-evidence",
+        [
+            _field(
+                "pile_diameter_mm",
+                300,
+                "m",
+                quote="桩径300mm",
+            )
+        ],
+        [],
+    )
+
+    score = evaluate_document_intake_output(case, output)
+
+    assert score.value_accuracy == 1.0
+    assert score.unit_accuracy == 0.0
+    assert score.evidence_completeness == 0.0
