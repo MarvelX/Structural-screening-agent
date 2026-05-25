@@ -1,0 +1,118 @@
+[
+  {
+    "case_id": "pv-cn-ground-fixed-foundation-001",
+    "language": "zh",
+    "scenario": "ground_fixed_foundation",
+    "source_text": "本项目为河北地面固定支架光伏项目，支架倾角25度，PHC桩径300mm，桩长3.5m，地基承载力特征值fak=180kPa。结构计算书暂未提交。",
+    "expected_fields": [
+      {"field_id": "tilt_angle_deg", "expected_value": 25, "unit": "deg", "required": true, "include_in_calculation": false},
+      {"field_id": "pile_diameter_mm", "expected_value": 300, "unit": "mm", "required": true, "include_in_calculation": true},
+      {"field_id": "pile_length_m", "expected_value": 3.5, "unit": "m", "required": true, "include_in_calculation": true},
+      {"field_id": "bearing_capacity_characteristic_kpa", "expected_value": 180, "unit": "kPa", "required": true, "include_in_calculation": true}
+    ],
+    "expected_missing_document_keys": ["calculation_report"],
+    "must_not_extract": ["steel_grade"]
+  },
+  {
+    "case_id": "pv-en-ground-fixed-wind-002",
+    "language": "en",
+    "scenario": "ground_fixed_loads",
+    "source_text": "The ground-mounted PV support uses a 25 deg tilt. Basic wind pressure is 0.45 kPa and snow load is 0.35 kPa. The geotechnical report has not been submitted.",
+    "expected_fields": [
+      {"field_id": "tilt_angle_deg", "expected_value": 25, "unit": "deg", "required": true, "include_in_calculation": false},
+      {"field_id": "basic_wind_pressure_kpa", "expected_value": 0.45, "unit": "kPa", "required": true, "include_in_calculation": true},
+      {"field_id": "snow_load_kpa", "expected_value": 0.35, "unit": "kPa", "required": true, "include_in_calculation": true}
+    ],
+    "expected_missing_document_keys": ["geotechnical_report"],
+    "must_not_extract": ["pile_length_m", "steel_grade"]
+  },
+  {
+    "case_id": "pv-bilingual-member-003",
+    "language": "mixed",
+    "scenario": "member_schedule",
+    "source_text": "支架材料表 / Member schedule: post section C160, beam section H200x100, purlin section C80. Steel grade is Q355B.",
+    "expected_fields": [
+      {"field_id": "post_section", "expected_value": "C160", "unit": null, "required": true, "include_in_calculation": false},
+      {"field_id": "beam_section", "expected_value": "H200x100", "unit": null, "required": true, "include_in_calculation": false},
+      {"field_id": "purlin_section", "expected_value": "C80", "unit": null, "required": true, "include_in_calculation": false},
+      {"field_id": "steel_grade", "expected_value": "Q355B", "unit": null, "required": true, "include_in_calculation": false}
+    ],
+    "expected_missing_document_keys": [],
+    "must_not_extract": ["pile_diameter_mm"]
+  },
+  {
+    "case_id": "pv-cn-reaction-table-004",
+    "language": "zh",
+    "scenario": "foundation_reactions",
+    "source_text": "基础反力汇总表：最不利轴力38kN，最不利弯矩12.5kN.m，最不利剪力6.2kN。",
+    "expected_fields": [
+      {"field_id": "worst_axial_force_kn", "expected_value": 38, "unit": "kN", "required": true, "include_in_calculation": true},
+      {"field_id": "worst_bending_moment_knm", "expected_value": 12.5, "unit": "kN.m", "required": true, "include_in_calculation": true},
+      {"field_id": "worst_shear_force_kn", "expected_value": 6.2, "unit": "kN", "required": true, "include_in_calculation": true}
+    ],
+    "expected_missing_document_keys": [],
+    "must_not_extract": ["bearing_capacity_characteristic_kpa"]
+  },
+  {
+    "case_id": "pv-cn-missing-geotech-005",
+    "language": "zh",
+    "scenario": "missing_geotechnical_evidence",
+    "source_text": "图纸说明：基础形式按地勘确定。当前提交资料包括结构图和技术规格书，未见地勘报告。",
+    "expected_fields": [],
+    "expected_missing_document_keys": ["geotechnical_report"],
+    "must_not_extract": ["bearing_capacity_characteristic_kpa", "side_resistance_standard_kpa", "pile_length_m"]
+  },
+  {
+    "case_id": "pv-en-contract-standard-006",
+    "language": "en",
+    "scenario": "contract_requirements",
+    "source_text": "The contract requires independent civil and structural design review under Eurocode and IEC 62548. No calculation report is included in the submission package.",
+    "expected_fields": [],
+    "expected_missing_document_keys": ["calculation_report"],
+    "must_not_extract": ["basic_wind_pressure_kpa", "snow_load_kpa", "pile_diameter_mm"]
+  },
+  {
+    "case_id": "pv-cn-unit-expression-007",
+    "language": "zh",
+    "scenario": "unit_expression",
+    "source_text": "基础表：PHC管桩 D=300mm，L=3500mm，桩间距4.2m。",
+    "expected_fields": [
+      {"field_id": "pile_diameter_mm", "expected_value": 300, "unit": "mm", "required": true, "include_in_calculation": true},
+      {"field_id": "pile_length_m", "expected_value": 3.5, "unit": "m", "required": true, "include_in_calculation": true},
+      {"field_id": "pile_spacing_m", "expected_value": 4.2, "unit": "m", "required": true, "include_in_calculation": false}
+    ],
+    "expected_missing_document_keys": [],
+    "must_not_extract": ["steel_grade"]
+  },
+  {
+    "case_id": "pv-cn-revision-conflict-008",
+    "language": "zh",
+    "scenario": "revision_conflict",
+    "source_text": "Rev A 基础表桩径300mm；Rev B 基础表桩径350mm，Rev B 替代 Rev A。计算书仍引用 Rev A。",
+    "expected_fields": [
+      {"field_id": "pile_diameter_mm", "expected_value": 350, "unit": "mm", "required": true, "include_in_calculation": true}
+    ],
+    "expected_missing_document_keys": [],
+    "must_not_extract": ["pile_length_m", "bearing_capacity_characteristic_kpa"]
+  },
+  {
+    "case_id": "pv-cn-rooftop-added-load-009",
+    "language": "zh",
+    "scenario": "existing_rooftop_added_load",
+    "source_text": "既有屋面光伏增载复核：新增恒载0.18kPa，组件及支架布置见屋面平面图。原结构计算书未提供。",
+    "expected_fields": [
+      {"field_id": "pv_added_dead_load_kpa", "expected_value": 0.18, "unit": "kPa", "required": false, "include_in_calculation": false}
+    ],
+    "expected_missing_document_keys": ["calculation_report"],
+    "must_not_extract": ["pile_diameter_mm", "pile_length_m"]
+  },
+  {
+    "case_id": "pv-cn-no-specific-values-010",
+    "language": "zh",
+    "scenario": "anti_hallucination",
+    "source_text": "设计说明称支架、基础和连接均满足现行规范要求，具体计算参数详见后续计算书。当前文本未列出数值。",
+    "expected_fields": [],
+    "expected_missing_document_keys": ["calculation_report"],
+    "must_not_extract": ["tilt_angle_deg", "pile_diameter_mm", "steel_grade", "basic_wind_pressure_kpa"]
+  }
+]
